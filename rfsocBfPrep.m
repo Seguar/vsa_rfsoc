@@ -8,7 +8,6 @@ lambda = c / fc; % wavelength
 d = lambda/2; % spacsing antenna elemnts
 min_ang = -90; % min scanning angle
 max_ang = 90; % max scanning angle
-% scan_res = 1; % scan resolution
 scan_axis = min_ang:scan_res:max_ang; % angles axis
 num_elements = 4;
 ula = phased.ULA('NumElements',num_elements,'ElementSpacing',d, 'ArrayAxis','y');
@@ -39,11 +38,10 @@ curr_data_size_bytes = typecast(uint64(curr_data_size), 'uint8');
 
 write(tcp_client, curr_data_size_bytes);
 clf(app.UIAxes);
-hold(app.UIAxes);
 yspec = zeros(1, length(scan_axis));
 plot_handle = plot(app.UIAxes, scan_axis, yspec);
 app.UIAxes.XLim = [min_ang max_ang];
-
+app.UIAxes.YLim = [0 1.2];
 app.UIAxes.XLabel.String  = ('\Theta^o');
 app.UIAxes.YLabel.String  = ('Power_{MVDR}');
 app.UIAxes.FontSize = 16;
