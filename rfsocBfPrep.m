@@ -1,6 +1,4 @@
 function [data_v, estimator, tcp_client, plot_handle] = rfsocBfPrep(app, dataChan, setupFile, num, scan_res)
-
-bw = 20e6;
 fc = 5.7e9;
 fsRfsoc = 125e6;
 c = physconst('LightSpeed'); % propagation velocity [m/s]

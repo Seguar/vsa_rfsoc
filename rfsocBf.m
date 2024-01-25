@@ -21,9 +21,25 @@ if ch>4
     ch = 1:4;
 end
 
-if bf
-    rawData = steerBf(rawData, estimated_angle(ang_num), lambda);
+switch bf
+    case 'Without'
+        rawData = rawData;
+        bf
+    case 'Steering'
+        rawData = steerBf(rawData, estimated_angle(ang_num), lambda);
+        bf
+    case 'MVDR'
+
+        bf
+        
+    case 'LVCM'
+        bf
+    otherwise
+        rawData = rawData;
 end
+% if bf
+%     rawData = steerBf(rawData, estimated_angle(ang_num), lambda);
+% end
 rawSum = sum(rawData(:,ch), 2);
 
 
