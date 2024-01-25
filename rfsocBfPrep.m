@@ -1,4 +1,4 @@
-function [data_v, estimator, tcp_client, plot_handle] = rfsocBfPrep(app, dataChan, setupFile, num)
+function [data_v, estimator, tcp_client, plot_handle] = rfsocBfPrep(app, dataChan, setupFile, num, scan_res)
 
 bw = 20e6;
 fc = 5.7e9;
@@ -8,7 +8,7 @@ lambda = c / fc; % wavelength
 d = lambda/2; % spacsing antenna elemnts
 min_ang = -90; % min scanning angle
 max_ang = 90; % max scanning angle
-scan_res = 1; % scan resolution
+% scan_res = 1; % scan resolution
 scan_axis = min_ang:scan_res:max_ang; % angles axis
 num_elements = 4;
 ula = phased.ULA('NumElements',num_elements,'ElementSpacing',d, 'ArrayAxis','y');
@@ -38,15 +38,12 @@ curr_data_size = dataChan * 8;
 curr_data_size_bytes = typecast(uint64(curr_data_size), 'uint8');
 
 write(tcp_client, curr_data_size_bytes);
-
-hold on;
-grid minor;
-axis tight;
+clf(app.UIAxes);
+hold(app.UIAxes);
 yspec = zeros(1, length(scan_axis));
-txtPlt = text(0, 0, '', 'Color', 'blue', 'FontSize', 14);
-plot_handle = plot(scan_axis, yspec);
-% ylim([0 50])
-xlim([min_ang max_ang])
+plot_handle = plot(app.UIAxes, scan_axis, yspec);
+app.UIAxes.XLim = [min_ang max_ang];
 
-xlabel('\Theta^o');
-ylabel('Power_{MVDR}');
+app.UIAxes.XLabel.String  = ('\Theta^o');
+app.UIAxes.YLabel.String  = ('Power_{MVDR}');
+app.UIAxes.FontSize = 16;

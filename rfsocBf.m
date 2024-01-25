@@ -1,12 +1,5 @@
-function rfsocBf(app, vsa, ch, bf, off, gap, cutter, ang_num, estimator, data_v, tcp_client, plot_handle)
-% z_num = 0;
+function [yspec, estimated_angle, bfSig] = rfsocBf(app, vsa, ch, bf, off, gap, cutter, ang_num, estimator, data_v, tcp_client)
 test_z = zeros(1, gap);
-% ang_num = 1;
-%
-% cutter = 1; % For OFDM sials
-% bf = 1;
-% vsa = 1;
-% ch = 1;
 
 setupFile = 'ofdm_iq_20_cal.setx'; %1ch_ddc_len.setx iqtools_ofdm_qam16_200
 bw = 20e6;
@@ -27,10 +20,6 @@ ula = phased.ULA('NumElements',num_elements,'ElementSpacing',d, 'ArrayAxis','y')
 %% AFunctions
 cPhSh = @(a) 360*(lambda/2)*sind(a)/lambda; % Calculation of constant phase shift between elements
 deg2comp = @(a) exp(1i*deg2rad(a)); % Degrees to complex (1 round) convertion
-
-%% Plot
-
-
 
 %% TCP prep
 data_size = dataChan * 8;
@@ -73,18 +62,16 @@ end
 
 %% Cutter
 if (cutter)
-    [sig, fb_lines, fe_lines, f_len, f_wid] = sigFinder(rawSum, 1, 100);
+    [~, fb_lines, fe_lines, ~, ~] = sigFinder(rawSum, 1, 100);
     if isempty(fb_lines)
         cutInds = 1:dataChan;
-        %             continue
     else
         if size(fb_lines) > 1
             n = 2;
         else
             n = 1;
         end
-        %         off = 500;
-        %             off = 150;
+
         cut_b = fb_lines(n)-off;
         cut_e = fe_lines(n)+off;
         if cut_b < 1
@@ -96,42 +83,21 @@ if (cutter)
             else
 
             end
-%             continue
         end
         if cut_e > dataLen
             cut_e = dataLen;
         end
         cutInds = cut_b:cut_e;
     end
-
-
 else cutInds = 1:dataChan;
 end
-steering = rawSum(cutInds);
 
-rawData_no_noise = rawData(cutInds,:);
-
-
-%% plot
-% txt = [newline newline '\uparrow' newline num2str(estimated_angle(1)) char(176)];
-title(['Direction of arrival', '   ||   Estimated angle = ' num2str(estimated_angle(1))]);
-% set(plot_handle, 'YData', (yspec)/max((yspec)));
-set(plot_handle, 'YData', yspec);
-% plot(app.UIAxes, estimated_angle(1), 1, '.', MarkerSize=30);
-
-% h = get(gca, 'Children');
-% if clCnt >= dotsNum
-%     delete(h(dotsNum+1))
-% else
-%     clCnt = clCnt +1;
-% end
-drawnow limitrate
-
+bfSig = rawSum(cutInds);
 
 %% VSA
 if (vsa)
     buff = zeros(size(rawSum));
-    buff(cutInds) = steering;
+    buff(cutInds) = bfSig;
     vsaSendData(buff, data_v)
 end
 
