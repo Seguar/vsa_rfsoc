@@ -1,6 +1,5 @@
-function [data_v, estimator, tcp_client, plot_handle, ula] = rfsocBfPrep(app, dataChan, setupFile, num, scan_res)
-fc = 5.7e9;
-fsRfsoc = 125e6;
+function [data_v, estimator, tcp_client, plot_handle, ula] = rfsocBfPrep(app, dataChan, setupFile, num, scan_res, fc, fsRfsoc)
+
 c = physconst('LightSpeed'); % propagation velocity [m/s]
 lambda = c / fc; % wavelength
 d = lambda/2; % spacsing antenna elemnts

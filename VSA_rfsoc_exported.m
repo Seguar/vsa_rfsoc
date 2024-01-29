@@ -50,9 +50,12 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         scan_res = 1;
         ang_num = 1;
         magic = 0;
-        
+        setupFile = 'ofdm_iq_20_cal.setx';
+
         fc = 5.7e9;
+        fsRfsoc = 125e6;
         num = 3;
+        
     end
 
     methods (Access = public)
@@ -74,11 +77,11 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             addpath(genpath([pwd '\Packet-Creator-VHT']))
 
 
-            setupFile = 'ofdm_iq_20_cal.setx';
-            [data_v, estimator, tcp_client, plot_handle, ula] = rfsocBfPrep(app, app.dataChan, setupFile, app.num, app.scan_res);
+            
+            [data_v, estimator, tcp_client, plot_handle, ula] = rfsocBfPrep(app, app.dataChan, app.setupFile, app.num, app.scan_res, app.fc, app.fsRfsoc);
             while true
                 if app.reset_req
-                    [data_v, estimator, tcp_client, plot_handle, ula] = rfsocBfPrep(app, app.dataChan, setupFile, app.num, app.scan_res);
+                    [data_v, estimator, tcp_client, plot_handle, ula] = rfsocBfPrep(app, app.dataChan, app.setupFile, app.num, app.scan_res, app.fc, app.fsRfsoc);
                     clf(app.UIAxes);
                     app.reset_req = 0;
                 end

@@ -1,7 +1,5 @@
 function [yspec, estimated_angle, bfSig] = rfsocBf(app, vsa, ch, bf, off, gap, cutter, ang_num, estimator, data_v, tcp_client, fc, dataChan, magic, ula)
 test_z = zeros(1, gap);
-% fc = 5.7e9;
-% dataChan = 2^14; % Samples per channel (buffer size)
 
 c = physconst('LightSpeed'); % propagation velocity [m/s]
 lambda = c / fc; % wavelength
