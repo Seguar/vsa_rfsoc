@@ -27,7 +27,7 @@ switch bf
     case 'Steering'
         rawData = steerBf(rawData, estimated_angle(ang_num), lambda);
     case 'MVDR'
-        rawDataAdj = mvdrBf(rawData, estimated_angle(ang_num), magic, ula, fc, c);
+        rawData = mvdrBf(rawData, estimated_angle(ang_num), magic, ula, fc, c);
     case 'LCMV'
         bf
     otherwise
