@@ -2,29 +2,31 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
 
     % Properties that correspond to app components
     properties (Access = public)
-        UIFigure                      matlab.ui.Figure
-        GridLayout                    matlab.ui.container.GridLayout
-        LeftPanel                     matlab.ui.container.Panel
-        BeamformingtypeListBox        matlab.ui.control.ListBox
-        BeamformingtypeListBoxLabel   matlab.ui.control.Label
-        SignalPositionEditField       matlab.ui.control.NumericEditField
-        SignalPositionEditFieldLabel  matlab.ui.control.Label
-        DOAresolutionEditField        matlab.ui.control.NumericEditField
-        DOAresolutionEditFieldLabel   matlab.ui.control.Label
-        PlutoButton                   matlab.ui.control.Button
-        IQtoolsButton                 matlab.ui.control.Button
-        dataChanEditField             matlab.ui.control.NumericEditField
-        dataChanEditFieldLabel        matlab.ui.control.Label
-        CutterCheckBox                matlab.ui.control.CheckBox
-        ChannelselectListBox          matlab.ui.control.ListBox
-        ChannelselectLabel            matlab.ui.control.Label
-        CutoffsetEditField            matlab.ui.control.NumericEditField
-        CutoffsetEditFieldLabel       matlab.ui.control.Label
-        GapEditField                  matlab.ui.control.NumericEditField
-        GapEditFieldLabel             matlab.ui.control.Label
-        VSACheckBox                   matlab.ui.control.CheckBox
-        RightPanel                    matlab.ui.container.Panel
-        UIAxes                        matlab.ui.control.UIAxes
+        UIFigure                     matlab.ui.Figure
+        GridLayout                   matlab.ui.container.GridLayout
+        LeftPanel                    matlab.ui.container.Panel
+        SignalpositionButtonGroup    matlab.ui.container.ButtonGroup
+        Button_3                     matlab.ui.control.RadioButton
+        Button_2                     matlab.ui.control.RadioButton
+        Button                       matlab.ui.control.RadioButton
+        BeamformingtypeListBox       matlab.ui.control.ListBox
+        BeamformingtypeListBoxLabel  matlab.ui.control.Label
+        DOAresolutionEditField       matlab.ui.control.NumericEditField
+        DOAresolutionEditFieldLabel  matlab.ui.control.Label
+        PlutoButton                  matlab.ui.control.Button
+        IQtoolsButton                matlab.ui.control.Button
+        dataChanEditField            matlab.ui.control.NumericEditField
+        dataChanEditFieldLabel       matlab.ui.control.Label
+        CutterCheckBox               matlab.ui.control.CheckBox
+        ChannelselectListBox         matlab.ui.control.ListBox
+        ChannelselectLabel           matlab.ui.control.Label
+        CutoffsetEditField           matlab.ui.control.NumericEditField
+        CutoffsetEditFieldLabel      matlab.ui.control.Label
+        GapEditField                 matlab.ui.control.NumericEditField
+        GapEditFieldLabel            matlab.ui.control.Label
+        VSACheckBox                  matlab.ui.control.CheckBox
+        RightPanel                   matlab.ui.container.Panel
+        UIAxes                       matlab.ui.control.UIAxes
     end
 
     % Properties that correspond to apps with auto-reflow
@@ -48,16 +50,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
     end
 
     methods (Access = public)
-%     vsa = app.VSACheckBox.Value;
-%         function [vsa, ch, bf, off, gap, cutter, dataChan] = chkParams(app)
-%             vsa = app.VSACheckBox.Value;
-%             ch = str2num(app.ChannelselectListBox.Value);
-%             bf = app.BeamformingCheckBox.Value;
-%             cutter = app.CutterCheckBox.Value;
-%             off = app.CutoffsetEditField.Value;
-%             gap = app.GapEditField.Value;
-%             dataChan = app.dataChanEditField.Value;
-%         end
+        
     end
 
     methods (Access = private)
@@ -87,8 +80,8 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
 
                 %% plot
                 app.UIAxes.Title.String = (['Direction of arrival', '   ||   Estimated angle = ' num2str(estimated_angle)]);
-%                 set(plot_handle, 'YData', yspec); 
                 set(plot_handle, 'YData', yspec/max(yspec)); 
+
 %                 xline(app.UIAxes, estimated_angle(app.ang_num))
 %                 plot(app.UIAxes,estimated_angle(app.ang_num), 1, '.', MarkerSize=30);
 %                 txtPlt = text(0, 0, '', 'Color', 'blue', 'FontSize', 14);
@@ -153,15 +146,14 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.reset_req = 1;
         end
 
-        % Value changed function: SignalPositionEditField
-        function SignalPositionEditFieldValueChanged(app, event)
-            app.ang_num = app.SignalPositionEditField.Value;
-            
-        end
-
         % Value changed function: BeamformingtypeListBox
         function BeamformingtypeListBoxValueChanged(app, event)
             app.bf = app.BeamformingtypeListBox.Value;
+        end
+
+        % Selection changed function: SignalpositionButtonGroup
+        function SignalpositionButtonGroupSelectionChanged(app, event)
+            app.ang_num = str2double(app.SignalpositionButtonGroup.SelectedObject.Text);            
         end
 
         % Changes arrangement of the app based on UIFigure width
@@ -275,37 +267,25 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             % Create IQtoolsButton
             app.IQtoolsButton = uibutton(app.LeftPanel, 'push');
             app.IQtoolsButton.ButtonPushedFcn = createCallbackFcn(app, @IQtoolsButtonPushed, true);
-            app.IQtoolsButton.Position = [60 146 100 22];
+            app.IQtoolsButton.Position = [54 234 100 22];
             app.IQtoolsButton.Text = 'IQtools';
 
             % Create PlutoButton
             app.PlutoButton = uibutton(app.LeftPanel, 'push');
-            app.PlutoButton.Position = [60 108 100 22];
+            app.PlutoButton.Position = [55 202 100 22];
             app.PlutoButton.Text = 'Pluto';
 
             % Create DOAresolutionEditFieldLabel
             app.DOAresolutionEditFieldLabel = uilabel(app.LeftPanel);
             app.DOAresolutionEditFieldLabel.HorizontalAlignment = 'right';
-            app.DOAresolutionEditFieldLabel.Position = [49 65 58 28];
+            app.DOAresolutionEditFieldLabel.Position = [39 166 58 28];
             app.DOAresolutionEditFieldLabel.Text = {'DOA'; 'resolution'};
 
             % Create DOAresolutionEditField
             app.DOAresolutionEditField = uieditfield(app.LeftPanel, 'numeric');
             app.DOAresolutionEditField.ValueChangedFcn = createCallbackFcn(app, @DOAresolutionEditFieldValueChanged, true);
-            app.DOAresolutionEditField.Position = [121 71 29 22];
+            app.DOAresolutionEditField.Position = [111 172 29 22];
             app.DOAresolutionEditField.Value = 1;
-
-            % Create SignalPositionEditFieldLabel
-            app.SignalPositionEditFieldLabel = uilabel(app.LeftPanel);
-            app.SignalPositionEditFieldLabel.HorizontalAlignment = 'right';
-            app.SignalPositionEditFieldLabel.Position = [38 25 55 28];
-            app.SignalPositionEditFieldLabel.Text = {'Signal'; 'Position'};
-
-            % Create SignalPositionEditField
-            app.SignalPositionEditField = uieditfield(app.LeftPanel, 'numeric');
-            app.SignalPositionEditField.ValueChangedFcn = createCallbackFcn(app, @SignalPositionEditFieldValueChanged, true);
-            app.SignalPositionEditField.Position = [107 31 74 22];
-            app.SignalPositionEditField.Value = 1;
 
             % Create BeamformingtypeListBoxLabel
             app.BeamformingtypeListBoxLabel = uilabel(app.LeftPanel);
@@ -319,6 +299,29 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.BeamformingtypeListBox.ValueChangedFcn = createCallbackFcn(app, @BeamformingtypeListBoxValueChanged, true);
             app.BeamformingtypeListBox.Position = [107 454 74 74];
             app.BeamformingtypeListBox.Value = 'Steering';
+
+            % Create SignalpositionButtonGroup
+            app.SignalpositionButtonGroup = uibuttongroup(app.LeftPanel);
+            app.SignalpositionButtonGroup.AutoResizeChildren = 'off';
+            app.SignalpositionButtonGroup.SelectionChangedFcn = createCallbackFcn(app, @SignalpositionButtonGroupSelectionChanged, true);
+            app.SignalpositionButtonGroup.Title = 'Signal position';
+            app.SignalpositionButtonGroup.Position = [40 52 100 106];
+
+            % Create Button
+            app.Button = uiradiobutton(app.SignalpositionButtonGroup);
+            app.Button.Text = '1';
+            app.Button.Position = [11 60 58 22];
+            app.Button.Value = true;
+
+            % Create Button_2
+            app.Button_2 = uiradiobutton(app.SignalpositionButtonGroup);
+            app.Button_2.Text = '2';
+            app.Button_2.Position = [11 38 65 22];
+
+            % Create Button_3
+            app.Button_3 = uiradiobutton(app.SignalpositionButtonGroup);
+            app.Button_3.Text = '3';
+            app.Button_3.Position = [11 16 65 22];
 
             % Create RightPanel
             app.RightPanel = uipanel(app.GridLayout);
