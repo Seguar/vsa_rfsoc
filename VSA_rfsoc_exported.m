@@ -5,6 +5,8 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         UIFigure                     matlab.ui.Figure
         GridLayout                   matlab.ui.container.GridLayout
         LeftPanel                    matlab.ui.container.Panel
+        MagicEditField               matlab.ui.control.NumericEditField
+        MagicEditFieldLabel          matlab.ui.control.Label
         SignalpositionButtonGroup    matlab.ui.container.ButtonGroup
         Button_3                     matlab.ui.control.RadioButton
         Button_2                     matlab.ui.control.RadioButton
@@ -47,6 +49,10 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         reset_req = 0;
         scan_res = 1;
         ang_num = 1;
+        magic = 0;
+        
+        fc = 5.7e9;
+        num = 3;
     end
 
     methods (Access = public)
@@ -66,17 +72,17 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         function startupFcn(app)
             addpath(genpath([pwd '\iqtools_2023_10_24']))
             addpath(genpath([pwd '\Packet-Creator-VHT']))
-            
-            num = 3;
+
+
             setupFile = 'ofdm_iq_20_cal.setx';
-            [data_v, estimator, tcp_client, plot_handle] = rfsocBfPrep(app, app.dataChan, setupFile, num, app.scan_res);
+            [data_v, estimator, tcp_client, plot_handle, ula] = rfsocBfPrep(app, app.dataChan, setupFile, app.num, app.scan_res);
             while true
                 if app.reset_req
-                    [data_v, estimator, tcp_client, plot_handle] = rfsocBfPrep(app, app.dataChan, setupFile, num, app.scan_res);
+                    [data_v, estimator, tcp_client, plot_handle, ula] = rfsocBfPrep(app, app.dataChan, setupFile, app.num, app.scan_res);
                     clf(app.UIAxes);
                     app.reset_req = 0;
                 end
-                [yspec, estimated_angle, bfSig] = rfsocBf(app, app.vsa, app.ch, app.bf, app.off, app.gap, app.cutter, app.ang_num, estimator, data_v, tcp_client);
+                [yspec, estimated_angle, bfSig] = rfsocBf(app, app.vsa, app.ch, app.bf, app.off, app.gap, app.cutter, app.ang_num, estimator, data_v, tcp_client, app.fc, app.dataChan, app.magic, ula);
 
                 %% plot
                 app.UIAxes.Title.String = (['Direction of arrival', '   ||   Estimated angle = ' num2str(estimated_angle)]);
@@ -154,6 +160,12 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         % Selection changed function: SignalpositionButtonGroup
         function SignalpositionButtonGroupSelectionChanged(app, event)
             app.ang_num = str2double(app.SignalpositionButtonGroup.SelectedObject.Text);            
+        end
+
+        % Value changed function: MagicEditField
+        function MagicEditFieldValueChanged(app, event)
+            app.magic = app.MagicEditField.Value;
+            
         end
 
         % Changes arrangement of the app based on UIFigure width
@@ -295,7 +307,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
 
             % Create BeamformingtypeListBox
             app.BeamformingtypeListBox = uilistbox(app.LeftPanel);
-            app.BeamformingtypeListBox.Items = {'Without', 'Steering', 'MVDR', 'LVCM'};
+            app.BeamformingtypeListBox.Items = {'Without', 'Steering', 'MVDR', 'LCMV'};
             app.BeamformingtypeListBox.ValueChangedFcn = createCallbackFcn(app, @BeamformingtypeListBoxValueChanged, true);
             app.BeamformingtypeListBox.Position = [107 454 74 74];
             app.BeamformingtypeListBox.Value = 'Steering';
@@ -322,6 +334,17 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.Button_3 = uiradiobutton(app.SignalpositionButtonGroup);
             app.Button_3.Text = '3';
             app.Button_3.Position = [11 16 65 22];
+
+            % Create MagicEditFieldLabel
+            app.MagicEditFieldLabel = uilabel(app.LeftPanel);
+            app.MagicEditFieldLabel.HorizontalAlignment = 'right';
+            app.MagicEditFieldLabel.Position = [29 18 38 22];
+            app.MagicEditFieldLabel.Text = 'Magic';
+
+            % Create MagicEditField
+            app.MagicEditField = uieditfield(app.LeftPanel, 'numeric');
+            app.MagicEditField.ValueChangedFcn = createCallbackFcn(app, @MagicEditFieldValueChanged, true);
+            app.MagicEditField.Position = [82 18 100 22];
 
             % Create RightPanel
             app.RightPanel = uipanel(app.GridLayout);
