@@ -1,4 +1,4 @@
-function [yspec, estimated_angle, bfSig] = rfsocBf(app, vsa, ch, bf, off, gap, cutter, ang_num, estimator, data_v, tcp_client, fc, dataChan, magic, ula)
+function [yspec, estimated_angle, bfSig, weights] = rfsocBf(app, vsa, ch, bf, off, gap, cutter, ang_num, estimator, data_v, tcp_client, fc, dataChan, magic, ula)
 test_z = zeros(1, gap);
 
 c = physconst('LightSpeed'); % propagation velocity [m/s]
@@ -22,10 +22,11 @@ end
 switch bf
     case 'Without'
         rawData = rawData;
+        weights = ones(4);
     case 'Steering'
-        rawData = steerBf(rawData, estimated_angle(ang_num), lambda);
+        [rawData, weights] = steerBf(rawData, estimated_angle(ang_num), lambda);
     case 'MVDR'
-        rawData = mvdrBf(rawData, estimated_angle(ang_num), magic, ula, fc, c);
+        [rawData, weights] = mvdrBf(rawData, estimated_angle(ang_num), magic, ula, fc, c);
     case 'LCMV'
         bf
     otherwise

@@ -28,6 +28,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         GapEditFieldLabel            matlab.ui.control.Label
         VSACheckBox                  matlab.ui.control.CheckBox
         RightPanel                   matlab.ui.container.Panel
+        UIAxes2                      matlab.ui.control.UIAxes
         UIAxes                       matlab.ui.control.UIAxes
     end
 
@@ -39,6 +40,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
 
     properties (Access = private)
         Property % Description
+        %% App fields
         vsa = 1;
         ch = 5;
         bf = 'Steering';
@@ -46,15 +48,17 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         off = 150;
         gap = 0;
         dataChan = 2^14;
-        reset_req = 0;
         scan_res = 1;
         ang_num = 1;
         magic = 0;
+        %% Flags
+        reset_req = 0;
+        %% Hardcode (temporally)
         setupFile = 'ofdm_iq_20_cal.setx';
-
         fc = 5.7e9;
         fsRfsoc = 125e6;
         num = 3;
+        scan_axis = -90:1:90;
         
     end
 
@@ -75,6 +79,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         function startupFcn(app)
             addpath(genpath([pwd '\iqtools_2023_10_24']))
             addpath(genpath([pwd '\Packet-Creator-VHT']))
+            c = physconst('LightSpeed'); % propagation velocity [m/s]
 
 
             
@@ -85,12 +90,15 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                     clf(app.UIAxes);
                     app.reset_req = 0;
                 end
-                [yspec, estimated_angle, bfSig] = rfsocBf(app, app.vsa, app.ch, app.bf, app.off, app.gap, app.cutter, app.ang_num, estimator, data_v, tcp_client, app.fc, app.dataChan, app.magic, ula);
+                [yspec, estimated_angle, bfSig, weights] = rfsocBf(app, app.vsa, app.ch, app.bf, app.off, app.gap, app.cutter, app.ang_num, estimator, data_v, tcp_client, app.fc, app.dataChan, app.magic, ula);
 
                 %% plot
                 app.UIAxes.Title.String = (['Direction of arrival', '   ||   Estimated angle = ' num2str(estimated_angle)]);
-                set(plot_handle, 'YData', yspec/max(yspec)); 
+                set(plot_handle, 'YData', yspec/max(yspec));
+%                 set(gca, 'XTickMode', 'auto', 'XTickLabelMode', 'auto')
 
+%                 p1 = pattern(ula,app.fc,app.scan_axis,0,'PropagationSpeed',c,'CoordinateSystem','rectangular','Type','directivity', 'Weights',double(weights));
+%                 plot(app.UIAxes2 ,app.scan_axis, p1, LineWidth=1.5);
 %                 xline(app.UIAxes, estimated_angle(app.ang_num))
 %                 plot(app.UIAxes,estimated_angle(app.ang_num), 1, '.', MarkerSize=30);
 %                 txtPlt = text(0, 0, '', 'Color', 'blue', 'FontSize', 14);
@@ -171,6 +179,12 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             
         end
 
+        % Value changed function: CutoffsetEditField
+        function CutoffsetEditFieldValueChanged(app, event)
+            app.off = app.CutoffsetEditField.Value;
+            
+        end
+
         % Changes arrangement of the app based on UIFigure width
         function updateAppLayout(app, event)
             currentFigureWidth = app.UIFigure.Position(3);
@@ -243,6 +257,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
 
             % Create CutoffsetEditField
             app.CutoffsetEditField = uieditfield(app.LeftPanel, 'numeric');
+            app.CutoffsetEditField.ValueChangedFcn = createCallbackFcn(app, @CutoffsetEditFieldValueChanged, true);
             app.CutoffsetEditField.Position = [138 304 38 22];
             app.CutoffsetEditField.Value = 150;
 
@@ -360,7 +375,18 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             xlabel(app.UIAxes, 'X')
             ylabel(app.UIAxes, 'Y')
             zlabel(app.UIAxes, 'Z')
-            app.UIAxes.Position = [1 6 495 653];
+            app.UIAxes.XGrid = 'on';
+            app.UIAxes.XMinorGrid = 'on';
+            app.UIAxes.YGrid = 'on';
+            app.UIAxes.Position = [1 265 598 394];
+
+            % Create UIAxes2
+            app.UIAxes2 = uiaxes(app.RightPanel);
+            title(app.UIAxes2, 'Title')
+            xlabel(app.UIAxes2, 'X')
+            ylabel(app.UIAxes2, 'Y')
+            zlabel(app.UIAxes2, 'Z')
+            app.UIAxes2.Position = [1 6 598 260];
 
             % Show the figure after all components are created
             app.UIFigure.Visible = 'on';

@@ -7,7 +7,8 @@ min_ang = -90; % min scanning angle
 max_ang = 90; % max scanning angle
 scan_axis = min_ang:scan_res:max_ang; % angles axis
 num_elements = 4;
-ula = phased.ULA('NumElements',num_elements,'ElementSpacing',d, 'ArrayAxis','y');
+% ula = phased.ULA('NumElements',num_elements,'ElementSpacing',d, 'ArrayAxis','y');
+ula = phased.ULA('NumElements',num_elements,'ElementSpacing',d);
 
 fc_v = 0;
 sr_v = fsRfsoc;
