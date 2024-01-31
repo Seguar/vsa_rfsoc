@@ -1,4 +1,4 @@
-function [yspec, estimated_angle, bfSig, weights] = rfsocBf(app, vsa, ch, bf, off, gap, cutter, ang_num, estimator, data_v, tcp_client, fc, dataChan, magic, ula)
+function [yspec, estimated_angle, bfSig, weights, rawData] = rfsocBf(app, vsa, ch, bf, off, gap, cutter, ang_num, estimator, data_v, tcp_client, fc, dataChan, magic, ula)
 test_z = zeros(1, gap);
 
 c = physconst('LightSpeed'); % propagation velocity [m/s]
@@ -26,26 +26,26 @@ estimated_angle = [estimated_angle(ang_num) estimated_angle];
 estimated_angle(ang_num + 1) = [];
 switch bf
     case 'Without'
-        rawData = rawData;
+        rawDataAdj = rawData;
         weights = ones(1,4);
     case 'Steering'
-        [rawData, weights] = steerBf(rawData, estimated_angle(1), lambda);
+        [rawDataAdj, weights] = steerBf(rawData, estimated_angle(1), lambda);
     case 'MVDR'
-        [rawData, weights] = mvdrBf(rawData, estimated_angle(1), magic, ula, fc, c);
+        [rawDataAdj, weights] = mvdrBf(rawData, estimated_angle(1), magic, ula, fc, c);
         weights = weights';
     case 'DMR'
-        [weights, rawData] = dmr_beamformer(rawData, npc, ula, estimated_angle(1));
+        [weights, rawDataAdj] = dmr_beamformer(rawData, npc, ula, estimated_angle(1));
     case 'PC'
-        [weights, rawData] = pc_beamformer(rawData, npc, ula, estimated_angle(1));
+        [weights, rawDataAdj] = pc_beamformer(rawData, npc, ula, estimated_angle(1));
     case 'LCMV'
-        [rawData, weights] = lcmv_beamformer(rawData, estimated_angle(1), estimated_angle(2), ula, magic, fc);
+        [rawDataAdj, weights] = lcmv_beamformer(rawData, estimated_angle(1), estimated_angle(2), ula, magic, fc);
     otherwise
-        rawData = rawData;
+        rawDataAdj = rawData;
 end
 % if bf
 %     rawData = steerBf(rawData, estimated_angle(ang_num), lambda);
 % end
-rawSum = sum(rawData(:,ch), 2);
+rawSum = sum(rawDataAdj(:,ch), 2);
 
 
 %% Cutter

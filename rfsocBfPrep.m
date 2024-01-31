@@ -1,4 +1,4 @@
-function [data_v, estimator, tcp_client, plot_handle, ula, patt_handle] = rfsocBfPrep(app, dataChan, setupFile, num, scan_res, fc, fsRfsoc)
+function [data_v, estimator, tcp_client, plot_handle, ula] = rfsocBfPrep(app, dataChan, setupFile, num, scan_res, fc, fsRfsoc)
 
 c = physconst('LightSpeed'); % propagation velocity [m/s]
 lambda = c / fc; % wavelength
@@ -39,8 +39,8 @@ clf(app.UIAxes);
 yspec = zeros(1, length(scan_axis));
 plot_handle = plot(app.UIAxes, scan_axis, yspec);
 
-p1 = pattern(ula,fc,scan_axis,0,'PropagationSpeed',c,'CoordinateSystem','rectangular','Type','directivity', 'Weights',double(ones(4,1)));
-patt_handle = plot(app.UIAxes2 ,app.scan_axis, p1, LineWidth=1.5);
+% p1 = pattern(ula,fc,scan_axis,0,'PropagationSpeed',c,'CoordinateSystem','rectangular','Type','directivity', 'Weights',double(ones(4,1)));
+% patt_handle = plot(app.UIAxes2 ,app.scan_axis, p1, LineWidth=1.5);
 
 app.UIAxes.XLim = [min_ang max_ang];
 app.UIAxes.YLim = [0 1.2];

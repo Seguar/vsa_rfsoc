@@ -85,16 +85,16 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
 
 
             
-            [data_v, estimator, tcp_client, plot_handle, ula, patt_handle] = rfsocBfPrep(app, app.dataChan, app.setupFile, app.num, app.scan_res, app.fc, app.fsRfsoc);
+            [data_v, estimator, tcp_client, plot_handle, ula] = rfsocBfPrep(app, app.dataChan, app.setupFile, app.num, app.scan_res, app.fc, app.fsRfsoc);
             while true
                 
                 if app.reset_req
-                    [data_v, estimator, tcp_client, plot_handle, ula, patt_handle] = rfsocBfPrep(app, app.dataChan, app.setupFile, app.num, app.scan_res, app.fc, app.fsRfsoc);
+                    [data_v, estimator, tcp_client, plot_handle, ula] = rfsocBfPrep(app, app.dataChan, app.setupFile, app.num, app.scan_res, app.fc, app.fsRfsoc);
                     clf(app.UIAxes);
                     app.reset_req = 0;
                 end
                 try
-                    [yspec, estimated_angle, bfSig, weights] = rfsocBf(app, app.vsa, app.ch, app.bf, app.off, app.gap, app.cutter, app.ang_num, estimator, data_v, tcp_client, app.fc, app.dataChan, app.magic, ula);
+                    [yspec, estimated_angle, bfSig, weights, rawData] = rfsocBf(app, app.vsa, app.ch, app.bf, app.off, app.gap, app.cutter, app.ang_num, estimator, data_v, tcp_client, app.fc, app.dataChan, app.magic, ula);
                 catch
                     continue
                 end
@@ -106,6 +106,21 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                 
 %                 p1 = pattern(ula,app.fc,app.scan_axis,0,'PropagationSpeed',c,'CoordinateSystem','rectangular','Type','directivity', 'Weights',double(weights'));
 %                 set(patt_handle, 'YData', p1);
+                R = rawData'*rawData;
+                results = zeros(length(app.scan_axis),1);
+                for i=1:length(app.scan_axis)
+                   w = exp(1j * pi * (0:3) * sind(app.scan_axis(i)));
+                   w = weights.*w;
+                   w = w/norm(w)*2;
+                   r_weighted = w*R;
+                   power_dB = 10*log10(var(r_weighted));
+                   results(i) = power_dB;
+                end
+                results = results - max(results);
+                plot(app.UIAxes2, app.scan_axis,results);
+% axis tight;
+
+
 % %                 plot(app.UIAxes2 ,app.scan_axis, p1, LineWidth=1.5);
 % %                 drawnow limitrate
 %                 tic
