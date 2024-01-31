@@ -19,6 +19,8 @@ if ch>4
     ch = 1:4;
 end
 
+npc = length(estimated_angle);
+
 switch bf
     case 'Without'
         rawData = rawData;
@@ -27,6 +29,10 @@ switch bf
         [rawData, weights] = steerBf(rawData, estimated_angle(ang_num), lambda);
     case 'MVDR'
         [rawData, weights] = mvdrBf(rawData, estimated_angle(ang_num), magic, ula, fc, c);
+    case 'DMR'
+        [weights, rawData] = dmr_beamformer(rawData, npc, ula, estimated_angle(ang_num));
+    case 'PC'
+        [weights, rawData] = pc_beamformer(rawData, npc, ula, estimated_angle(ang_num));
     case 'LCMV'
         bf
     otherwise

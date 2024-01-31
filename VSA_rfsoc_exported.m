@@ -24,12 +24,12 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         ChannelselectLabel           matlab.ui.control.Label
         CutoffsetEditField           matlab.ui.control.NumericEditField
         CutoffsetEditFieldLabel      matlab.ui.control.Label
-        GapEditField                 matlab.ui.control.NumericEditField
-        GapEditFieldLabel            matlab.ui.control.Label
         VSACheckBox                  matlab.ui.control.CheckBox
         RightPanel                   matlab.ui.container.Panel
         UIAxes2                      matlab.ui.control.UIAxes
         UIAxes                       matlab.ui.control.UIAxes
+        GapEditField                 matlab.ui.control.NumericEditField
+        GapEditFieldLabel            matlab.ui.control.Label
     end
 
     % Properties that correspond to apps with auto-reflow
@@ -102,8 +102,9 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                 set(plot_handle, 'YData', yspec/max(yspec));
 %                 set(gca, 'XTickMode', 'auto', 'XTickLabelMode', 'auto')
 
-%                 p1 = pattern(ula,app.fc,app.scan_axis,0,'PropagationSpeed',c,'CoordinateSystem','rectangular','Type','directivity', 'Weights',double(weights));
+%                 p1 = pattern(ula,app.fc,app.scan_axis,0,'PropagationSpeed',c,'CoordinateSystem','rectangular','Type','directivity', 'Weights',double(weights'));
 %                 plot(app.UIAxes2 ,app.scan_axis, p1, LineWidth=1.5);
+%                 drawnow limitrate
 %                 xline(app.UIAxes, estimated_angle(app.ang_num))
 %                 plot(app.UIAxes,estimated_angle(app.ang_num), 1, '.', MarkerSize=30);
 %                 txtPlt = text(0, 0, '', 'Color', 'blue', 'FontSize', 14);
@@ -241,18 +242,8 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.VSACheckBox = uicheckbox(app.LeftPanel);
             app.VSACheckBox.ValueChangedFcn = createCallbackFcn(app, @VSACheckBoxValueChanged, true);
             app.VSACheckBox.Text = 'VSA';
-            app.VSACheckBox.Position = [87 418 46 22];
+            app.VSACheckBox.Position = [81 371 46 22];
             app.VSACheckBox.Value = true;
-
-            % Create GapEditFieldLabel
-            app.GapEditFieldLabel = uilabel(app.LeftPanel);
-            app.GapEditFieldLabel.HorizontalAlignment = 'right';
-            app.GapEditFieldLabel.Position = [38 387 55 22];
-            app.GapEditFieldLabel.Text = 'Gap';
-
-            % Create GapEditField
-            app.GapEditField = uieditfield(app.LeftPanel, 'numeric');
-            app.GapEditField.Position = [143 387 38 22];
 
             % Create CutoffsetEditFieldLabel
             app.CutoffsetEditFieldLabel = uilabel(app.LeftPanel);
@@ -330,9 +321,9 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
 
             % Create BeamformingtypeListBox
             app.BeamformingtypeListBox = uilistbox(app.LeftPanel);
-            app.BeamformingtypeListBox.Items = {'Without', 'Steering', 'MVDR', 'LCMV'};
+            app.BeamformingtypeListBox.Items = {'Without', 'Steering', 'MVDR', 'DMR', 'PC', 'LCMV'};
             app.BeamformingtypeListBox.ValueChangedFcn = createCallbackFcn(app, @BeamformingtypeListBoxValueChanged, true);
-            app.BeamformingtypeListBox.Position = [107 454 74 74];
+            app.BeamformingtypeListBox.Position = [107 417 74 111];
             app.BeamformingtypeListBox.Value = 'Steering';
 
             % Create SignalpositionButtonGroup
@@ -392,6 +383,16 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             ylabel(app.UIAxes2, 'Y')
             zlabel(app.UIAxes2, 'Z')
             app.UIAxes2.Position = [1 6 598 260];
+
+            % Create GapEditFieldLabel
+            app.GapEditFieldLabel = uilabel(app.UIFigure);
+            app.GapEditFieldLabel.HorizontalAlignment = 'right';
+            app.GapEditFieldLabel.Position = [-205 367 55 22];
+            app.GapEditFieldLabel.Text = 'Gap';
+
+            % Create GapEditField
+            app.GapEditField = uieditfield(app.UIFigure, 'numeric');
+            app.GapEditField.Position = [-100 367 38 22];
 
             % Show the figure after all components are created
             app.UIFigure.Visible = 'on';
