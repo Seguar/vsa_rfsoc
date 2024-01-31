@@ -27,7 +27,7 @@ estimated_angle(ang_num + 1) = [];
 switch bf
     case 'Without'
         rawData = rawData;
-        weights = ones(4);
+        weights = ones(1,4);
     case 'Steering'
         [rawData, weights] = steerBf(rawData, estimated_angle(1), lambda);
     case 'MVDR'
