@@ -44,10 +44,11 @@ if (cutter)
     if isempty(fb_lines)
         cutInds = 1:dataChan;
     else
-        if size(fb_lines) > 1
+        if length(fb_lines) > 1
             n = 2;
         else
             n = 1;
+%             return
         end
 
         cut_b = fb_lines(n)-off;
@@ -66,6 +67,7 @@ if (cutter)
             cut_e = dataLen;
         end
         cutInds = cut_b:cut_e;
+%         cutInds = fb_lines(1):fe_lines(end);
     end
 else cutInds = 1:dataChan;
 end
@@ -77,5 +79,6 @@ if (vsa)
     buff = zeros(size(rawSum));
     buff(cutInds) = bfSig;
     vsaSendData(buff, data_v)
+%     vsaSendData(bfSig, data_v)
 end
 

@@ -45,12 +45,13 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         ch = 5;
         bf = 'Steering';
         cutter = 1;
-        off = 150;
+        off = 500;
         gap = 0;
+        ang_num = 1;
+        magic = 0;        
         dataChan = 2^14;
         scan_res = 1;
-        ang_num = 1;
-        magic = 0;
+
         %% Flags
         reset_req = 0;
         %% Hardcode (temporally)
@@ -90,7 +91,11 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                     clf(app.UIAxes);
                     app.reset_req = 0;
                 end
-                [yspec, estimated_angle, bfSig, weights] = rfsocBf(app, app.vsa, app.ch, app.bf, app.off, app.gap, app.cutter, app.ang_num, estimator, data_v, tcp_client, app.fc, app.dataChan, app.magic, ula);
+                try
+                    [yspec, estimated_angle, bfSig, weights] = rfsocBf(app, app.vsa, app.ch, app.bf, app.off, app.gap, app.cutter, app.ang_num, estimator, data_v, tcp_client, app.fc, app.dataChan, app.magic, ula);
+                catch
+                    continue
+                end
 
                 %% plot
                 app.UIAxes.Title.String = (['Direction of arrival', '   ||   Estimated angle = ' num2str(estimated_angle)]);
@@ -259,7 +264,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.CutoffsetEditField = uieditfield(app.LeftPanel, 'numeric');
             app.CutoffsetEditField.ValueChangedFcn = createCallbackFcn(app, @CutoffsetEditFieldValueChanged, true);
             app.CutoffsetEditField.Position = [138 304 38 22];
-            app.CutoffsetEditField.Value = 150;
+            app.CutoffsetEditField.Value = 500;
 
             % Create ChannelselectLabel
             app.ChannelselectLabel = uilabel(app.LeftPanel);
