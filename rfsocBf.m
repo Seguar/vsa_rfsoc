@@ -21,20 +21,24 @@ end
 
 npc = length(estimated_angle);
 
+% estimated_angle = circshift(estimated_angle, -(ang_num-1));
+estimated_angle = [estimated_angle(ang_num) estimated_angle];
+estimated_angle(ang_num + 1) = [];
 switch bf
     case 'Without'
         rawData = rawData;
         weights = ones(4);
     case 'Steering'
-        [rawData, weights] = steerBf(rawData, estimated_angle(ang_num), lambda);
+        [rawData, weights] = steerBf(rawData, estimated_angle(1), lambda);
     case 'MVDR'
-        [rawData, weights] = mvdrBf(rawData, estimated_angle(ang_num), magic, ula, fc, c);
+        [rawData, weights] = mvdrBf(rawData, estimated_angle(1), magic, ula, fc, c);
+        weights = weights';
     case 'DMR'
-        [weights, rawData] = dmr_beamformer(rawData, npc, ula, estimated_angle(ang_num));
+        [weights, rawData] = dmr_beamformer(rawData, npc, ula, estimated_angle(1));
     case 'PC'
-        [weights, rawData] = pc_beamformer(rawData, npc, ula, estimated_angle(ang_num));
+        [weights, rawData] = pc_beamformer(rawData, npc, ula, estimated_angle(1));
     case 'LCMV'
-        bf
+        [rawData, weights] = lcmv_beamformer(rawData, estimated_angle(1), estimated_angle(2), ula, magic, fc);
     otherwise
         rawData = rawData;
 end

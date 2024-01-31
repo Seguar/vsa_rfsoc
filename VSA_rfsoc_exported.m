@@ -28,8 +28,6 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         RightPanel                   matlab.ui.container.Panel
         UIAxes2                      matlab.ui.control.UIAxes
         UIAxes                       matlab.ui.control.UIAxes
-        GapEditField                 matlab.ui.control.NumericEditField
-        GapEditFieldLabel            matlab.ui.control.Label
     end
 
     % Properties that correspond to apps with auto-reflow
@@ -59,8 +57,11 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         fc = 5.7e9;
         fsRfsoc = 125e6;
         num = 3;
-        scan_axis = -90:1:90;
+%         scan_axis = -90:1:90;
         
+    end
+    properties (Access = public)
+        scan_axis = -90:1:90;
     end
 
     methods (Access = public)
@@ -84,10 +85,11 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
 
 
             
-            [data_v, estimator, tcp_client, plot_handle, ula] = rfsocBfPrep(app, app.dataChan, app.setupFile, app.num, app.scan_res, app.fc, app.fsRfsoc);
+            [data_v, estimator, tcp_client, plot_handle, ula, patt_handle] = rfsocBfPrep(app, app.dataChan, app.setupFile, app.num, app.scan_res, app.fc, app.fsRfsoc);
             while true
+                
                 if app.reset_req
-                    [data_v, estimator, tcp_client, plot_handle, ula] = rfsocBfPrep(app, app.dataChan, app.setupFile, app.num, app.scan_res, app.fc, app.fsRfsoc);
+                    [data_v, estimator, tcp_client, plot_handle, ula, patt_handle] = rfsocBfPrep(app, app.dataChan, app.setupFile, app.num, app.scan_res, app.fc, app.fsRfsoc);
                     clf(app.UIAxes);
                     app.reset_req = 0;
                 end
@@ -101,10 +103,16 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                 app.UIAxes.Title.String = (['Direction of arrival', '   ||   Estimated angle = ' num2str(estimated_angle)]);
                 set(plot_handle, 'YData', yspec/max(yspec));
 %                 set(gca, 'XTickMode', 'auto', 'XTickLabelMode', 'auto')
-
+                
 %                 p1 = pattern(ula,app.fc,app.scan_axis,0,'PropagationSpeed',c,'CoordinateSystem','rectangular','Type','directivity', 'Weights',double(weights'));
-%                 plot(app.UIAxes2 ,app.scan_axis, p1, LineWidth=1.5);
-%                 drawnow limitrate
+%                 set(patt_handle, 'YData', p1);
+% %                 plot(app.UIAxes2 ,app.scan_axis, p1, LineWidth=1.5);
+% %                 drawnow limitrate
+%                 tic
+%                 if toc > 0.1
+%                 drawnow
+%                 tic
+%                 end
 %                 xline(app.UIAxes, estimated_angle(app.ang_num))
 %                 plot(app.UIAxes,estimated_angle(app.ang_num), 1, '.', MarkerSize=30);
 %                 txtPlt = text(0, 0, '', 'Color', 'blue', 'FontSize', 14);
@@ -382,17 +390,10 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             xlabel(app.UIAxes2, 'X')
             ylabel(app.UIAxes2, 'Y')
             zlabel(app.UIAxes2, 'Z')
+            app.UIAxes2.XGrid = 'on';
+            app.UIAxes2.XMinorGrid = 'on';
+            app.UIAxes2.YGrid = 'on';
             app.UIAxes2.Position = [1 6 598 260];
-
-            % Create GapEditFieldLabel
-            app.GapEditFieldLabel = uilabel(app.UIFigure);
-            app.GapEditFieldLabel.HorizontalAlignment = 'right';
-            app.GapEditFieldLabel.Position = [-205 367 55 22];
-            app.GapEditFieldLabel.Text = 'Gap';
-
-            % Create GapEditField
-            app.GapEditField = uieditfield(app.UIFigure, 'numeric');
-            app.GapEditField.Position = [-100 367 38 22];
 
             % Show the figure after all components are created
             app.UIFigure.Visible = 'on';
