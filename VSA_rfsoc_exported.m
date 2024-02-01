@@ -82,7 +82,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             addpath(genpath([pwd '\iqtools_2023_10_24']))
             addpath(genpath([pwd '\Packet-Creator-VHT']))
             c = physconst('LightSpeed'); % propagation velocity [m/s]
-
+            warning('off','all')
 
             
             [data_v, estimator, tcp_client, plot_handle, ula] = rfsocBfPrep(app, app.dataChan, app.setupFile, app.num, app.scan_res, app.fc, app.fsRfsoc);
@@ -102,40 +102,21 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                 %% plot
                 app.UIAxes.Title.String = (['Direction of arrival', '   ||   Estimated angle = ' num2str(estimated_angle)]);
                 set(plot_handle, 'YData', yspec/max(yspec));
-%                 set(gca, 'XTickMode', 'auto', 'XTickLabelMode', 'auto')
-                
-%                 p1 = pattern(ula,app.fc,app.scan_axis,0,'PropagationSpeed',c,'CoordinateSystem','rectangular','Type','directivity', 'Weights',double(weights'));
-%                 set(patt_handle, 'YData', p1);
+%                 plot(app.UIAxes, app.scan_axis(estimated_angle(1)), 1, '.', MarkerSize=30);
                 R = rawData'*rawData;
                 results = zeros(length(app.scan_axis),1);
                 for i=1:length(app.scan_axis)
                    w = exp(1j * pi * (0:3) * sind(app.scan_axis(i)));
                    w = weights.*w;
+%                    w = weights;
                    w = w/norm(w)*2;
                    r_weighted = w*R;
                    power_dB = 10*log10(var(r_weighted));
                    results(i) = power_dB;
                 end
                 results = results - max(results);
+%                 results = fliplr(results);
                 plot(app.UIAxes2, app.scan_axis,results);
-% axis tight;
-
-
-% %                 plot(app.UIAxes2 ,app.scan_axis, p1, LineWidth=1.5);
-% %                 drawnow limitrate
-%                 tic
-%                 if toc > 0.1
-%                 drawnow
-%                 tic
-%                 end
-%                 xline(app.UIAxes, estimated_angle(app.ang_num))
-%                 plot(app.UIAxes,estimated_angle(app.ang_num), 1, '.', MarkerSize=30);
-%                 txtPlt = text(0, 0, '', 'Color', 'blue', 'FontSize', 14);
-%                 txt = [newline newline '\uparrow' newline num2str(estimated_angle(app.ang_num)) char(176)];
-%                 set(app.UIAxes, 'String', txt, 'Position', [estimated_angle, max(yspec)]);
-%                 drawnow update % Makes callbacks stop working
-%                 drawnow limitrate
-%                 drawnow limitrate nocallbacks
             end
         end
 
