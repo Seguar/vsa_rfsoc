@@ -39,14 +39,13 @@ switch bf
         [weights, rawDataAdj] = pc_beamformer(rawData, npc, ula, estimated_angle(1));
     case 'LCMV'
         [rawDataAdj, weights] = lcmv_beamformer(rawData, estimated_angle(1), estimated_angle(2), ula, magic, fc);
+        weights = weights';
     otherwise
         rawDataAdj = rawData;
+        weights = ones(1,4);        
 end
-% if bf
-%     rawData = steerBf(rawData, estimated_angle(ang_num), lambda);
-% end
-rawSum = sum(rawDataAdj(:,ch), 2);
 
+rawSum = sum(rawDataAdj(:,ch), 2);
 
 %% Cutter
 if (cutter)
