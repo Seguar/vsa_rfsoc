@@ -43,7 +43,9 @@ plot_handle = plot(app.UIAxes, scan_axis, yspec);
 % patt_handle = plot(app.UIAxes2 ,app.scan_axis, p1, LineWidth=1.5);
 
 app.UIAxes.XLim = [min_ang max_ang];
+app.UIAxes2.XLim = [min_ang max_ang];
 app.UIAxes.YLim = [0 1.2];
 app.UIAxes.XLabel.String  = ('\Theta^o');
 app.UIAxes.YLabel.String  = ('Power_{MVDR}');
 app.UIAxes.FontSize = 16;
+app.UIAxes2.FontSize = 16;
