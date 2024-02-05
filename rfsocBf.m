@@ -32,14 +32,14 @@ switch bf
         [rawDataAdj, weights] = steerBf(rawData, estimated_angle(1), lambda);
     case 'MVDR'
         [rawDataAdj, weights] = mvdrBf(rawData, estimated_angle(1), magic, ula, fc, c);
-        weights = weights';
+        weights = weights.';
     case 'DMR'
         [weights, rawDataAdj] = dmr_beamformer(rawData, npc, ula, estimated_angle(1));
     case 'PC'
         [weights, rawDataAdj] = pc_beamformer(rawData, npc, ula, estimated_angle(1));
     case 'LCMV'
         [rawDataAdj, weights] = lcmv_beamformer(rawData, estimated_angle(1), estimated_angle(2), ula, magic, fc);
-        weights = weights';
+        weights = weights.';
     otherwise
         rawDataAdj = rawData;
         weights = ones(1,4);        
