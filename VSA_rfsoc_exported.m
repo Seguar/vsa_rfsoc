@@ -87,9 +87,9 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
 
         % Code that executes after component creation
         function startupFcn(app)
-            main.line = '-g';
+            main.line = '-b';
             main.txt = 'Main';            
-            sub.line = '--r';
+            sub.line = '--c';
             sub.txt = 'Sub';
             count = 0;
             am = [];
