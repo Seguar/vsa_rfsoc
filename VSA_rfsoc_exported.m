@@ -48,7 +48,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         off = 500;
         gap = 0;
         ang_num = 1;
-        magic = 0.1;        
+        magic = 0.1;
         dataChan = 2^14;
         scan_res = 1;
         debug = 0;
@@ -65,15 +65,15 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         fc = 5.7e9;
         fsRfsoc = 125e6;
         num = 3;
-%         scan_axis = -90:1:90;
-        
+        %         scan_axis = -90:1:90;
+
     end
     properties (Access = public)
         scan_axis = -90:1:90;
     end
 
     methods (Access = public)
-        
+
     end
 
     methods (Access = private)
@@ -88,7 +88,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         % Code that executes after component creation
         function startupFcn(app)
             main.line = '-b';
-            main.txt = 'Main';            
+            main.txt = 'Main';
             sub.line = '--c';
             sub.txt = 'Sub';
             count = 0;
@@ -106,11 +106,11 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             cPhSh = @(a) 360*(lambda/2)*sind(a)/lambda; % Calculation of constant phase shift between elements
             deg2comp = @(a) exp(1i*deg2rad(a)); % Degrees to complex (1 round) convertion
             powCalc = @(x) round(max(db(fftshift(fft(x))))/2, 1); % Power from FFT calculations
-            
+
             [data_v, estimator, tcp_client, plot_handle, app.ula] = rfsocBfPrep(app, app.dataChan, app.setupFile, app.num, app.scan_res, app.fc, app.fsRfsoc);
             while true
-                
-                    if app.reset_req
+
+                if app.reset_req
                     [data_v, estimator, tcp_client, plot_handle, app.ula] = rfsocBfPrep(app, app.dataChan, app.setupFile, app.num, app.scan_res, app.fc, app.fsRfsoc);
                     clf(app.UIAxes);
                     app.reset_req = 0;
@@ -132,27 +132,27 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                     r_weighted = w*R;
                     results(i) = 10*log10(var(r_weighted));
                 end
-                                results = results - max(results);
-                
+                results = results - max(results);
+
                 plot(app.UIAxes2, app.scan_axis,results);
                 am = guiXline(am, app.UIAxes, main, estimated_angle(1));
                 bs = guiXline(bs, app.UIAxes, sub, estimated_angle(2));
-%                 cs = guiXline(cs, app.UIAxes, sub, estimated_angle(3));
+                %                 cs = guiXline(cs, app.UIAxes, sub, estimated_angle(3));
                 am2 = guiXline(am2, app.UIAxes2, main, estimated_angle(1));
                 bs2 = guiXline(bs2, app.UIAxes2, sub, estimated_angle(2));
-%                 cs2 = guiXline(cs2, app.UIAxes2, sub, estimated_angle(3));
+                %                 cs2 = guiXline(cs2, app.UIAxes2, sub, estimated_angle(3));
 
                 if app.debug
 
-                            if count == 10
-                                           plotResponse(app.ula,app.fc,app.c,...
-                                            'AzimuthAngles',app.scan_axis,...
-                                            'Unit','db',...
-                                            'Weights',app.weights');
-                                        count = 0;
-                            else
-                                count = count + 1;
-                            end
+                    if count == 10
+                        plotResponse(app.ula,app.fc,app.c,...
+                            'AzimuthAngles',app.scan_axis,...
+                            'Unit','db',...
+                            'Weights',app.weights');
+                        count = 0;
+                    else
+                        count = count + 1;
+                    end
                 end
 
             end
@@ -181,7 +181,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
 
         % Callback function
         function UIAxesButtonDown(app, event)
-%             clf(app.UIAxes);
+            %             clf(app.UIAxes);
         end
 
         % Callback function
@@ -197,12 +197,12 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
 
         % Button pushed function: IQtoolsButton
         function IQtoolsButtonPushed(app, event)
-            iqtools 
+            iqtools
         end
 
         % Value changed function: CutterCheckBox
         function CutterCheckBoxValueChanged(app, event)
-            app.cutter = app.CutterCheckBox.Value;            
+            app.cutter = app.CutterCheckBox.Value;
         end
 
         % Value changed function: DOAresolutionEditField
@@ -218,31 +218,31 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
 
         % Selection changed function: SignalpositionButtonGroup
         function SignalpositionButtonGroupSelectionChanged(app, event)
-            app.ang_num = str2double(app.SignalpositionButtonGroup.SelectedObject.Text);            
+            app.ang_num = str2double(app.SignalpositionButtonGroup.SelectedObject.Text);
         end
 
         % Value changed function: MagicEditField
         function MagicEditFieldValueChanged(app, event)
             app.magic = app.MagicEditField.Value;
-            
+
         end
 
         % Value changed function: CutoffsetEditField
         function CutoffsetEditFieldValueChanged(app, event)
             app.off = app.CutoffsetEditField.Value;
-            
+
         end
 
         % Value changed function: DebugCheckBox
         function DebugCheckBoxValueChanged(app, event)
             app.debug = app.DebugCheckBox.Value;
-            
+
         end
 
         % Value changed function: GetPatternButton
         function GetPatternButtonValueChanged(app, event)
-%             figure(app.UIFigure)
-%             app.UIFigure.WindowStyle = 'alwaysontop';
+            %             figure(app.UIFigure)
+            %             app.UIFigure.WindowStyle = 'alwaysontop';
             plotResponse(app.ula,app.fc,app.c,...
                 'AzimuthAngles',app.scan_axis,...
                 'Unit','db',...
