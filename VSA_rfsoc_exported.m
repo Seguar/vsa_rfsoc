@@ -5,6 +5,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         UIFigure                     matlab.ui.Figure
         GridLayout                   matlab.ui.container.GridLayout
         LeftPanel                    matlab.ui.container.Panel
+        ResetButton                  matlab.ui.control.StateButton
         GetPatternButton             matlab.ui.control.StateButton
         DebugCheckBox                matlab.ui.control.CheckBox
         MagicEditField               matlab.ui.control.NumericEditField
@@ -111,6 +112,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             while true
 
                 if app.reset_req
+                    delete(tcp_client)
                     [data_v, estimator, tcp_client, plot_handle, app.ula] = rfsocBfPrep(app, app.dataChan, app.setupFile, app.num, app.scan_res, app.fc, app.fsRfsoc);
                     clf(app.UIAxes);
                     app.reset_req = 0;
@@ -249,6 +251,12 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                 'Weights',app.weights');
             uistack(gcf,'top')
 
+        end
+
+        % Value changed function: ResetButton
+        function ResetButtonValueChanged(app, event)
+            app.reset_req = app.ResetButton.Value;
+            
         end
 
         % Changes arrangement of the app based on UIFigure width
@@ -432,6 +440,12 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.GetPatternButton.ValueChangedFcn = createCallbackFcn(app, @GetPatternButtonValueChanged, true);
             app.GetPatternButton.Text = 'GetPattern';
             app.GetPatternButton.Position = [1 392 100 22];
+
+            % Create ResetButton
+            app.ResetButton = uibutton(app.LeftPanel, 'state');
+            app.ResetButton.ValueChangedFcn = createCallbackFcn(app, @ResetButtonValueChanged, true);
+            app.ResetButton.Text = 'Reset';
+            app.ResetButton.Position = [1 325 100 22];
 
             % Create RightPanel
             app.RightPanel = uipanel(app.GridLayout);
