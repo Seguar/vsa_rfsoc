@@ -102,7 +102,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             addpath(genpath([pwd '\iqtools_2023_10_24']))
             addpath(genpath([pwd '\Packet-Creator-VHT']))
             app.c = physconst('LightSpeed'); % propagation velocity [m/s]
-            warning('off','all')
+%             warning('off','all')
             lambda = app.c/app.fc;
             cPhSh = @(a) 360*(lambda/2)*sind(a)/lambda; % Calculation of constant phase shift between elements
             deg2comp = @(a) exp(1i*deg2rad(a)); % Degrees to complex (1 round) convertion
@@ -150,7 +150,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                         plotResponse(app.ula,app.fc,app.c,...
                             'AzimuthAngles',app.scan_axis,...
                             'Unit','db',...
-                            'Weights',app.weights');
+                            'Weights',app.weights);
                         count = 0;
                     else
                         count = count + 1;
@@ -248,7 +248,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             plotResponse(app.ula,app.fc,app.c,...
                 'AzimuthAngles',app.scan_axis,...
                 'Unit','db',...
-                'Weights',app.weights');
+                'Weights',app.weights);
             uistack(gcf,'top')
 
         end
