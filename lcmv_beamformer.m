@@ -4,6 +4,10 @@ function [rawDataAdj, weights] = lcmv_beamformer(rawData, estimated_angle, intrf
     stv = steeringvec(fc,[estimated_angle intrf_angle+magic intrf_angle-magic]);
     lcmvbeamformer.Constraint = stv;
     lcmvbeamformer.DesiredResponse = [1; db2pow(-100)/2; db2pow(-100)/2];
-    [rawDataAdj,weights] = lcmvbeamformer(rawData);
+    [~,weights] = lcmvbeamformer(rawData);
+    rawDataAdj(:,1) = rawData(:,1)*weights(1);
+    rawDataAdj(:,2) = rawData(:,2)*weights(2);
+    rawDataAdj(:,3) = rawData(:,3)*weights(3);
+    rawDataAdj(:,4) = rawData(:,4)*weights(4);
     weights = weights.';
 end

@@ -38,11 +38,18 @@ switch bf
         [rawDataAdj, weights] = pc_beamformer(rawData, npc, ula, estimated_angle(1));
     case 'LCMV'
         [rawDataAdj, weights] = lcmv_beamformer(rawData, estimated_angle(1), estimated_angle(2), ula, magic, fc);
+        weights = conj(weights);
     otherwise
         rawDataAdj = rawData;
         weights = ones(1,4);        
 end
+weights = weights/(max(weights));
+weights = conj(weights);
 
+rawDataAdj(:,1) = rawData(:,1)*weights(1);
+rawDataAdj(:,2) = rawData(:,2)*weights(2);
+rawDataAdj(:,3) = rawData(:,3)*weights(3);
+rawDataAdj(:,4) = rawData(:,4)*weights(4);
 rawSum = sum(rawDataAdj(:,ch), 2);
 
 %% Cutter
