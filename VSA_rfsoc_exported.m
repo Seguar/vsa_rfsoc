@@ -259,6 +259,11 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             
         end
 
+        % Button pushed function: PlutoButton
+        function PlutoButtonPushed(app, event)
+            PlutoControl
+        end
+
         % Changes arrangement of the app based on UIFigure width
         function updateAppLayout(app, event)
             currentFigureWidth = app.UIFigure.Position(3);
@@ -344,7 +349,6 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.CutterCheckBox.ValueChangedFcn = createCallbackFcn(app, @CutterCheckBoxValueChanged, true);
             app.CutterCheckBox.Text = 'Cutter';
             app.CutterCheckBox.Position = [80 350 55 22];
-            app.CutterCheckBox.Value = true;
 
             % Create dataChanEditFieldLabel
             app.dataChanEditFieldLabel = uilabel(app.LeftPanel);
@@ -366,6 +370,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
 
             % Create PlutoButton
             app.PlutoButton = uibutton(app.LeftPanel, 'push');
+            app.PlutoButton.ButtonPushedFcn = createCallbackFcn(app, @PlutoButtonPushed, true);
             app.PlutoButton.Position = [55 202 100 22];
             app.PlutoButton.Text = 'Pluto';
 
