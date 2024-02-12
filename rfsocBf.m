@@ -1,4 +1,4 @@
-function [yspec, estimated_angle, bfSig, weights, rawData] = rfsocBf(app, vsa, ch, bf, off, gap, cutter, ang_num, estimator, data_v, tcp_client, fc, dataChan, magic, ula)
+function [yspec, estimated_angle, bfSig, weights, rawData] = rfsocBf(app, vsa, ch, bf, off, gap, cutter, ang_num, estimator, data_v, tcp_client, fc, dataChan, magic, ula, c1, c2)
 test_z = zeros(1, gap);
 
 c = physconst('LightSpeed'); % propagation velocity [m/s]
@@ -38,20 +38,25 @@ switch bf
         [rawDataAdj, weights] = pc_beamformer(rawData, npc, ula, estimated_angle(1));
     case 'LCMV'
         [rawDataAdj, weights] = lcmv_beamformer(rawData, estimated_angle(1), estimated_angle(2), ula, magic, fc);
-        weights = conj(weights);
+%         weights = conj(weights);
     otherwise
         rawDataAdj = rawData;
         weights = ones(1,4);        
 end
-weights = weights/(max(weights));
-weights = conj(weights);
-
+% weights = weights/(max(weights));
+% weights = conj(weights);
+if c1
+    weights = conj(weights);
+end
+weights = weights/norm(weights)*2;
 rawDataAdj(:,1) = rawData(:,1)*weights(1);
 rawDataAdj(:,2) = rawData(:,2)*weights(2);
 rawDataAdj(:,3) = rawData(:,3)*weights(3);
 rawDataAdj(:,4) = rawData(:,4)*weights(4);
 rawSum = sum(rawDataAdj(:,ch), 2);
-
+if c2
+    weights = conj(weights);
+end
 %% Cutter
 if (cutter)
     [~, fb_lines, fe_lines, ~, ~] = sigFinder(rawSum, 1, 100);

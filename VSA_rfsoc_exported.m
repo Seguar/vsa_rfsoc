@@ -5,6 +5,8 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         UIFigure                     matlab.ui.Figure
         GridLayout                   matlab.ui.container.GridLayout
         LeftPanel                    matlab.ui.container.Panel
+        c2CheckBox                   matlab.ui.control.CheckBox
+        c1CheckBox                   matlab.ui.control.CheckBox
         ResetButton                  matlab.ui.control.StateButton
         GetPatternButton             matlab.ui.control.StateButton
         DebugCheckBox                matlab.ui.control.CheckBox
@@ -54,6 +56,8 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         scan_res = 1;
         debug = 0;
 
+        c1 = 0;
+        c2 = 0;
         %%
         ula
         weights
@@ -88,6 +92,10 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
 
         % Code that executes after component creation
         function startupFcn(app)
+            app.UIFigure.Visible = 'off';
+            movegui(app.UIFigure,"east")
+            app.UIFigure.Visible = 'on';
+
             main.line = '-b';
             main.txt = 'Main';
             sub.line = '--c';
@@ -118,11 +126,22 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                     app.reset_req = 0;
                 end
                 try
-                    [yspec, estimated_angle, bfSig, app.weights, rawData] = rfsocBf(app, app.vsa, app.ch, app.bf, app.off, app.gap, app.cutter, app.ang_num, estimator, data_v, tcp_client, app.fc, app.dataChan, app.magic, app.ula);
+                    [yspec, estimated_angle, bfSig, app.weights, rawData] = rfsocBf(app, app.vsa, app.ch, app.bf, app.off, app.gap, app.cutter, app.ang_num, estimator, data_v, tcp_client, app.fc, app.dataChan, app.magic, app.ula, ...
+                        app.c1, app.c2);
                 catch
                     continue
                 end
-
+                if isnan(app.weights)
+                    continue
+                end
+                switch app.bf
+                    case 'Steering'
+                        app.weights = app.weights;
+                    case 'MVDR'
+                         app.weights = app.weights;
+                    otherwise
+                        app.weights = conj(app.weights);
+                end
                 %% plot
                 app.UIAxes.Title.String = (['Direction of arrival', '   ||   Estimated angle = ' num2str(estimated_angle)]);
                 set(plot_handle, 'YData', yspec/max(yspec));
@@ -130,7 +149,8 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                 results = zeros(length(app.scan_axis),1);
                 for i=1:length(app.scan_axis)
                     w = exp(1j * pi * (0:3) * sind(app.scan_axis(i)));
-                    w = (app.weights + w)/2;
+%                     w = (app.weights + w)/2;
+                    w = app.weights.*w;
                     r_weighted = w*R;
                     results(i) = 10*log10(var(r_weighted));
                 end
@@ -143,9 +163,8 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                 am2 = guiXline(am2, app.UIAxes2, main, estimated_angle(1));
                 bs2 = guiXline(bs2, app.UIAxes2, sub, estimated_angle(2));
                 %                 cs2 = guiXline(cs2, app.UIAxes2, sub, estimated_angle(3));
-
+    
                 if app.debug
-
                     if count == 10
                         plotResponse(app.ula,app.fc,app.c,...
                             'AzimuthAngles',app.scan_axis,...
@@ -264,6 +283,18 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             PlutoControl
         end
 
+        % Value changed function: c1CheckBox
+        function c1CheckBoxValueChanged(app, event)
+            app.c1 = app.c1CheckBox.Value;
+            
+        end
+
+        % Value changed function: c2CheckBox
+        function c2CheckBoxValueChanged(app, event)
+            app.c2 = app.c2CheckBox.Value;
+            
+        end
+
         % Changes arrangement of the app based on UIFigure width
         function updateAppLayout(app, event)
             currentFigureWidth = app.UIFigure.Position(3);
@@ -296,6 +327,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.UIFigure.Name = 'MATLAB App';
             app.UIFigure.SizeChangedFcn = createCallbackFcn(app, @updateAppLayout, true);
             app.UIFigure.Scrollable = 'on';
+            app.UIFigure.WindowStyle = 'alwaysontop';
 
             % Create GridLayout
             app.GridLayout = uigridlayout(app.UIFigure);
@@ -431,7 +463,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             % Create MagicEditField
             app.MagicEditField = uieditfield(app.LeftPanel, 'numeric');
             app.MagicEditField.ValueChangedFcn = createCallbackFcn(app, @MagicEditFieldValueChanged, true);
-            app.MagicEditField.Position = [82 18 100 22];
+            app.MagicEditField.Position = [81 18 100 22];
             app.MagicEditField.Value = 0.1;
 
             % Create DebugCheckBox
@@ -451,6 +483,18 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.ResetButton.ValueChangedFcn = createCallbackFcn(app, @ResetButtonValueChanged, true);
             app.ResetButton.Text = 'Reset';
             app.ResetButton.Position = [1 325 100 22];
+
+            % Create c1CheckBox
+            app.c1CheckBox = uicheckbox(app.LeftPanel);
+            app.c1CheckBox.ValueChangedFcn = createCallbackFcn(app, @c1CheckBoxValueChanged, true);
+            app.c1CheckBox.Text = 'c1';
+            app.c1CheckBox.Position = [1 283 35 22];
+
+            % Create c2CheckBox
+            app.c2CheckBox = uicheckbox(app.LeftPanel);
+            app.c2CheckBox.ValueChangedFcn = createCallbackFcn(app, @c2CheckBoxValueChanged, true);
+            app.c2CheckBox.Text = 'c2';
+            app.c2CheckBox.Position = [1 260 35 22];
 
             % Create RightPanel
             app.RightPanel = uipanel(app.GridLayout);
