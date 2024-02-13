@@ -69,7 +69,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         setupFile = 'ofdm_iq_20_cal.setx';
         fc = 5.7e9;
         fsRfsoc = 125e6;
-        num = 3;
+        num = 2;
         %         scan_axis = -90:1:90;
 
     end
@@ -116,6 +116,11 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             deg2comp = @(a) exp(1i*deg2rad(a)); % Degrees to complex (1 round) convertion
             powCalc = @(x) round(max(db(fftshift(fft(x))))/2, 1); % Power from FFT calculations
 
+            sig_scan = exp(1j*2*pi*app.fc*(1/100e9:1/100e9:10/100e9));
+            sig_scan = [sig_scan;sig_scan;sig_scan;sig_scan]';
+
+
+
             [data_v, estimator, tcp_client, plot_handle, app.ula] = rfsocBfPrep(app, app.dataChan, app.setupFile, app.num, app.scan_res, app.fc, app.fsRfsoc);
             while true
 
@@ -139,7 +144,13 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                     case 'Steering'
                         app.weights = app.weights;
                     case 'MVDR'
-                         app.weights = app.weights;
+                        if app.magic 
+                            app.weights = conj(app.weights);
+                        else
+                            app.weights = app.weights;
+                        end
+                    case 'PC'
+                        app.weights = app.weights;                    
                     otherwise
                         app.weights = conj(app.weights);
                 end
@@ -148,16 +159,16 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                 set(plot_handle, 'YData', yspec/max(yspec));
                 R = rawData'*rawData;
                 results = zeros(length(app.scan_axis),1);
+              p_manual = zeros(length(app.scan_axis),1);
                 for i=1:length(app.scan_axis)
-                    w = exp(1j * pi * (0:3) * sind(app.scan_axis(i)));
-                    w = (app.weights + w)/2;
-%                     w = app.weights.*w;
-                    r_weighted = w*R;
-                    results(i) = 10*log10(var(r_weighted));
+                    w_scan = exp(1j * pi * (0:3)' * sind(app.scan_axis(i)))*2;
+                    w_scan = (w_scan.*app.weights');
+                    r_weighted = w_scan.'*sig_scan.';
+                    p_manual(i) = 20*log10(norm(r_weighted));
                 end
-                results = results - max(results);
-
-                plot(app.UIAxes2, app.scan_axis,results);
+                p_manual = p_manual - max(p_manual);
+                estimated_angle = [estimated_angle NaN NaN];
+                plot(app.UIAxes2, app.scan_axis,p_manual);
                 am = guiXline(am, app.UIAxes, main, estimated_angle(1));
                 bs = guiXline(bs, app.UIAxes, sub, estimated_angle(2));
                 %                 cs = guiXline(cs, app.UIAxes, sub, estimated_angle(3));
@@ -328,7 +339,6 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.UIFigure.Name = 'MATLAB App';
             app.UIFigure.SizeChangedFcn = createCallbackFcn(app, @updateAppLayout, true);
             app.UIFigure.Scrollable = 'on';
-            app.UIFigure.WindowStyle = 'alwaysontop';
 
             % Create GridLayout
             app.GridLayout = uigridlayout(app.UIFigure);
