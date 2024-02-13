@@ -82,9 +82,9 @@
           <Boolean key="AutoFreqPoints" value="false" />
           <Boolean key="AverageFast" value="false" />
           <Boolean key="AverageRestart" value="true" />
-          <Int16 key="AverageType" value="0" />
+          <Int16 key="AverageType" value="2" />
           <Int32 key="AverageUpdate" value="10" />
-          <Boolean key="AverageUpdateIsCnt" value="false" />
+          <Boolean key="AverageUpdateIsCnt" value="true" />
           <Int16 key="ConfigDemod" value="20" />
           <Boolean key="ContinuousSweep" value="true" />
           <Boolean key="CoupleIQChannels" value="true" />
@@ -324,7 +324,7 @@
           <Boolean key="RecordSettle" value="true" />
           <Double key="RecordSize" value="50" />
           <String key="RecordSizeUnit" value="records" />
-          <Double key="ResBW" value="10000" />
+          <Double key="ResBW" value="30000" />
           <Boolean key="ResBWArb" value="false" />
           <Boolean key="SegCapture" value="false" />
           <Int32 key="SegCount" value="10" />
@@ -366,7 +366,7 @@
           <Double key="SwitchAttenuation" value="1.7976931348623157E+308" />
           <Int32 key="SwitchPathsPerAcquisition" value="0" />
           <Int32 key="SwitchRepeatedPathsPerAcquisition" value="0" />
-          <Double key="TimeMainLength" value="0.00022156250000000003" />
+          <Double key="TimeMainLength" value="7.3867187500000012E-05" />
           <Boolean key="TimeResolutionAuto" value="false" />
           <Boolean key="TrendEnableEba" value="false" />
           <Int32 key="TriggerChannel" value="1" />
@@ -644,7 +644,7 @@
       <Boolean key="ObwVisible.Trace4" value="false" />
       <Boolean key="ObwVisible.Trace5" value="false" />
       <Boolean key="ObwVisible.Trace6" value="false" />
-      <Int32 key="SelectedTrace" value="1" />
+      <Int32 key="SelectedTrace" value="0" />
       <Double key="Trace1.Aperture" value="0.5" />
       <Boolean key="Trace1.AutoCoupled" value="true" />
       <Boolean key="Trace1.Coupled" value="true" />
@@ -759,7 +759,7 @@
       <Int32 key="Trace2.Mkr1.ReferenceTrace" value="-1" />
       <Double key="Trace2.Mkr1.Value" value="9999999.9999999981" />
       <Boolean key="Trace2.Mkr1.Visible" value="false" />
-      <Double key="Trace2.Mkr1.Y" value="32.625097176736347" />
+      <Double key="Trace2.Mkr1.Y" value="0" />
       <Double key="Trace2.Mkr1.Z" value="0" />
       <Boolean key="Trace2.Overlay" value="false" />
       <Double key="Trace2.PhsOffset" value="0" />
@@ -929,7 +929,7 @@
       <Int32 key="Trace4.Mkr1.ReferenceTrace" value="-1" />
       <Double key="Trace4.Mkr1.Value" value="-2.96875E-06" />
       <Boolean key="Trace4.Mkr1.Visible" value="false" />
-      <Double key="Trace4.Mkr1.Y" value="-780" />
+      <Double key="Trace4.Mkr1.Y" value="0" />
       <Double key="Trace4.Mkr1.Z" value="0" />
       <Boolean key="Trace4.Overlay" value="false" />
       <Double key="Trace4.PhsOffset" value="0" />
@@ -1005,7 +1005,7 @@
       <Int32 key="Trace5.Mkr1.Position" value="0" />
       <Int32 key="Trace5.Mkr1.Reference" value="0" />
       <Int32 key="Trace5.Mkr1.ReferenceTrace" value="-1" />
-      <Double key="Trace5.Mkr1.Value" value="-2.5703125000000003E-05" />
+      <Double key="Trace5.Mkr1.Value" value="-1.52734375E-05" />
       <Boolean key="Trace5.Mkr1.Visible" value="false" />
       <Double key="Trace5.Mkr1.Y" value="0" />
       <Double key="Trace5.Mkr1.Z" value="0" />
@@ -1031,13 +1031,13 @@
       <Boolean key="Trace5.Visible" value="false" />
       <Int32 key="Trace5.XAxisCoordinate" value="2" />
       <Boolean key="Trace5.XAxisCoupled" value="false" />
-      <Double key="Trace5.XAxisLeft" value="-2.5703125000000003E-05" />
+      <Double key="Trace5.XAxisLeft" value="-2.109375E-05" />
       <Double key="Trace5.XAxisRefPos" value="50" />
-      <Double key="Trace5.XAxisRight" value="3.4257812499998875E-05" />
+      <Double key="Trace5.XAxisRight" value="3.8867187499998877E-05" />
       <Double key="Trace5.XEyeLength" value="2" />
-      <Double key="Trace5.XLeft" value="-2.5703125000000003E-05" />
+      <Double key="Trace5.XLeft" value="-2.109375E-05" />
       <Boolean key="Trace5.XLog" value="false" />
-      <Double key="Trace5.XRight" value="3.4257812499998875E-05" />
+      <Double key="Trace5.XRight" value="3.8867187499998877E-05" />
       <Boolean key="Trace5.XScaleAuto" value="true" />
       <Int32 key="Trace5.XUnit" value="0" />
       <Int32 key="Trace5.YAxisCoordinate" value="2" />
