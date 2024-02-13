@@ -134,6 +134,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                 if isnan(app.weights)
                     continue
                 end
+                app.weights = conj(app.weights);
                 switch app.bf
                     case 'Steering'
                         app.weights = app.weights;
@@ -149,8 +150,8 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                 results = zeros(length(app.scan_axis),1);
                 for i=1:length(app.scan_axis)
                     w = exp(1j * pi * (0:3) * sind(app.scan_axis(i)));
-%                     w = (app.weights + w)/2;
-                    w = app.weights.*w;
+                    w = (app.weights + w)/2;
+%                     w = app.weights.*w;
                     r_weighted = w*R;
                     results(i) = 10*log10(var(r_weighted));
                 end

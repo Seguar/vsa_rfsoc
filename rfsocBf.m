@@ -12,6 +12,7 @@ dataLen = data_size/channels;
 %% TCP
 rawData = tcpDataRec(tcp_client, data_size, channels);
 %% Matlab MVDR DOA FUNC
+rawData = filtSig(rawData, 125e6, 20e6);
 [yspec, estimated_angle] = estimator(rawData'*rawData);
 %% Angles
 
