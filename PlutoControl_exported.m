@@ -96,29 +96,34 @@ classdef PlutoControl_exported < matlab.apps.AppBase
         function FcMhzEditFieldValueChanged(app, event)
             app.fc = app.FcMhzEditField.Value*1e6;
             app.updReq = 1;
+            updatePluto(app)
         end
 
         % Button pushed function: CustomfileButton
         function CustomfileButtonPushed(app, event)
             [app.file, app.path] = uigetfile('*.mat');  %open a mat file
+            updatePluto(app)
         end
 
         % Value changed function: FsMhzEditField
         function FsMhzEditFieldValueChanged(app, event)
             app.fs = app.FsMhzEditField.Value*1e6;
             app.updReq = 1;
+            updatePluto(app)
         end
 
         % Value changed function: Gain890EditField
         function Gain890EditFieldValueChanged(app, event)
             app.gain = app.Gain890EditField.Value;
             app.updReq = 1;
+            updatePluto(app)
         end
 
         % Selection changed function: SignalButtonGroup
         function SignalButtonGroupSelectionChanged(app, event)
             app.state = app.SignalButtonGroup.SelectedObject.Text;
             app.updReq = 1;
+            updatePluto(app)
         end
 
         % Button pushed function: UpdateButton
@@ -130,12 +135,14 @@ classdef PlutoControl_exported < matlab.apps.AppBase
         function FcCWEditFieldValueChanged(app, event)
             app.cwFc = app.FcCWEditField.Value;
             app.updReq = 1;
+            updatePluto(app)
         end
 
         % Value changed function: GapEditField
         function GapEditFieldValueChanged(app, event)
             app.gap = app.GapEditField.Value;
             app.updReq = 1;
+            updatePluto(app)
         end
     end
 
