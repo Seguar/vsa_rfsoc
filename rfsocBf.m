@@ -22,7 +22,6 @@ end
 
 npc = sum(~isnan(estimated_angle));
 
-% estimated_angle = circshift(estimated_angle, -(ang_num-1));
 estimated_angle = [estimated_angle(ang_num) estimated_angle];
 estimated_angle(ang_num + 1) = [];
 switch bf

@@ -5,6 +5,8 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         UIFigure                       matlab.ui.Figure
         GridLayout                     matlab.ui.container.GridLayout
         LeftPanel                      matlab.ui.container.Panel
+        AvgEditField                   matlab.ui.control.NumericEditField
+        AvgEditFieldLabel              matlab.ui.control.Label
         CutterCheckBox                 matlab.ui.control.CheckBox
         TabGroup                       matlab.ui.container.TabGroup
         MainTab                        matlab.ui.container.Tab
@@ -18,6 +20,8 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         BFtypeListBox                  matlab.ui.control.ListBox
         BFtypeListBoxLabel             matlab.ui.control.Label
         DebugTab                       matlab.ui.container.Tab
+        UpdRateEditField               matlab.ui.control.NumericEditField
+        UpdRateEditFieldLabel          matlab.ui.control.Label
         DOAtypeListBox                 matlab.ui.control.ListBox
         DOAtypeListBoxLabel            matlab.ui.control.Label
         DebugCheckBox                  matlab.ui.control.CheckBox
@@ -61,6 +65,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         vsa = 1;
         ch = 5;
         bf = 'Steering';
+        doa = 'MVDR';
         cutter = 1;
         off = 500;
         gap = 0;
@@ -69,7 +74,8 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         dataChan = 2^14;
         scan_res = 1;
         debug = 0;
-
+        avg_factor = 10;
+        updrate = 10;
         c1 = 0;
         c2 = 0;
         %%
@@ -78,7 +84,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         c
 
         %% Flags
-        reset_req = 0;
+        reset_req = 1;
 
         %         scan_axis = -90:1:90;
 
@@ -90,7 +96,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         setupFile = 'ofdm_iq_20_cal.setx';
         fc = 5.7e9;
         fsRfsoc = 125e6;
-        num = 2;
+        num = 3;
     end
 
     methods (Access = public)
@@ -116,7 +122,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             main.txt = 'Main';
             sub.line = '--c';
             sub.txt = 'Sub';
-            count = 0;
+            count = 1;
             am = [];
             bs = [];
             cs = [];
@@ -137,17 +143,16 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
 
 
 
-            [data_v, estimator, tcp_client, plot_handle, app.ula] = rfsocBfPrep(app, app.dataChan, app.setupFile, app.num, app.scan_res, app.fc, app.fsRfsoc);
             while true
-
                 if app.reset_req
-                    delete(tcp_client)
                     [data_v, estimator, tcp_client, plot_handle, app.ula] = rfsocBfPrep(app, app.dataChan, app.setupFile, app.num, app.scan_res, app.fc, app.fsRfsoc);
+                    p_manual_mean = zeros(length(app.scan_axis), app.avg_factor);
+                    yspec_mean = zeros(length(app.scan_axis), app.avg_factor);
                     clf(app.UIAxes);
                     app.reset_req = 0;
                 end
                 try
-                    [yspec, estimated_angle, bfSig, app.weights, rawData] = rfsocBf(app, app.vsa, app.ch, app.bf, app.off, app.gap, app.cutter, app.ang_num, estimator, data_v, tcp_client, app.fc, app.dataChan, app.magic, app.ula, ...
+                    [yspec, estimated_angle, ~, app.weights, rawData] = rfsocBf(app, app.vsa, app.ch, app.bf, app.off, app.gap, app.cutter, app.ang_num, estimator, data_v, tcp_client, app.fc, app.dataChan, app.magic, app.ula, ...
                         app.c1, app.c2);
                 catch
                     continue
@@ -155,6 +160,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                 if isnan(app.weights)
                     continue
                 end
+                %% Bugs
                 app.weights = conj(app.weights);
                 switch app.bf
                     case 'Steering'
@@ -170,35 +176,41 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                     otherwise
                         app.weights = conj(app.weights);
                 end
-                %% plot
-                app.UIAxes.Title.String = (['Direction of arrival', '   ||   Estimated angle = ' num2str(estimated_angle)]);
-                set(plot_handle, 'YData', yspec/max(yspec), 'LineWidth', 1.5);
+                %% Pattern calc
                 R = rawData'*rawData;
-                results = zeros(length(app.scan_axis),1);
                 p_manual = zeros(length(app.scan_axis),1);
                 for i=1:length(app.scan_axis)
                     w_scan = exp(1j * pi * (0:3)' * sind(app.scan_axis(i)))*2;
                     w_scan = (w_scan.*app.weights');
                     r_weighted = w_scan.'*sig_scan.';
-                    p_manual(i) = 20*log10(norm(r_weighted));
+                    p_manual(i) = norm(r_weighted);
                 end
-                p_manual = p_manual - max(p_manual);
+                [p_manual_mean_db, p_manual_mean]  = avgData(p_manual, p_manual_mean);                
+                [yspec_db, yspec_mean]  = avgData(yspec, yspec_mean);
+                %% Plot
+                app.UIAxes.Title.String = (['Direction of arrival', '   ||   Estimated angle = ' num2str(estimated_angle)]);
+                set(plot_handle, 'YData', yspec_db, 'LineWidth', 1.5);
+                plot(app.UIAxes2, app.scan_axis,p_manual_mean_db);
+                % Xlines
                 estimated_angle = [estimated_angle NaN NaN];
-                plot(app.UIAxes2, app.scan_axis,p_manual);
                 am = guiXline(am, app.UIAxes, main, estimated_angle(1));
                 bs = guiXline(bs, app.UIAxes, sub, estimated_angle(2));
-                %                 cs = guiXline(cs, app.UIAxes, sub, estimated_angle(3));
+                                
                 am2 = guiXline(am2, app.UIAxes2, main, estimated_angle(1));
                 bs2 = guiXline(bs2, app.UIAxes2, sub, estimated_angle(2));
-                %                 cs2 = guiXline(cs2, app.UIAxes2, sub, estimated_angle(3));
+
+                if sum(~isnan(estimated_angle)) > 2
+                    cs = guiXline(cs, app.UIAxes, sub, estimated_angle(3));
+                    cs2 = guiXline(cs2, app.UIAxes2, sub, estimated_angle(3));
+                end
 
                 if app.debug
-                    if count == 10
+                    if count >= app.updrate
                         plotResponse(app.ula,app.fc,app.c,...
                             'AzimuthAngles',app.scan_axis,...
                             'Unit','db',...
                             'Weights',app.weights.');
-                        count = 0;
+                        count = 1;
                     else
                         count = count + 1;
                     end
@@ -290,15 +302,11 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
 
         % Value changed function: GetPatternButton
         function GetPatternButtonValueChanged(app, event)
-            %             figure(app.UIFigure)
-            %             app.UIFigure.WindowStyle = 'alwaysontop';
-            figure
             plotResponse(app.ula,app.fc,app.c,...
                 'AzimuthAngles',app.scan_axis,...
                 'Unit','db',...
                 'Weights',app.weights.');
             uistack(gcf,'top')
-
         end
 
         % Value changed function: ResetButton
@@ -344,7 +352,19 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
 
         % Value changed function: DOAtypeListBox
         function DOAtypeListBoxValueChanged(app, event)
-            value = app.DOAtypeListBox.Value;
+            app.doa = app.DOAtypeListBox.Value;
+            
+        end
+
+        % Value changed function: AvgEditField
+        function AvgEditFieldValueChanged(app, event)
+            app.avg_factor = app.AvgEditField.Value;
+            app.reset_req = 1;
+        end
+
+        % Value changed function: UpdRateEditField
+        function UpdRateEditFieldValueChanged(app, event)
+            app.updrate = app.UpdRateEditField.Value;
             
         end
 
@@ -398,24 +418,24 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             % Create IQtoolsButton
             app.IQtoolsButton = uibutton(app.LeftPanel, 'push');
             app.IQtoolsButton.ButtonPushedFcn = createCallbackFcn(app, @IQtoolsButtonPushed, true);
-            app.IQtoolsButton.Position = [38 49 100 22];
+            app.IQtoolsButton.Position = [41 41 100 22];
             app.IQtoolsButton.Text = 'IQtools';
 
             % Create PlutoButton
             app.PlutoButton = uibutton(app.LeftPanel, 'push');
             app.PlutoButton.ButtonPushedFcn = createCallbackFcn(app, @PlutoButtonPushed, true);
-            app.PlutoButton.Position = [39 84 100 22];
+            app.PlutoButton.Position = [41 73 100 22];
             app.PlutoButton.Text = 'Pluto';
 
             % Create ResetButton
             app.ResetButton = uibutton(app.LeftPanel, 'state');
             app.ResetButton.ValueChangedFcn = createCallbackFcn(app, @ResetButtonValueChanged, true);
             app.ResetButton.Text = 'Reset';
-            app.ResetButton.Position = [39 13 100 22];
+            app.ResetButton.Position = [40 11 100 22];
 
             % Create TabGroup
             app.TabGroup = uitabgroup(app.LeftPanel);
-            app.TabGroup.Position = [7 158 150 507];
+            app.TabGroup.Position = [6 158 151 507];
 
             % Create MainTab
             app.MainTab = uitab(app.TabGroup);
@@ -484,7 +504,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.GetPatternButton = uibutton(app.DebugTab, 'state');
             app.GetPatternButton.ValueChangedFcn = createCallbackFcn(app, @GetPatternButtonValueChanged, true);
             app.GetPatternButton.Text = 'GetPattern';
-            app.GetPatternButton.Position = [30 164 100 22];
+            app.GetPatternButton.Position = [35 176 100 22];
 
             % Create CutoffsetEditFieldLabel
             app.CutoffsetEditFieldLabel = uilabel(app.DebugTab);
@@ -506,6 +526,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
 
             % Create dataChanEditField
             app.dataChanEditField = uieditfield(app.DebugTab, 'numeric');
+            app.dataChanEditField.Limits = [5000 Inf];
             app.dataChanEditField.ValueChangedFcn = createCallbackFcn(app, @dataChanEditFieldValueChanged, true);
             app.dataChanEditField.Position = [76 71 74 22];
             app.dataChanEditField.Value = 16384;
@@ -540,7 +561,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.DebugCheckBox = uicheckbox(app.DebugTab);
             app.DebugCheckBox.ValueChangedFcn = createCallbackFcn(app, @DebugCheckBoxValueChanged, true);
             app.DebugCheckBox.Text = 'Debug';
-            app.DebugCheckBox.Position = [93 126 57 22];
+            app.DebugCheckBox.Position = [15 105 57 22];
 
             % Create DOAtypeListBoxLabel
             app.DOAtypeListBoxLabel = uilabel(app.DebugTab);
@@ -554,6 +575,19 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.DOAtypeListBox.ValueChangedFcn = createCallbackFcn(app, @DOAtypeListBoxValueChanged, true);
             app.DOAtypeListBox.Position = [78 214 74 111];
             app.DOAtypeListBox.Value = 'MVDR';
+
+            % Create UpdRateEditFieldLabel
+            app.UpdRateEditFieldLabel = uilabel(app.DebugTab);
+            app.UpdRateEditFieldLabel.HorizontalAlignment = 'right';
+            app.UpdRateEditFieldLabel.Position = [2 138 55 22];
+            app.UpdRateEditFieldLabel.Text = 'UpdRate';
+
+            % Create UpdRateEditField
+            app.UpdRateEditField = uieditfield(app.DebugTab, 'numeric');
+            app.UpdRateEditField.Limits = [1 Inf];
+            app.UpdRateEditField.ValueChangedFcn = createCallbackFcn(app, @UpdRateEditFieldValueChanged, true);
+            app.UpdRateEditField.Position = [72 138 77 22];
+            app.UpdRateEditField.Value = 10;
 
             % Create SystemTab
             app.SystemTab = uitab(app.TabGroup);
@@ -598,13 +632,26 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.SignalsEditField.ValueDisplayFormat = '%.0f';
             app.SignalsEditField.ValueChangedFcn = createCallbackFcn(app, @SignalsEditFieldValueChanged, true);
             app.SignalsEditField.Position = [75 337 77 22];
-            app.SignalsEditField.Value = 2;
+            app.SignalsEditField.Value = 3;
 
             % Create CutterCheckBox
             app.CutterCheckBox = uicheckbox(app.LeftPanel);
             app.CutterCheckBox.ValueChangedFcn = createCallbackFcn(app, @CutterCheckBoxValueChanged, true);
             app.CutterCheckBox.Text = 'Cutter';
-            app.CutterCheckBox.Position = [58 121 55 22];
+            app.CutterCheckBox.Position = [67 103 55 22];
+
+            % Create AvgEditFieldLabel
+            app.AvgEditFieldLabel = uilabel(app.LeftPanel);
+            app.AvgEditFieldLabel.HorizontalAlignment = 'right';
+            app.AvgEditFieldLabel.Position = [38 124 55 22];
+            app.AvgEditFieldLabel.Text = 'Avg';
+
+            % Create AvgEditField
+            app.AvgEditField = uieditfield(app.LeftPanel, 'numeric');
+            app.AvgEditField.Limits = [1 Inf];
+            app.AvgEditField.ValueChangedFcn = createCallbackFcn(app, @AvgEditFieldValueChanged, true);
+            app.AvgEditField.Position = [107 124 30 22];
+            app.AvgEditField.Value = 10;
 
             % Create RightPanel
             app.RightPanel = uipanel(app.GridLayout);
@@ -635,7 +682,6 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
 
             % Create UIAxes2
             app.UIAxes2 = uiaxes(app.GridLayout2);
-            title(app.UIAxes2, 'Title')
             xlabel(app.UIAxes2, 'X')
             ylabel(app.UIAxes2, 'Y')
             zlabel(app.UIAxes2, 'Z')
