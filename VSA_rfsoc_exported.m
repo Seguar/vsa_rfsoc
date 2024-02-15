@@ -2,42 +2,51 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
 
     % Properties that correspond to app components
     properties (Access = public)
-        UIFigure                     matlab.ui.Figure
-        GridLayout                   matlab.ui.container.GridLayout
-        LeftPanel                    matlab.ui.container.Panel
-        TabGroup                     matlab.ui.container.TabGroup
-        MainTab                      matlab.ui.container.Tab
-        MagicEditField               matlab.ui.control.NumericEditField
-        MagicEditFieldLabel          matlab.ui.control.Label
-        DOAresolutionEditField       matlab.ui.control.NumericEditField
-        DOAresolutionEditFieldLabel  matlab.ui.control.Label
-        ResetButton                  matlab.ui.control.StateButton
-        PlutoButton                  matlab.ui.control.Button
-        IQtoolsButton                matlab.ui.control.Button
-        SignalpositionButtonGroup    matlab.ui.container.ButtonGroup
-        Button_3                     matlab.ui.control.RadioButton
-        Button_2                     matlab.ui.control.RadioButton
-        Button                       matlab.ui.control.RadioButton
-        CutterCheckBox               matlab.ui.control.CheckBox
-        VSACheckBox                  matlab.ui.control.CheckBox
-        BeamformingtypeListBox       matlab.ui.control.ListBox
-        BeamformingtypeListBoxLabel  matlab.ui.control.Label
-        DebugTab                     matlab.ui.container.Tab
-        DebugCheckBox                matlab.ui.control.CheckBox
-        ChannelselectListBox         matlab.ui.control.ListBox
-        ChannelselectLabel           matlab.ui.control.Label
-        c2CheckBox                   matlab.ui.control.CheckBox
-        c1CheckBox                   matlab.ui.control.CheckBox
-        dataChanEditField            matlab.ui.control.NumericEditField
-        dataChanEditFieldLabel       matlab.ui.control.Label
-        CutoffsetEditField           matlab.ui.control.NumericEditField
-        CutoffsetEditFieldLabel      matlab.ui.control.Label
-        GetPatternButton             matlab.ui.control.StateButton
-        SystemTab                    matlab.ui.container.Tab
-        RightPanel                   matlab.ui.container.Panel
-        GridLayout2                  matlab.ui.container.GridLayout
-        UIAxes2                      matlab.ui.control.UIAxes
-        UIAxes                       matlab.ui.control.UIAxes
+        UIFigure                       matlab.ui.Figure
+        GridLayout                     matlab.ui.container.GridLayout
+        LeftPanel                      matlab.ui.container.Panel
+        CutterCheckBox                 matlab.ui.control.CheckBox
+        TabGroup                       matlab.ui.container.TabGroup
+        MainTab                        matlab.ui.container.Tab
+        DOAresolutionEditField         matlab.ui.control.NumericEditField
+        DOAresolutionEditField_3Label  matlab.ui.control.Label
+        SignalpositionButtonGroup      matlab.ui.container.ButtonGroup
+        Button_3                       matlab.ui.control.RadioButton
+        Button_2                       matlab.ui.control.RadioButton
+        Button                         matlab.ui.control.RadioButton
+        VSACheckBox                    matlab.ui.control.CheckBox
+        BFtypeListBox                  matlab.ui.control.ListBox
+        BFtypeListBoxLabel             matlab.ui.control.Label
+        DebugTab                       matlab.ui.container.Tab
+        DOAtypeListBox                 matlab.ui.control.ListBox
+        DOAtypeListBoxLabel            matlab.ui.control.Label
+        DebugCheckBox                  matlab.ui.control.CheckBox
+        ChannelselectListBox           matlab.ui.control.ListBox
+        ChannelselectLabel             matlab.ui.control.Label
+        c2CheckBox                     matlab.ui.control.CheckBox
+        c1CheckBox                     matlab.ui.control.CheckBox
+        dataChanEditField              matlab.ui.control.NumericEditField
+        dataChanEditFieldLabel         matlab.ui.control.Label
+        CutoffsetEditField             matlab.ui.control.NumericEditField
+        CutoffsetEditFieldLabel        matlab.ui.control.Label
+        GetPatternButton               matlab.ui.control.StateButton
+        SystemTab                      matlab.ui.container.Tab
+        SignalsEditField               matlab.ui.control.NumericEditField
+        SignalsEditFieldLabel          matlab.ui.control.Label
+        RFSoCFsEditField               matlab.ui.control.NumericEditField
+        RFSoCFsEditFieldLabel          matlab.ui.control.Label
+        RFSoCFcEditField               matlab.ui.control.NumericEditField
+        RFSoCFcEditFieldLabel          matlab.ui.control.Label
+        ResetButton                    matlab.ui.control.StateButton
+        PlutoButton                    matlab.ui.control.Button
+        IQtoolsButton                  matlab.ui.control.Button
+        RightPanel                     matlab.ui.container.Panel
+        GridLayout2                    matlab.ui.container.GridLayout
+        UIAxes2                        matlab.ui.control.UIAxes
+        UIAxes                         matlab.ui.control.UIAxes
+        ContextMenu                    matlab.ui.container.ContextMenu
+        Menu                           matlab.ui.container.Menu
+        Menu2                          matlab.ui.container.Menu
     end
 
     % Properties that correspond to apps with auto-reflow
@@ -70,16 +79,18 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
 
         %% Flags
         reset_req = 0;
+
+        %         scan_axis = -90:1:90;
+
+    end
+    properties (Access = public)
+        %         scan_axis = -90:scan_res:90;
+        scan_axis = -90:1:90;
         %% Hardcode (temporally)
         setupFile = 'ofdm_iq_20_cal.setx';
         fc = 5.7e9;
         fsRfsoc = 125e6;
         num = 2;
-        %         scan_axis = -90:1:90;
-
-    end
-    properties (Access = public)
-        scan_axis = -90:1:90;
     end
 
     methods (Access = public)
@@ -115,7 +126,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             addpath(genpath([pwd '\iqtools_2023_10_24']))
             addpath(genpath([pwd '\Packet-Creator-VHT']))
             app.c = physconst('LightSpeed'); % propagation velocity [m/s]
-%             warning('off','all')
+            %             warning('off','all')
             lambda = app.c/app.fc;
             cPhSh = @(a) 360*(lambda/2)*sind(a)/lambda; % Calculation of constant phase shift between elements
             deg2comp = @(a) exp(1i*deg2rad(a)); % Degrees to complex (1 round) convertion
@@ -149,22 +160,22 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                     case 'Steering'
                         app.weights = app.weights;
                     case 'MVDR'
-                        if app.magic 
+                        if app.magic
                             app.weights = conj(app.weights);
                         else
                             app.weights = app.weights;
                         end
                     case 'PC'
-                        app.weights = app.weights;                    
+                        app.weights = app.weights;
                     otherwise
                         app.weights = conj(app.weights);
                 end
                 %% plot
                 app.UIAxes.Title.String = (['Direction of arrival', '   ||   Estimated angle = ' num2str(estimated_angle)]);
-                set(plot_handle, 'YData', yspec/max(yspec));
+                set(plot_handle, 'YData', yspec/max(yspec), 'LineWidth', 1.5);
                 R = rawData'*rawData;
                 results = zeros(length(app.scan_axis),1);
-              p_manual = zeros(length(app.scan_axis),1);
+                p_manual = zeros(length(app.scan_axis),1);
                 for i=1:length(app.scan_axis)
                     w_scan = exp(1j * pi * (0:3)' * sind(app.scan_axis(i)))*2;
                     w_scan = (w_scan.*app.weights');
@@ -180,7 +191,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                 am2 = guiXline(am2, app.UIAxes2, main, estimated_angle(1));
                 bs2 = guiXline(bs2, app.UIAxes2, sub, estimated_angle(2));
                 %                 cs2 = guiXline(cs2, app.UIAxes2, sub, estimated_angle(3));
-    
+
                 if app.debug
                     if count == 10
                         plotResponse(app.ula,app.fc,app.c,...
@@ -243,15 +254,15 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.cutter = app.CutterCheckBox.Value;
         end
 
-        % Value changed function: DOAresolutionEditField
+        % Callback function
         function DOAresolutionEditFieldValueChanged(app, event)
             app.scan_res = app.DOAresolutionEditField.Value;
             app.reset_req = 1;
         end
 
-        % Value changed function: BeamformingtypeListBox
-        function BeamformingtypeListBoxValueChanged(app, event)
-            app.bf = app.BeamformingtypeListBox.Value;
+        % Value changed function: BFtypeListBox
+        function BFtypeListBoxValueChanged(app, event)
+            app.bf = app.BFtypeListBox.Value;
         end
 
         % Selection changed function: SignalpositionButtonGroup
@@ -259,7 +270,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.ang_num = str2double(app.SignalpositionButtonGroup.SelectedObject.Text);
         end
 
-        % Value changed function: MagicEditField
+        % Callback function
         function MagicEditFieldValueChanged(app, event)
             app.magic = app.MagicEditField.Value;
 
@@ -281,6 +292,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         function GetPatternButtonValueChanged(app, event)
             %             figure(app.UIFigure)
             %             app.UIFigure.WindowStyle = 'alwaysontop';
+            figure
             plotResponse(app.ula,app.fc,app.c,...
                 'AzimuthAngles',app.scan_axis,...
                 'Unit','db',...
@@ -292,7 +304,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         % Value changed function: ResetButton
         function ResetButtonValueChanged(app, event)
             app.reset_req = app.ResetButton.Value;
-            
+
         end
 
         % Button pushed function: PlutoButton
@@ -303,12 +315,36 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         % Value changed function: c1CheckBox
         function c1CheckBoxValueChanged(app, event)
             app.c1 = app.c1CheckBox.Value;
-            
+
         end
 
         % Value changed function: c2CheckBox
         function c2CheckBoxValueChanged(app, event)
             app.c2 = app.c2CheckBox.Value;
+
+        end
+
+        % Value changed function: RFSoCFcEditField
+        function RFSoCFcEditFieldValueChanged(app, event)
+            app.fc = app.RFSoCFcEditField.Value*1e6;
+            app.reset_req = 1;
+        end
+
+        % Value changed function: RFSoCFsEditField
+        function RFSoCFsEditFieldValueChanged(app, event)
+            app.fsRfsoc = app.RFSoCFsEditField.Value*1e6;
+            app.reset_req = 1;
+        end
+
+        % Value changed function: SignalsEditField
+        function SignalsEditFieldValueChanged(app, event)
+            app.num = app.SignalsEditField.Value;
+            app.reset_req = 1;
+        end
+
+        % Value changed function: DOAtypeListBox
+        function DOAtypeListBoxValueChanged(app, event)
+            value = app.DOAtypeListBox.Value;
             
         end
 
@@ -317,14 +353,14 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             currentFigureWidth = app.UIFigure.Position(3);
             if(currentFigureWidth <= app.onePanelWidth)
                 % Change to a 2x1 grid
-                app.GridLayout.RowHeight = {636, 636};
+                app.GridLayout.RowHeight = {666, 666};
                 app.GridLayout.ColumnWidth = {'1x'};
                 app.RightPanel.Layout.Row = 2;
                 app.RightPanel.Layout.Column = 1;
             else
                 % Change to a 1x2 grid
                 app.GridLayout.RowHeight = {'1x'};
-                app.GridLayout.ColumnWidth = {272, '1x'};
+                app.GridLayout.ColumnWidth = {163, '1x'};
                 app.RightPanel.Layout.Row = 1;
                 app.RightPanel.Layout.Column = 2;
             end
@@ -340,14 +376,14 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             % Create UIFigure and hide until all components are created
             app.UIFigure = uifigure('Visible', 'off');
             app.UIFigure.AutoResizeChildren = 'off';
-            app.UIFigure.Position = [100 100 934 636];
+            app.UIFigure.Position = [100 100 729 666];
             app.UIFigure.Name = 'MATLAB App';
             app.UIFigure.SizeChangedFcn = createCallbackFcn(app, @updateAppLayout, true);
             app.UIFigure.Scrollable = 'on';
 
             % Create GridLayout
             app.GridLayout = uigridlayout(app.UIFigure);
-            app.GridLayout.ColumnWidth = {272, '1x'};
+            app.GridLayout.ColumnWidth = {163, '1x'};
             app.GridLayout.RowHeight = {'1x'};
             app.GridLayout.ColumnSpacing = 0;
             app.GridLayout.RowSpacing = 0;
@@ -362,61 +398,55 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             % Create IQtoolsButton
             app.IQtoolsButton = uibutton(app.LeftPanel, 'push');
             app.IQtoolsButton.ButtonPushedFcn = createCallbackFcn(app, @IQtoolsButtonPushed, true);
-            app.IQtoolsButton.Position = [80 95 100 22];
+            app.IQtoolsButton.Position = [38 49 100 22];
             app.IQtoolsButton.Text = 'IQtools';
 
             % Create PlutoButton
             app.PlutoButton = uibutton(app.LeftPanel, 'push');
             app.PlutoButton.ButtonPushedFcn = createCallbackFcn(app, @PlutoButtonPushed, true);
-            app.PlutoButton.Position = [83 220 100 22];
+            app.PlutoButton.Position = [39 84 100 22];
             app.PlutoButton.Text = 'Pluto';
 
             % Create ResetButton
             app.ResetButton = uibutton(app.LeftPanel, 'state');
             app.ResetButton.ValueChangedFcn = createCallbackFcn(app, @ResetButtonValueChanged, true);
             app.ResetButton.Text = 'Reset';
-            app.ResetButton.Position = [83 156 100 22];
+            app.ResetButton.Position = [39 13 100 22];
 
             % Create TabGroup
             app.TabGroup = uitabgroup(app.LeftPanel);
-            app.TabGroup.Position = [7 306 260 329];
+            app.TabGroup.Position = [7 158 150 507];
 
             % Create MainTab
             app.MainTab = uitab(app.TabGroup);
             app.MainTab.Title = 'Main';
 
-            % Create BeamformingtypeListBoxLabel
-            app.BeamformingtypeListBoxLabel = uilabel(app.MainTab);
-            app.BeamformingtypeListBoxLabel.HorizontalAlignment = 'right';
-            app.BeamformingtypeListBoxLabel.Position = [12 246 79 43];
-            app.BeamformingtypeListBoxLabel.Text = {'Beamforming'; 'type'};
+            % Create BFtypeListBoxLabel
+            app.BFtypeListBoxLabel = uilabel(app.MainTab);
+            app.BFtypeListBoxLabel.HorizontalAlignment = 'right';
+            app.BFtypeListBoxLabel.Position = [-3 429 79 43];
+            app.BFtypeListBoxLabel.Text = {'BF'; 'type'};
 
-            % Create BeamformingtypeListBox
-            app.BeamformingtypeListBox = uilistbox(app.MainTab);
-            app.BeamformingtypeListBox.Items = {'Without', 'Steering', 'MVDR', 'DMR', 'PC', 'LCMV'};
-            app.BeamformingtypeListBox.ValueChangedFcn = createCallbackFcn(app, @BeamformingtypeListBoxValueChanged, true);
-            app.BeamformingtypeListBox.Position = [95 180 74 111];
-            app.BeamformingtypeListBox.Value = 'Steering';
+            % Create BFtypeListBox
+            app.BFtypeListBox = uilistbox(app.MainTab);
+            app.BFtypeListBox.Items = {'Without', 'Steering', 'MVDR', 'DMR', 'PC', 'LCMV'};
+            app.BFtypeListBox.ValueChangedFcn = createCallbackFcn(app, @BFtypeListBoxValueChanged, true);
+            app.BFtypeListBox.Position = [80 363 74 111];
+            app.BFtypeListBox.Value = 'Steering';
 
             % Create VSACheckBox
             app.VSACheckBox = uicheckbox(app.MainTab);
             app.VSACheckBox.ValueChangedFcn = createCallbackFcn(app, @VSACheckBoxValueChanged, true);
             app.VSACheckBox.Text = 'VSA';
-            app.VSACheckBox.Position = [188 129 46 22];
+            app.VSACheckBox.Position = [83 219 46 22];
             app.VSACheckBox.Value = true;
-
-            % Create CutterCheckBox
-            app.CutterCheckBox = uicheckbox(app.MainTab);
-            app.CutterCheckBox.ValueChangedFcn = createCallbackFcn(app, @CutterCheckBoxValueChanged, true);
-            app.CutterCheckBox.Text = 'Cutter';
-            app.CutterCheckBox.Position = [188 159 55 22];
 
             % Create SignalpositionButtonGroup
             app.SignalpositionButtonGroup = uibuttongroup(app.MainTab);
             app.SignalpositionButtonGroup.AutoResizeChildren = 'off';
             app.SignalpositionButtonGroup.SelectionChangedFcn = createCallbackFcn(app, @SignalpositionButtonGroupSelectionChanged, true);
             app.SignalpositionButtonGroup.Title = 'Signal position';
-            app.SignalpositionButtonGroup.Position = [1 1 100 106];
+            app.SignalpositionButtonGroup.Position = [51 253 100 106];
 
             % Create Button
             app.Button = uiradiobutton(app.SignalpositionButtonGroup);
@@ -434,29 +464,17 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.Button_3.Text = '3';
             app.Button_3.Position = [11 16 65 22];
 
-            % Create DOAresolutionEditFieldLabel
-            app.DOAresolutionEditFieldLabel = uilabel(app.MainTab);
-            app.DOAresolutionEditFieldLabel.HorizontalAlignment = 'right';
-            app.DOAresolutionEditFieldLabel.Position = [124 55 58 28];
-            app.DOAresolutionEditFieldLabel.Text = {'DOA'; 'resolution'};
+            % Create DOAresolutionEditField_3Label
+            app.DOAresolutionEditField_3Label = uilabel(app.MainTab);
+            app.DOAresolutionEditField_3Label.HorizontalAlignment = 'right';
+            app.DOAresolutionEditField_3Label.Position = [-2 65 58 28];
+            app.DOAresolutionEditField_3Label.Text = {'DOA'; 'resolution'};
 
             % Create DOAresolutionEditField
             app.DOAresolutionEditField = uieditfield(app.MainTab, 'numeric');
-            app.DOAresolutionEditField.ValueChangedFcn = createCallbackFcn(app, @DOAresolutionEditFieldValueChanged, true);
-            app.DOAresolutionEditField.Position = [196 61 29 22];
+            app.DOAresolutionEditField.Limits = [0.0001 Inf];
+            app.DOAresolutionEditField.Position = [71 71 77 22];
             app.DOAresolutionEditField.Value = 1;
-
-            % Create MagicEditFieldLabel
-            app.MagicEditFieldLabel = uilabel(app.MainTab);
-            app.MagicEditFieldLabel.HorizontalAlignment = 'right';
-            app.MagicEditFieldLabel.Position = [1 129 38 22];
-            app.MagicEditFieldLabel.Text = 'Magic';
-
-            % Create MagicEditField
-            app.MagicEditField = uieditfield(app.MainTab, 'numeric');
-            app.MagicEditField.ValueChangedFcn = createCallbackFcn(app, @MagicEditFieldValueChanged, true);
-            app.MagicEditField.Position = [53 129 100 22];
-            app.MagicEditField.Value = 0.1;
 
             % Create DebugTab
             app.DebugTab = uitab(app.TabGroup);
@@ -466,48 +484,48 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.GetPatternButton = uibutton(app.DebugTab, 'state');
             app.GetPatternButton.ValueChangedFcn = createCallbackFcn(app, @GetPatternButtonValueChanged, true);
             app.GetPatternButton.Text = 'GetPattern';
-            app.GetPatternButton.Position = [103 22 100 22];
+            app.GetPatternButton.Position = [30 164 100 22];
 
             % Create CutoffsetEditFieldLabel
             app.CutoffsetEditFieldLabel = uilabel(app.DebugTab);
             app.CutoffsetEditFieldLabel.HorizontalAlignment = 'right';
-            app.CutoffsetEditFieldLabel.Position = [78 64 57 22];
+            app.CutoffsetEditFieldLabel.Position = [8 33 57 22];
             app.CutoffsetEditFieldLabel.Text = 'Cut offset';
 
             % Create CutoffsetEditField
             app.CutoffsetEditField = uieditfield(app.DebugTab, 'numeric');
             app.CutoffsetEditField.ValueChangedFcn = createCallbackFcn(app, @CutoffsetEditFieldValueChanged, true);
-            app.CutoffsetEditField.Position = [178 64 38 22];
+            app.CutoffsetEditField.Position = [108 33 38 22];
             app.CutoffsetEditField.Value = 500;
 
             % Create dataChanEditFieldLabel
             app.dataChanEditFieldLabel = uilabel(app.DebugTab);
             app.dataChanEditFieldLabel.HorizontalAlignment = 'right';
-            app.dataChanEditFieldLabel.Position = [69 121 58 22];
+            app.dataChanEditFieldLabel.Position = [4 71 58 22];
             app.dataChanEditFieldLabel.Text = 'dataChan';
 
             % Create dataChanEditField
             app.dataChanEditField = uieditfield(app.DebugTab, 'numeric');
             app.dataChanEditField.ValueChangedFcn = createCallbackFcn(app, @dataChanEditFieldValueChanged, true);
-            app.dataChanEditField.Position = [141 121 74 22];
+            app.dataChanEditField.Position = [76 71 74 22];
             app.dataChanEditField.Value = 16384;
 
             % Create c1CheckBox
             app.c1CheckBox = uicheckbox(app.DebugTab);
             app.c1CheckBox.ValueChangedFcn = createCallbackFcn(app, @c1CheckBoxValueChanged, true);
             app.c1CheckBox.Text = 'c1';
-            app.c1CheckBox.Position = [178 159 35 22];
+            app.c1CheckBox.Position = [76 105 35 22];
 
             % Create c2CheckBox
             app.c2CheckBox = uicheckbox(app.DebugTab);
             app.c2CheckBox.ValueChangedFcn = createCallbackFcn(app, @c2CheckBoxValueChanged, true);
             app.c2CheckBox.Text = 'c2';
-            app.c2CheckBox.Position = [218 159 35 22];
+            app.c2CheckBox.Position = [117 105 35 22];
 
             % Create ChannelselectLabel
             app.ChannelselectLabel = uilabel(app.DebugTab);
             app.ChannelselectLabel.HorizontalAlignment = 'right';
-            app.ChannelselectLabel.Position = [18 266 50 28];
+            app.ChannelselectLabel.Position = [6 444 50 28];
             app.ChannelselectLabel.Text = {'Channel'; 'select'};
 
             % Create ChannelselectListBox
@@ -515,18 +533,78 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.ChannelselectListBox.Items = {'Ch1', 'Ch2', 'Ch3', 'Ch4', 'All'};
             app.ChannelselectListBox.ItemsData = {'1', '2', '3', '4', '5', ''};
             app.ChannelselectListBox.ValueChangedFcn = createCallbackFcn(app, @ChannelselectListBoxValueChanged, true);
-            app.ChannelselectListBox.Position = [82 198 81 98];
+            app.ChannelselectListBox.Position = [70 376 81 98];
             app.ChannelselectListBox.Value = '5';
 
             % Create DebugCheckBox
             app.DebugCheckBox = uicheckbox(app.DebugTab);
             app.DebugCheckBox.ValueChangedFcn = createCallbackFcn(app, @DebugCheckBoxValueChanged, true);
             app.DebugCheckBox.Text = 'Debug';
-            app.DebugCheckBox.Position = [39 159 57 22];
+            app.DebugCheckBox.Position = [93 126 57 22];
+
+            % Create DOAtypeListBoxLabel
+            app.DOAtypeListBoxLabel = uilabel(app.DebugTab);
+            app.DOAtypeListBoxLabel.HorizontalAlignment = 'right';
+            app.DOAtypeListBoxLabel.Position = [-5 280 79 43];
+            app.DOAtypeListBoxLabel.Text = {'DOA'; 'type'};
+
+            % Create DOAtypeListBox
+            app.DOAtypeListBox = uilistbox(app.DebugTab);
+            app.DOAtypeListBox.Items = {'MVDR', 'DMR', 'PC', 'LCMV'};
+            app.DOAtypeListBox.ValueChangedFcn = createCallbackFcn(app, @DOAtypeListBoxValueChanged, true);
+            app.DOAtypeListBox.Position = [78 214 74 111];
+            app.DOAtypeListBox.Value = 'MVDR';
 
             % Create SystemTab
             app.SystemTab = uitab(app.TabGroup);
             app.SystemTab.Title = 'System';
+
+            % Create RFSoCFcEditFieldLabel
+            app.RFSoCFcEditFieldLabel = uilabel(app.SystemTab);
+            app.RFSoCFcEditFieldLabel.HorizontalAlignment = 'right';
+            app.RFSoCFcEditFieldLabel.Position = [1 423 55 28];
+            app.RFSoCFcEditFieldLabel.Text = {'RFSoC'; 'Fc'};
+
+            % Create RFSoCFcEditField
+            app.RFSoCFcEditField = uieditfield(app.SystemTab, 'numeric');
+            app.RFSoCFcEditField.Limits = [500 6000];
+            app.RFSoCFcEditField.ValueChangedFcn = createCallbackFcn(app, @RFSoCFcEditFieldValueChanged, true);
+            app.RFSoCFcEditField.Position = [71 429 77 22];
+            app.RFSoCFcEditField.Value = 5700;
+
+            % Create RFSoCFsEditFieldLabel
+            app.RFSoCFsEditFieldLabel = uilabel(app.SystemTab);
+            app.RFSoCFsEditFieldLabel.HorizontalAlignment = 'right';
+            app.RFSoCFsEditFieldLabel.Position = [5 376 55 28];
+            app.RFSoCFsEditFieldLabel.Text = {'RFSoC'; 'Fs'};
+
+            % Create RFSoCFsEditField
+            app.RFSoCFsEditField = uieditfield(app.SystemTab, 'numeric');
+            app.RFSoCFsEditField.Limits = [1 125];
+            app.RFSoCFsEditField.ValueDisplayFormat = '%.0f';
+            app.RFSoCFsEditField.ValueChangedFcn = createCallbackFcn(app, @RFSoCFsEditFieldValueChanged, true);
+            app.RFSoCFsEditField.Position = [75 382 77 22];
+            app.RFSoCFsEditField.Value = 125;
+
+            % Create SignalsEditFieldLabel
+            app.SignalsEditFieldLabel = uilabel(app.SystemTab);
+            app.SignalsEditFieldLabel.HorizontalAlignment = 'right';
+            app.SignalsEditFieldLabel.Position = [5 331 55 28];
+            app.SignalsEditFieldLabel.Text = 'Signals';
+
+            % Create SignalsEditField
+            app.SignalsEditField = uieditfield(app.SystemTab, 'numeric');
+            app.SignalsEditField.Limits = [1 5];
+            app.SignalsEditField.ValueDisplayFormat = '%.0f';
+            app.SignalsEditField.ValueChangedFcn = createCallbackFcn(app, @SignalsEditFieldValueChanged, true);
+            app.SignalsEditField.Position = [75 337 77 22];
+            app.SignalsEditField.Value = 2;
+
+            % Create CutterCheckBox
+            app.CutterCheckBox = uicheckbox(app.LeftPanel);
+            app.CutterCheckBox.ValueChangedFcn = createCallbackFcn(app, @CutterCheckBoxValueChanged, true);
+            app.CutterCheckBox.Text = 'Cutter';
+            app.CutterCheckBox.Position = [58 121 55 22];
 
             % Create RightPanel
             app.RightPanel = uipanel(app.GridLayout);
@@ -546,9 +624,12 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             xlabel(app.UIAxes, 'X')
             ylabel(app.UIAxes, 'Y')
             zlabel(app.UIAxes, 'Z')
+            app.UIAxes.FontWeight = 'bold';
+            app.UIAxes.LineWidth = 1;
             app.UIAxes.XGrid = 'on';
             app.UIAxes.XMinorGrid = 'on';
             app.UIAxes.YGrid = 'on';
+            app.UIAxes.SubtitleFontWeight = 'bold';
             app.UIAxes.Layout.Row = 1;
             app.UIAxes.Layout.Column = 1;
 
@@ -563,6 +644,17 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.UIAxes2.YGrid = 'on';
             app.UIAxes2.Layout.Row = 2;
             app.UIAxes2.Layout.Column = 1;
+
+            % Create ContextMenu
+            app.ContextMenu = uicontextmenu(app.UIFigure);
+
+            % Create Menu
+            app.Menu = uimenu(app.ContextMenu);
+            app.Menu.Text = 'Menu';
+
+            % Create Menu2
+            app.Menu2 = uimenu(app.ContextMenu);
+            app.Menu2.Text = 'Menu2';
 
             % Show the figure after all components are created
             app.UIFigure.Visible = 'on';
