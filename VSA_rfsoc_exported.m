@@ -134,18 +134,17 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.c = physconst('LightSpeed'); % propagation velocity [m/s]
             %             warning('off','all')
             lambda = app.c/app.fc;
+            %% Functions
             cPhSh = @(a) 360*(lambda/2)*sind(a)/lambda; % Calculation of constant phase shift between elements
             deg2comp = @(a) exp(1i*deg2rad(a)); % Degrees to complex (1 round) convertion
             powCalc = @(x) round(max(db(fftshift(fft(x))))/2, 1); % Power from FFT calculations
-
+            %% For pattern
             sig_scan = exp(1j*2*pi*app.fc*(1/100e9:1/100e9:10/100e9));
             sig_scan = [sig_scan;sig_scan;sig_scan;sig_scan]';
 
-
-
             while true
                 if app.reset_req
-                    [data_v, estimator, tcp_client, plot_handle, app.ula] = rfsocBfPrep(app, app.dataChan, app.setupFile, app.num, app.scan_res, app.fc, app.fsRfsoc);
+                    [data_v, estimator, tcp_client, plot_handle, app.ula] = rfsocBfPrep(app, app.dataChan, app.setupFile, app.num, app.scan_res, app.fc, app.fsRfsoc, app.doa);
                     p_manual_mean = zeros(length(app.scan_axis), app.avg_factor);
                     yspec_mean = zeros(length(app.scan_axis), app.avg_factor);
                     clf(app.UIAxes);
@@ -185,7 +184,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                     r_weighted = w_scan.'*sig_scan.';
                     p_manual(i) = norm(r_weighted);
                 end
-                [p_manual_mean_db, p_manual_mean]  = avgData(p_manual, p_manual_mean);                
+                [p_manual_mean_db, p_manual_mean]  = avgData(p_manual, p_manual_mean);
                 [yspec_db, yspec_mean]  = avgData(yspec, yspec_mean);
                 %% Plot
                 app.UIAxes.Title.String = (['Direction of arrival', '   ||   Estimated angle = ' num2str(estimated_angle)]);
@@ -195,7 +194,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                 estimated_angle = [estimated_angle NaN NaN];
                 am = guiXline(am, app.UIAxes, main, estimated_angle(1));
                 bs = guiXline(bs, app.UIAxes, sub, estimated_angle(2));
-                                
+
                 am2 = guiXline(am2, app.UIAxes2, main, estimated_angle(1));
                 bs2 = guiXline(bs2, app.UIAxes2, sub, estimated_angle(2));
 
@@ -353,7 +352,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         % Value changed function: DOAtypeListBox
         function DOAtypeListBoxValueChanged(app, event)
             app.doa = app.DOAtypeListBox.Value;
-            
+            app.reset_req = 1;
         end
 
         % Value changed function: AvgEditField
@@ -365,7 +364,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         % Value changed function: UpdRateEditField
         function UpdRateEditFieldValueChanged(app, event)
             app.updrate = app.UpdRateEditField.Value;
-            
+
         end
 
         % Changes arrangement of the app based on UIFigure width
@@ -571,7 +570,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
 
             % Create DOAtypeListBox
             app.DOAtypeListBox = uilistbox(app.DebugTab);
-            app.DOAtypeListBox.Items = {'MVDR', 'DMR', 'PC', 'LCMV'};
+            app.DOAtypeListBox.Items = {'MVDR', 'MUSIC', 'Beamscan', ''};
             app.DOAtypeListBox.ValueChangedFcn = createCallbackFcn(app, @DOAtypeListBoxValueChanged, true);
             app.DOAtypeListBox.Position = [78 214 74 111];
             app.DOAtypeListBox.Value = 'MVDR';
