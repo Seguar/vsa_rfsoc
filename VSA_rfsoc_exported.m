@@ -2,11 +2,11 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
 
     % Properties that correspond to app components
     properties (Access = public)
-        UIFigure                       matlab.ui.Figure
+        RFSoCBeamformerUIFigure        matlab.ui.Figure
         GridLayout                     matlab.ui.container.GridLayout
         LeftPanel                      matlab.ui.container.Panel
-        AvgEditField                   matlab.ui.control.NumericEditField
-        AvgEditFieldLabel              matlab.ui.control.Label
+        AvgSpinner                     matlab.ui.control.Spinner
+        AvgSpinnerLabel                matlab.ui.control.Label
         CutterCheckBox                 matlab.ui.control.CheckBox
         TabGroup                       matlab.ui.container.TabGroup
         MainTab                        matlab.ui.container.Tab
@@ -35,8 +35,8 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         CutoffsetEditFieldLabel        matlab.ui.control.Label
         GetPatternButton               matlab.ui.control.StateButton
         SystemTab                      matlab.ui.container.Tab
-        SignalsEditField               matlab.ui.control.NumericEditField
-        SignalsEditFieldLabel          matlab.ui.control.Label
+        SignalsSpinner                 matlab.ui.control.Spinner
+        SignalsSpinnerLabel            matlab.ui.control.Label
         RFSoCFsEditField               matlab.ui.control.NumericEditField
         RFSoCFsEditFieldLabel          matlab.ui.control.Label
         RFSoCFcEditField               matlab.ui.control.NumericEditField
@@ -48,9 +48,6 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         GridLayout2                    matlab.ui.container.GridLayout
         UIAxes2                        matlab.ui.control.UIAxes
         UIAxes                         matlab.ui.control.UIAxes
-        ContextMenu                    matlab.ui.container.ContextMenu
-        Menu                           matlab.ui.container.Menu
-        Menu2                          matlab.ui.container.Menu
     end
 
     % Properties that correspond to apps with auto-reflow
@@ -114,9 +111,9 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
 
         % Code that executes after component creation
         function startupFcn(app)
-            app.UIFigure.Visible = 'off';
-            movegui(app.UIFigure,"east")
-            app.UIFigure.Visible = 'on';
+            app.RFSoCBeamformerUIFigure.Visible = 'off';
+            movegui(app.RFSoCBeamformerUIFigure,"east")
+            app.RFSoCBeamformerUIFigure.Visible = 'on';
 
             main.line = '-b';
             main.txt = 'Main';
@@ -131,6 +128,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             cs2 = [];
             addpath(genpath([pwd '\iqtools_2023_10_24']))
             addpath(genpath([pwd '\Packet-Creator-VHT']))
+            addpath(genpath([pwd '\Functions']))
             app.c = physconst('LightSpeed'); % propagation velocity [m/s]
             %             warning('off','all')
             lambda = app.c/app.fc;
@@ -160,21 +158,21 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                     continue
                 end
                 %% Bugs
-                app.weights = conj(app.weights);
-                switch app.bf
-                    case 'Steering'
-                        app.weights = app.weights;
-                    case 'MVDR'
-                        if app.magic
-                            app.weights = conj(app.weights);
-                        else
-                            app.weights = app.weights;
-                        end
-                    case 'PC'
-                        app.weights = app.weights;
-                    otherwise
-                        app.weights = conj(app.weights);
-                end
+%                 app.weights = conj(app.weights);
+%                 switch app.bf
+%                     case 'Steering'
+%                         app.weights = app.weights;
+%                     case 'MVDR'
+%                         if app.magic
+%                             app.weights = conj(app.weights);
+%                         else
+%                             app.weights = app.weights;
+%                         end
+%                     case 'PC'
+%                         app.weights = app.weights;
+%                     otherwise
+%                         app.weights = conj(app.weights);
+%                 end
                 %% Pattern calc
                 R = rawData'*rawData;
                 p_manual = zeros(length(app.scan_axis),1);
@@ -343,9 +341,9 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.reset_req = 1;
         end
 
-        % Value changed function: SignalsEditField
-        function SignalsEditFieldValueChanged(app, event)
-            app.num = app.SignalsEditField.Value;
+        % Value changed function: SignalsSpinner
+        function SignalsSpinnerValueChanged(app, event)
+            app.num = app.SignalsSpinner.Value;
             app.reset_req = 1;
         end
 
@@ -355,9 +353,9 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.reset_req = 1;
         end
 
-        % Value changed function: AvgEditField
-        function AvgEditFieldValueChanged(app, event)
-            app.avg_factor = app.AvgEditField.Value;
+        % Value changed function: AvgSpinner
+        function AvgSpinnerValueChanged(app, event)
+            app.avg_factor = app.AvgSpinner.Value;
             app.reset_req = 1;
         end
 
@@ -369,7 +367,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
 
         % Changes arrangement of the app based on UIFigure width
         function updateAppLayout(app, event)
-            currentFigureWidth = app.UIFigure.Position(3);
+            currentFigureWidth = app.RFSoCBeamformerUIFigure.Position(3);
             if(currentFigureWidth <= app.onePanelWidth)
                 % Change to a 2x1 grid
                 app.GridLayout.RowHeight = {666, 666};
@@ -392,16 +390,16 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         % Create UIFigure and components
         function createComponents(app)
 
-            % Create UIFigure and hide until all components are created
-            app.UIFigure = uifigure('Visible', 'off');
-            app.UIFigure.AutoResizeChildren = 'off';
-            app.UIFigure.Position = [100 100 729 666];
-            app.UIFigure.Name = 'MATLAB App';
-            app.UIFigure.SizeChangedFcn = createCallbackFcn(app, @updateAppLayout, true);
-            app.UIFigure.Scrollable = 'on';
+            % Create RFSoCBeamformerUIFigure and hide until all components are created
+            app.RFSoCBeamformerUIFigure = uifigure('Visible', 'off');
+            app.RFSoCBeamformerUIFigure.AutoResizeChildren = 'off';
+            app.RFSoCBeamformerUIFigure.Position = [100 100 729 666];
+            app.RFSoCBeamformerUIFigure.Name = 'RFSoC Beamformer';
+            app.RFSoCBeamformerUIFigure.SizeChangedFcn = createCallbackFcn(app, @updateAppLayout, true);
+            app.RFSoCBeamformerUIFigure.Scrollable = 'on';
 
             % Create GridLayout
-            app.GridLayout = uigridlayout(app.UIFigure);
+            app.GridLayout = uigridlayout(app.RFSoCBeamformerUIFigure);
             app.GridLayout.ColumnWidth = {163, '1x'};
             app.GridLayout.RowHeight = {'1x'};
             app.GridLayout.ColumnSpacing = 0;
@@ -619,19 +617,19 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.RFSoCFsEditField.Position = [75 382 77 22];
             app.RFSoCFsEditField.Value = 125;
 
-            % Create SignalsEditFieldLabel
-            app.SignalsEditFieldLabel = uilabel(app.SystemTab);
-            app.SignalsEditFieldLabel.HorizontalAlignment = 'right';
-            app.SignalsEditFieldLabel.Position = [5 331 55 28];
-            app.SignalsEditFieldLabel.Text = 'Signals';
+            % Create SignalsSpinnerLabel
+            app.SignalsSpinnerLabel = uilabel(app.SystemTab);
+            app.SignalsSpinnerLabel.HorizontalAlignment = 'right';
+            app.SignalsSpinnerLabel.Position = [15 337 45 22];
+            app.SignalsSpinnerLabel.Text = 'Signals';
 
-            % Create SignalsEditField
-            app.SignalsEditField = uieditfield(app.SystemTab, 'numeric');
-            app.SignalsEditField.Limits = [1 5];
-            app.SignalsEditField.ValueDisplayFormat = '%.0f';
-            app.SignalsEditField.ValueChangedFcn = createCallbackFcn(app, @SignalsEditFieldValueChanged, true);
-            app.SignalsEditField.Position = [75 337 77 22];
-            app.SignalsEditField.Value = 3;
+            % Create SignalsSpinner
+            app.SignalsSpinner = uispinner(app.SystemTab);
+            app.SignalsSpinner.Limits = [1 5];
+            app.SignalsSpinner.ValueDisplayFormat = '%.0f';
+            app.SignalsSpinner.ValueChangedFcn = createCallbackFcn(app, @SignalsSpinnerValueChanged, true);
+            app.SignalsSpinner.Position = [75 337 77 22];
+            app.SignalsSpinner.Value = 3;
 
             % Create CutterCheckBox
             app.CutterCheckBox = uicheckbox(app.LeftPanel);
@@ -639,18 +637,18 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.CutterCheckBox.Text = 'Cutter';
             app.CutterCheckBox.Position = [67 103 55 22];
 
-            % Create AvgEditFieldLabel
-            app.AvgEditFieldLabel = uilabel(app.LeftPanel);
-            app.AvgEditFieldLabel.HorizontalAlignment = 'right';
-            app.AvgEditFieldLabel.Position = [38 124 55 22];
-            app.AvgEditFieldLabel.Text = 'Avg';
+            % Create AvgSpinnerLabel
+            app.AvgSpinnerLabel = uilabel(app.LeftPanel);
+            app.AvgSpinnerLabel.HorizontalAlignment = 'right';
+            app.AvgSpinnerLabel.Position = [41 124 26 22];
+            app.AvgSpinnerLabel.Text = 'Avg';
 
-            % Create AvgEditField
-            app.AvgEditField = uieditfield(app.LeftPanel, 'numeric');
-            app.AvgEditField.Limits = [1 Inf];
-            app.AvgEditField.ValueChangedFcn = createCallbackFcn(app, @AvgEditFieldValueChanged, true);
-            app.AvgEditField.Position = [107 124 30 22];
-            app.AvgEditField.Value = 10;
+            % Create AvgSpinner
+            app.AvgSpinner = uispinner(app.LeftPanel);
+            app.AvgSpinner.Limits = [1 Inf];
+            app.AvgSpinner.ValueChangedFcn = createCallbackFcn(app, @AvgSpinnerValueChanged, true);
+            app.AvgSpinner.Position = [81 124 56 22];
+            app.AvgSpinner.Value = 10;
 
             % Create RightPanel
             app.RightPanel = uipanel(app.GridLayout);
@@ -690,19 +688,8 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.UIAxes2.Layout.Row = 2;
             app.UIAxes2.Layout.Column = 1;
 
-            % Create ContextMenu
-            app.ContextMenu = uicontextmenu(app.UIFigure);
-
-            % Create Menu
-            app.Menu = uimenu(app.ContextMenu);
-            app.Menu.Text = 'Menu';
-
-            % Create Menu2
-            app.Menu2 = uimenu(app.ContextMenu);
-            app.Menu2.Text = 'Menu2';
-
             % Show the figure after all components are created
-            app.UIFigure.Visible = 'on';
+            app.RFSoCBeamformerUIFigure.Visible = 'on';
         end
     end
 
@@ -721,14 +708,14 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                 createComponents(app)
 
                 % Register the app with App Designer
-                registerApp(app, app.UIFigure)
+                registerApp(app, app.RFSoCBeamformerUIFigure)
 
                 % Execute the startup function
                 runStartupFcn(app, @startupFcn)
             else
 
                 % Focus the running singleton app
-                figure(runningApp.UIFigure)
+                figure(runningApp.RFSoCBeamformerUIFigure)
 
                 app = runningApp;
             end
@@ -742,7 +729,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         function delete(app)
 
             % Delete UIFigure when app is deleted
-            delete(app.UIFigure)
+            delete(app.RFSoCBeamformerUIFigure)
         end
     end
 end

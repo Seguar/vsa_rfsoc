@@ -36,7 +36,7 @@ switch bf
         [rawDataAdj, weights] = dmr_beamformer(rawData, npc, ula, estimated_angle(1));
     case 'PC'
         [rawDataAdj, weights] = pc_beamformer(rawData, npc, ula, estimated_angle(1));
-        weights = conj(weights);
+%         weights = conj(weights);
     case 'LCMV'
         [rawDataAdj, weights] = lcmv_beamformer(rawData, estimated_angle(1), estimated_angle(2), ula, magic, fc);
 %         weights = conj(weights);

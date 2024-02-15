@@ -2,24 +2,23 @@ classdef PlutoControl_exported < matlab.apps.AppBase
 
     % Properties that correspond to app components
     properties (Access = public)
-        UIFigure               matlab.ui.Figure
-        GapEditField           matlab.ui.control.NumericEditField
-        GapEditFieldLabel      matlab.ui.control.Label
-        FcCWEditField          matlab.ui.control.NumericEditField
-        FcCWEditFieldLabel     matlab.ui.control.Label
-        UpdateButton           matlab.ui.control.Button
-        CustomfileButton       matlab.ui.control.Button
-        Gain890EditField       matlab.ui.control.NumericEditField
-        Gain890EditFieldLabel  matlab.ui.control.Label
-        FsMhzEditField         matlab.ui.control.NumericEditField
-        FsMhzEditFieldLabel    matlab.ui.control.Label
-        SignalButtonGroup      matlab.ui.container.ButtonGroup
-        OffButton              matlab.ui.control.RadioButton
-        CustomButton           matlab.ui.control.RadioButton
-        OFDMButton             matlab.ui.control.RadioButton
-        CWButton               matlab.ui.control.RadioButton
-        FcMhzEditField         matlab.ui.control.NumericEditField
-        FcMhzEditFieldLabel    matlab.ui.control.Label
+        PlutoControlUIFigure  matlab.ui.Figure
+        GapEditField          matlab.ui.control.NumericEditField
+        GapEditFieldLabel     matlab.ui.control.Label
+        FcCWEditField         matlab.ui.control.NumericEditField
+        FcCWEditFieldLabel    matlab.ui.control.Label
+        CustomfileButton      matlab.ui.control.Button
+        GainKnob              matlab.ui.control.Knob
+        GainKnobLabel         matlab.ui.control.Label
+        FsMhzSpinner          matlab.ui.control.Spinner
+        FsMhzSpinnerLabel     matlab.ui.control.Label
+        SignalButtonGroup     matlab.ui.container.ButtonGroup
+        OffButton             matlab.ui.control.RadioButton
+        CustomButton          matlab.ui.control.RadioButton
+        OFDMButton            matlab.ui.control.RadioButton
+        CWButton              matlab.ui.control.RadioButton
+        FcMhzSpinner          matlab.ui.control.Spinner
+        FcMhzSpinnerLabel     matlab.ui.control.Label
     end
 
 
@@ -92,9 +91,9 @@ classdef PlutoControl_exported < matlab.apps.AppBase
 %             end
         end
 
-        % Value changed function: FcMhzEditField
-        function FcMhzEditFieldValueChanged(app, event)
-            app.fc = app.FcMhzEditField.Value*1e6;
+        % Value changed function: FcMhzSpinner
+        function FcMhzSpinnerValueChanged(app, event)
+            app.fc = app.FcMhzSpinner.Value*1e6;
             app.updReq = 1;
             updatePluto(app)
         end
@@ -105,16 +104,16 @@ classdef PlutoControl_exported < matlab.apps.AppBase
             updatePluto(app)
         end
 
-        % Value changed function: FsMhzEditField
-        function FsMhzEditFieldValueChanged(app, event)
-            app.fs = app.FsMhzEditField.Value*1e6;
+        % Value changed function: FsMhzSpinner
+        function FsMhzSpinnerValueChanged(app, event)
+            app.fs = app.FsMhzSpinner.Value*1e6;
             app.updReq = 1;
             updatePluto(app)
         end
 
-        % Value changed function: Gain890EditField
-        function Gain890EditFieldValueChanged(app, event)
-            app.gain = app.Gain890EditField.Value;
+        % Value changed function: GainKnob
+        function GainKnobValueChanged(app, event)
+            app.gain = app.GainKnob.Value;
             app.updReq = 1;
             updatePluto(app)
         end
@@ -126,7 +125,7 @@ classdef PlutoControl_exported < matlab.apps.AppBase
             updatePluto(app)
         end
 
-        % Button pushed function: UpdateButton
+        % Callback function
         function UpdateButtonPushed(app, event)
             updatePluto(app)
         end
@@ -152,25 +151,27 @@ classdef PlutoControl_exported < matlab.apps.AppBase
         % Create UIFigure and components
         function createComponents(app)
 
-            % Create UIFigure and hide until all components are created
-            app.UIFigure = uifigure('Visible', 'off');
-            app.UIFigure.Position = [100 100 241 377];
-            app.UIFigure.Name = 'MATLAB App';
+            % Create PlutoControlUIFigure and hide until all components are created
+            app.PlutoControlUIFigure = uifigure('Visible', 'off');
+            app.PlutoControlUIFigure.Position = [100 100 241 377];
+            app.PlutoControlUIFigure.Name = 'Pluto Control';
 
-            % Create FcMhzEditFieldLabel
-            app.FcMhzEditFieldLabel = uilabel(app.UIFigure);
-            app.FcMhzEditFieldLabel.HorizontalAlignment = 'right';
-            app.FcMhzEditFieldLabel.Position = [19 317 53 22];
-            app.FcMhzEditFieldLabel.Text = 'Fc (Mhz)';
+            % Create FcMhzSpinnerLabel
+            app.FcMhzSpinnerLabel = uilabel(app.PlutoControlUIFigure);
+            app.FcMhzSpinnerLabel.HorizontalAlignment = 'right';
+            app.FcMhzSpinnerLabel.Position = [19 317 53 22];
+            app.FcMhzSpinnerLabel.Text = 'Fc (Mhz)';
 
-            % Create FcMhzEditField
-            app.FcMhzEditField = uieditfield(app.UIFigure, 'numeric');
-            app.FcMhzEditField.ValueChangedFcn = createCallbackFcn(app, @FcMhzEditFieldValueChanged, true);
-            app.FcMhzEditField.Position = [87 317 100 22];
-            app.FcMhzEditField.Value = 5700;
+            % Create FcMhzSpinner
+            app.FcMhzSpinner = uispinner(app.PlutoControlUIFigure);
+            app.FcMhzSpinner.Step = 0.5;
+            app.FcMhzSpinner.Limits = [70 6000];
+            app.FcMhzSpinner.ValueChangedFcn = createCallbackFcn(app, @FcMhzSpinnerValueChanged, true);
+            app.FcMhzSpinner.Position = [87 317 100 22];
+            app.FcMhzSpinner.Value = 5700;
 
             % Create SignalButtonGroup
-            app.SignalButtonGroup = uibuttongroup(app.UIFigure);
+            app.SignalButtonGroup = uibuttongroup(app.PlutoControlUIFigure);
             app.SignalButtonGroup.SelectionChangedFcn = createCallbackFcn(app, @SignalButtonGroupSelectionChanged, true);
             app.SignalButtonGroup.TitlePosition = 'centertop';
             app.SignalButtonGroup.Title = 'Signal';
@@ -197,66 +198,62 @@ classdef PlutoControl_exported < matlab.apps.AppBase
             app.OffButton.Position = [11 23 38 22];
             app.OffButton.Value = true;
 
-            % Create FsMhzEditFieldLabel
-            app.FsMhzEditFieldLabel = uilabel(app.UIFigure);
-            app.FsMhzEditFieldLabel.HorizontalAlignment = 'right';
-            app.FsMhzEditFieldLabel.Position = [19 267 53 22];
-            app.FsMhzEditFieldLabel.Text = 'Fs (Mhz)';
+            % Create FsMhzSpinnerLabel
+            app.FsMhzSpinnerLabel = uilabel(app.PlutoControlUIFigure);
+            app.FsMhzSpinnerLabel.HorizontalAlignment = 'right';
+            app.FsMhzSpinnerLabel.Position = [19 267 53 22];
+            app.FsMhzSpinnerLabel.Text = 'Fs (Mhz)';
 
-            % Create FsMhzEditField
-            app.FsMhzEditField = uieditfield(app.UIFigure, 'numeric');
-            app.FsMhzEditField.ValueChangedFcn = createCallbackFcn(app, @FsMhzEditFieldValueChanged, true);
-            app.FsMhzEditField.Position = [87 267 100 22];
-            app.FsMhzEditField.Value = 60;
+            % Create FsMhzSpinner
+            app.FsMhzSpinner = uispinner(app.PlutoControlUIFigure);
+            app.FsMhzSpinner.Limits = [1 61.44];
+            app.FsMhzSpinner.ValueChangedFcn = createCallbackFcn(app, @FsMhzSpinnerValueChanged, true);
+            app.FsMhzSpinner.Position = [87 267 100 22];
+            app.FsMhzSpinner.Value = 60;
 
-            % Create Gain890EditFieldLabel
-            app.Gain890EditFieldLabel = uilabel(app.UIFigure);
-            app.Gain890EditFieldLabel.HorizontalAlignment = 'right';
-            app.Gain890EditFieldLabel.Position = [2 220 70 22];
-            app.Gain890EditFieldLabel.Text = 'Gain (-89:0)';
+            % Create GainKnobLabel
+            app.GainKnobLabel = uilabel(app.PlutoControlUIFigure);
+            app.GainKnobLabel.HorizontalAlignment = 'right';
+            app.GainKnobLabel.Position = [28 241 31 22];
+            app.GainKnobLabel.Text = 'Gain';
 
-            % Create Gain890EditField
-            app.Gain890EditField = uieditfield(app.UIFigure, 'numeric');
-            app.Gain890EditField.ValueChangedFcn = createCallbackFcn(app, @Gain890EditFieldValueChanged, true);
-            app.Gain890EditField.Position = [87 220 100 22];
+            % Create GainKnob
+            app.GainKnob = uiknob(app.PlutoControlUIFigure, 'continuous');
+            app.GainKnob.Limits = [-89 0];
+            app.GainKnob.ValueChangedFcn = createCallbackFcn(app, @GainKnobValueChanged, true);
+            app.GainKnob.Position = [100 184 60 60];
 
             % Create CustomfileButton
-            app.CustomfileButton = uibutton(app.UIFigure, 'push');
+            app.CustomfileButton = uibutton(app.PlutoControlUIFigure, 'push');
             app.CustomfileButton.ButtonPushedFcn = createCallbackFcn(app, @CustomfileButtonPushed, true);
             app.CustomfileButton.Position = [139 75 107 20];
             app.CustomfileButton.Text = 'Custom file';
 
-            % Create UpdateButton
-            app.UpdateButton = uibutton(app.UIFigure, 'push');
-            app.UpdateButton.ButtonPushedFcn = createCallbackFcn(app, @UpdateButtonPushed, true);
-            app.UpdateButton.Position = [73 178 100 22];
-            app.UpdateButton.Text = 'Update';
-
             % Create FcCWEditFieldLabel
-            app.FcCWEditFieldLabel = uilabel(app.UIFigure);
+            app.FcCWEditFieldLabel = uilabel(app.PlutoControlUIFigure);
             app.FcCWEditFieldLabel.HorizontalAlignment = 'right';
             app.FcCWEditFieldLabel.Position = [140 127 42 22];
             app.FcCWEditFieldLabel.Text = 'Fc CW';
 
             % Create FcCWEditField
-            app.FcCWEditField = uieditfield(app.UIFigure, 'numeric');
+            app.FcCWEditField = uieditfield(app.PlutoControlUIFigure, 'numeric');
             app.FcCWEditField.ValueChangedFcn = createCallbackFcn(app, @FcCWEditFieldValueChanged, true);
             app.FcCWEditField.Position = [197 127 45 22];
 
             % Create GapEditFieldLabel
-            app.GapEditFieldLabel = uilabel(app.UIFigure);
+            app.GapEditFieldLabel = uilabel(app.PlutoControlUIFigure);
             app.GapEditFieldLabel.HorizontalAlignment = 'right';
             app.GapEditFieldLabel.Position = [150 97 28 22];
             app.GapEditFieldLabel.Text = 'Gap';
 
             % Create GapEditField
-            app.GapEditField = uieditfield(app.UIFigure, 'numeric');
+            app.GapEditField = uieditfield(app.PlutoControlUIFigure, 'numeric');
             app.GapEditField.ValueChangedFcn = createCallbackFcn(app, @GapEditFieldValueChanged, true);
             app.GapEditField.Position = [193 97 45 22];
             app.GapEditField.Value = 5000;
 
             % Show the figure after all components are created
-            app.UIFigure.Visible = 'on';
+            app.PlutoControlUIFigure.Visible = 'on';
         end
     end
 
@@ -275,14 +272,14 @@ classdef PlutoControl_exported < matlab.apps.AppBase
                 createComponents(app)
 
                 % Register the app with App Designer
-                registerApp(app, app.UIFigure)
+                registerApp(app, app.PlutoControlUIFigure)
 
                 % Execute the startup function
                 runStartupFcn(app, @startupFcn)
             else
 
                 % Focus the running singleton app
-                figure(runningApp.UIFigure)
+                figure(runningApp.PlutoControlUIFigure)
 
                 app = runningApp;
             end
@@ -296,7 +293,7 @@ classdef PlutoControl_exported < matlab.apps.AppBase
         function delete(app)
 
             % Delete UIFigure when app is deleted
-            delete(app.UIFigure)
+            delete(app.PlutoControlUIFigure)
         end
     end
 end
