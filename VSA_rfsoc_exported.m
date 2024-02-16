@@ -10,6 +10,8 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         CutterCheckBox                 matlab.ui.control.CheckBox
         TabGroup                       matlab.ui.container.TabGroup
         MainTab                        matlab.ui.container.Tab
+        DOAtypeListBox                 matlab.ui.control.ListBox
+        DOAtypeListBoxLabel            matlab.ui.control.Label
         DOAresolutionEditField         matlab.ui.control.NumericEditField
         DOAresolutionEditField_3Label  matlab.ui.control.Label
         SignalpositionButtonGroup      matlab.ui.container.ButtonGroup
@@ -22,8 +24,6 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         DebugTab                       matlab.ui.container.Tab
         UpdRateEditField               matlab.ui.control.NumericEditField
         UpdRateEditFieldLabel          matlab.ui.control.Label
-        DOAtypeListBox                 matlab.ui.control.ListBox
-        DOAtypeListBoxLabel            matlab.ui.control.Label
         DebugCheckBox                  matlab.ui.control.CheckBox
         ChannelselectListBox           matlab.ui.control.ListBox
         ChannelselectLabel             matlab.ui.control.Label
@@ -79,7 +79,10 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         ula
         weights
         c
-
+        %%
+        fc = 5.7e9;
+        fsRfsoc = 125e6;
+        num = 3;
         %% Flags
         reset_req = 1;
 
@@ -91,9 +94,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         scan_axis = -90:1:90;
         %% Hardcode (temporally)
         setupFile = 'ofdm_iq_20_cal.setx';
-        fc = 5.7e9;
-        fsRfsoc = 125e6;
-        num = 3;
+        num_elements = 4;
     end
 
     methods (Access = public)
@@ -114,7 +115,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.RFSoCBeamformerUIFigure.Visible = 'off';
             movegui(app.RFSoCBeamformerUIFigure,"east")
             app.RFSoCBeamformerUIFigure.Visible = 'on';
-
+            app.num_elements = 4;
             main.line = '-b';
             main.txt = 'Main';
             sub.line = '--c';
@@ -130,75 +131,71 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             addpath(genpath([pwd '\Packet-Creator-VHT']))
             addpath(genpath([pwd '\Functions']))
             app.c = physconst('LightSpeed'); % propagation velocity [m/s]
-            %             warning('off','all')
+            warning('off','all')
             lambda = app.c/app.fc;
-            %% Functions
-            cPhSh = @(a) 360*(lambda/2)*sind(a)/lambda; % Calculation of constant phase shift between elements
-            deg2comp = @(a) exp(1i*deg2rad(a)); % Degrees to complex (1 round) convertion
-            powCalc = @(x) round(max(db(fftshift(fft(x))))/2, 1); % Power from FFT calculations
-            %% For pattern
-            sig_scan = exp(1j*2*pi*app.fc*(1/100e9:1/100e9:10/100e9));
-            sig_scan = [sig_scan;sig_scan;sig_scan;sig_scan]';
 
             while true
                 if app.reset_req
+                    app.ResetButton.Text = 'Processing...';
+                    app.ResetButton.BackgroundColor = 'r';
+                    drawnow %!!!!
                     [data_v, estimator, tcp_client, plot_handle, app.ula] = rfsocBfPrep(app, app.dataChan, app.setupFile, app.num, app.scan_res, app.fc, app.fsRfsoc, app.doa);
                     p_manual_mean = zeros(length(app.scan_axis), app.avg_factor);
                     yspec_mean = zeros(length(app.scan_axis), app.avg_factor);
                     clf(app.UIAxes);
                     app.reset_req = 0;
+                    app.ResetButton.Text = 'Reset';
+                    app.ResetButton.BackgroundColor = 'g';
                 end
                 try
-                    [yspec, estimated_angle, ~, app.weights, rawData] = rfsocBf(app, app.vsa, app.ch, app.bf, app.off, app.gap, app.cutter, app.ang_num, estimator, data_v, tcp_client, app.fc, app.dataChan, app.magic, app.ula, ...
+                    [yspec, estimated_angle, ~, app.weights, ~] = rfsocBf(app, app.vsa, app.ch, app.bf, app.off, app.gap, app.cutter, app.ang_num, estimator, data_v, tcp_client, app.fc, app.dataChan, app.magic, app.ula, ...
                         app.c1, app.c2);
+                    if isnan(app.weights)
+                        continue
+                    end
                 catch
                     continue
                 end
-                if isnan(app.weights)
-                    continue
-                end
+
                 %% Bugs
-%                 app.weights = conj(app.weights);
-%                 switch app.bf
-%                     case 'Steering'
-%                         app.weights = app.weights;
-%                     case 'MVDR'
-%                         if app.magic
-%                             app.weights = conj(app.weights);
-%                         else
-%                             app.weights = app.weights;
-%                         end
-%                     case 'PC'
-%                         app.weights = app.weights;
-%                     otherwise
-%                         app.weights = conj(app.weights);
-%                 end
+                %                 app.weights = conj(app.weights);
+                %                 switch app.bf
+                %                     case 'Steering'
+                %                         app.weights = app.weights;
+                %                     case 'MVDR'
+                %                         if app.magic
+                %                             app.weights = conj(app.weights);
+                %                         else
+                %                             app.weights = app.weights;
+                %                         end
+                %                     case 'PC'
+                %                         app.weights = app.weights;
+                %                     otherwise
+                %                         app.weights = conj(app.weights);
+                %                 end
                 %% Pattern calc
-                R = rawData'*rawData;
-                p_manual = zeros(length(app.scan_axis),1);
-                for i=1:length(app.scan_axis)
-                    w_scan = exp(1j * pi * (0:3)' * sind(app.scan_axis(i)))*2;
-                    w_scan = (w_scan.*app.weights');
-                    r_weighted = w_scan.'*sig_scan.';
-                    p_manual(i) = norm(r_weighted);
-                end
+                p_manual = beamPatternCalc(app.weights, app.fc, app.scan_axis, app.num_elements);
+                %% Avg
+
                 [p_manual_mean_db, p_manual_mean]  = avgData(p_manual, p_manual_mean);
                 [yspec_db, yspec_mean]  = avgData(yspec, yspec_mean);
                 %% Plot
                 app.UIAxes.Title.String = (['Direction of arrival', '   ||   Estimated angle = ' num2str(estimated_angle)]);
                 set(plot_handle, 'YData', yspec_db, 'LineWidth', 1.5);
-                plot(app.UIAxes2, app.scan_axis,p_manual_mean_db);
+                plot(app.UIAxes2, app.scan_axis,p_manual_mean_db, 'LineWidth', 1.5);
                 % Xlines
-                estimated_angle = [estimated_angle NaN NaN];
+                estimated_angle = [estimated_angle NaN NaN]; % To prevent errors in xlines indexing
                 am = guiXline(am, app.UIAxes, main, estimated_angle(1));
-                bs = guiXline(bs, app.UIAxes, sub, estimated_angle(2));
-
                 am2 = guiXline(am2, app.UIAxes2, main, estimated_angle(1));
-                bs2 = guiXline(bs2, app.UIAxes2, sub, estimated_angle(2));
 
-                if sum(~isnan(estimated_angle)) > 2
-                    cs = guiXline(cs, app.UIAxes, sub, estimated_angle(3));
-                    cs2 = guiXline(cs2, app.UIAxes2, sub, estimated_angle(3));
+
+                if sum(~isnan(estimated_angle)) > 1
+                    bs = guiXline(bs, app.UIAxes, sub, estimated_angle(2));
+                    bs2 = guiXline(bs2, app.UIAxes2, sub, estimated_angle(2));
+                    if sum(~isnan(estimated_angle)) > 2
+                        cs = guiXline(cs, app.UIAxes, sub, estimated_angle(3));
+                        cs2 = guiXline(cs2, app.UIAxes2, sub, estimated_angle(3));
+                    end
                 end
 
                 if app.debug
@@ -235,16 +232,6 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         % Value changed function: ChannelselectListBox
         function ChannelselectListBoxValueChanged(app, event)
             app.ch = str2double(app.ChannelselectListBox.Value);
-        end
-
-        % Callback function
-        function UIAxesButtonDown(app, event)
-            %             clf(app.UIAxes);
-        end
-
-        % Callback function
-        function UIAxesButtonDown2(app, event)
-            %             clf(app.UIAxes);
         end
 
         % Value changed function: dataChanEditField
@@ -441,14 +428,14 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             % Create BFtypeListBoxLabel
             app.BFtypeListBoxLabel = uilabel(app.MainTab);
             app.BFtypeListBoxLabel.HorizontalAlignment = 'right';
-            app.BFtypeListBoxLabel.Position = [-3 429 79 43];
+            app.BFtypeListBoxLabel.Position = [-6 429 79 43];
             app.BFtypeListBoxLabel.Text = {'BF'; 'type'};
 
             % Create BFtypeListBox
             app.BFtypeListBox = uilistbox(app.MainTab);
             app.BFtypeListBox.Items = {'Without', 'Steering', 'MVDR', 'DMR', 'PC', 'LCMV'};
             app.BFtypeListBox.ValueChangedFcn = createCallbackFcn(app, @BFtypeListBoxValueChanged, true);
-            app.BFtypeListBox.Position = [80 363 74 111];
+            app.BFtypeListBox.Position = [77 363 74 111];
             app.BFtypeListBox.Value = 'Steering';
 
             % Create VSACheckBox
@@ -484,14 +471,27 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             % Create DOAresolutionEditField_3Label
             app.DOAresolutionEditField_3Label = uilabel(app.MainTab);
             app.DOAresolutionEditField_3Label.HorizontalAlignment = 'right';
-            app.DOAresolutionEditField_3Label.Position = [-2 65 58 28];
+            app.DOAresolutionEditField_3Label.Position = [4 176 58 28];
             app.DOAresolutionEditField_3Label.Text = {'DOA'; 'resolution'};
 
             % Create DOAresolutionEditField
             app.DOAresolutionEditField = uieditfield(app.MainTab, 'numeric');
             app.DOAresolutionEditField.Limits = [0.0001 Inf];
-            app.DOAresolutionEditField.Position = [71 71 77 22];
+            app.DOAresolutionEditField.Position = [77 182 77 22];
             app.DOAresolutionEditField.Value = 1;
+
+            % Create DOAtypeListBoxLabel
+            app.DOAtypeListBoxLabel = uilabel(app.MainTab);
+            app.DOAtypeListBoxLabel.HorizontalAlignment = 'right';
+            app.DOAtypeListBoxLabel.Position = [-5 115 79 43];
+            app.DOAtypeListBoxLabel.Text = {'DOA'; 'type'};
+
+            % Create DOAtypeListBox
+            app.DOAtypeListBox = uilistbox(app.MainTab);
+            app.DOAtypeListBox.Items = {'MVDR', 'MUSIC', 'Beamscan', ''};
+            app.DOAtypeListBox.ValueChangedFcn = createCallbackFcn(app, @DOAtypeListBoxValueChanged, true);
+            app.DOAtypeListBox.Position = [78 49 74 111];
+            app.DOAtypeListBox.Value = 'MVDR';
 
             % Create DebugTab
             app.DebugTab = uitab(app.TabGroup);
@@ -559,19 +559,6 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.DebugCheckBox.ValueChangedFcn = createCallbackFcn(app, @DebugCheckBoxValueChanged, true);
             app.DebugCheckBox.Text = 'Debug';
             app.DebugCheckBox.Position = [15 105 57 22];
-
-            % Create DOAtypeListBoxLabel
-            app.DOAtypeListBoxLabel = uilabel(app.DebugTab);
-            app.DOAtypeListBoxLabel.HorizontalAlignment = 'right';
-            app.DOAtypeListBoxLabel.Position = [-5 280 79 43];
-            app.DOAtypeListBoxLabel.Text = {'DOA'; 'type'};
-
-            % Create DOAtypeListBox
-            app.DOAtypeListBox = uilistbox(app.DebugTab);
-            app.DOAtypeListBox.Items = {'MVDR', 'MUSIC', 'Beamscan', ''};
-            app.DOAtypeListBox.ValueChangedFcn = createCallbackFcn(app, @DOAtypeListBoxValueChanged, true);
-            app.DOAtypeListBox.Position = [78 214 74 111];
-            app.DOAtypeListBox.Value = 'MVDR';
 
             % Create UpdRateEditFieldLabel
             app.UpdRateEditFieldLabel = uilabel(app.DebugTab);
