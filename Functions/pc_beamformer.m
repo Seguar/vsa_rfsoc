@@ -10,13 +10,12 @@ R = rawData'*rawData;
 numelements = ula.NumElements;
 v_m = exp(1j*pi*((0:numelements-1)')*sin(deg2rad(estimated_angle)));
 [V, D] = eig(R, 'vector');
-[D, ind] = sort(D,"descend");
+[~, ind] = sort(D,"descend");
 V = V(:, ind);
 [~, D_mat] = eig(R, 'matrix');
 SSI_full = D_mat(ind, ind);
 SSI = SSI_full(1:npc,1:npc);
 U_SI = V(:,1:npc);
-R_r = U_SI*SSI*U_SI';
 weights = (v_m.'*U_SI*(SSI^-1)*U_SI')/((v_m'*U_SI*(SSI^-1)*U_SI'*v_m)^-1);
 
 rawDataAdj(:,1) = rawData(:,1)*weights(1);
