@@ -25,9 +25,6 @@ npc = sum(~isnan(estimated_angle));
 estimated_angle = [estimated_angle(ang_num) estimated_angle];
 estimated_angle(ang_num + 1) = [];
 switch bf
-    case 'Without'
-        rawDataAdj = rawData;
-        weights = ones(1,4);
     case 'Steering'
         [rawDataAdj, weights] = steerBf(rawData, estimated_angle(1), lambda);
     case 'MVDR'
@@ -44,8 +41,7 @@ switch bf
         rawDataAdj = rawData;
         weights = ones(1,4);        
 end
-% weights = weights/(max(weights));
-% weights = conj(weights);
+
 if c1
     weights = conj(weights);
 end
@@ -68,7 +64,6 @@ if (cutter)
             n = 2;
         else
             n = 1;
-%             return
         end
 
         cut_b = fb_lines(n)-off;

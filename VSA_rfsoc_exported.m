@@ -132,8 +132,6 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             addpath(genpath([pwd '\Functions']))
             app.c = physconst('LightSpeed'); % propagation velocity [m/s]
             warning('off','all')
-            lambda = app.c/app.fc;
-
             while true
                 if app.reset_req
                     app.ResetButton.Text = 'Processing...';
@@ -156,27 +154,10 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                 catch
                     continue
                 end
-
-                %% Bugs
-                %                 app.weights = conj(app.weights);
-                %                 switch app.bf
-                %                     case 'Steering'
-                %                         app.weights = app.weights;
-                %                     case 'MVDR'
-                %                         if app.magic
-                %                             app.weights = conj(app.weights);
-                %                         else
-                %                             app.weights = app.weights;
-                %                         end
-                %                     case 'PC'
-                %                         app.weights = app.weights;
-                %                     otherwise
-                %                         app.weights = conj(app.weights);
-                %                 end
                 %% Pattern calc
+                app.weights = conj(app.weights);
                 p_manual = beamPatternCalc(app.weights, app.fc, app.scan_axis, app.num_elements);
                 %% Avg
-
                 [p_manual_mean_db, p_manual_mean]  = avgData(p_manual, p_manual_mean);
                 [yspec_db, yspec_mean]  = avgData(yspec, yspec_mean);
                 %% Plot
@@ -187,8 +168,6 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                 estimated_angle = [estimated_angle NaN NaN]; % To prevent errors in xlines indexing
                 am = guiXline(am, app.UIAxes, main, estimated_angle(1));
                 am2 = guiXline(am2, app.UIAxes2, main, estimated_angle(1));
-
-
                 if sum(~isnan(estimated_angle)) > 1
                     bs = guiXline(bs, app.UIAxes, sub, estimated_angle(2));
                     bs2 = guiXline(bs2, app.UIAxes2, sub, estimated_angle(2));
@@ -209,7 +188,6 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                         count = count + 1;
                     end
                 end
-
             end
         end
 

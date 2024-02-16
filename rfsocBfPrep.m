@@ -62,4 +62,4 @@ app.UIAxes.XLabel.String  = ('\Theta^o');
 app.UIAxes.YLabel.String  = ('Power_{MVDR}');
 app.UIAxes.FontSize = 16;
 app.UIAxes2.FontSize = 16;
-app.UIAxes2.YLim = [-60 0];
+app.UIAxes2.YLim = [-30 0];
