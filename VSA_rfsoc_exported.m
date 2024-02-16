@@ -138,6 +138,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                     app.ResetButton.BackgroundColor = 'r';
                     drawnow %!!!!
                     [data_v, estimator, tcp_client, plot_handle, app.ula] = rfsocBfPrep(app, app.dataChan, app.setupFile, app.num, app.scan_res, app.fc, app.fsRfsoc, app.doa);
+                    app.scan_axis = -90:app.scan_res:90;
                     p_manual_mean = zeros(length(app.scan_axis), app.avg_factor);
                     yspec_mean = zeros(length(app.scan_axis), app.avg_factor);
                     clf(app.UIAxes);
@@ -226,12 +227,6 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         % Value changed function: CutterCheckBox
         function CutterCheckBoxValueChanged(app, event)
             app.cutter = app.CutterCheckBox.Value;
-        end
-
-        % Callback function
-        function DOAresolutionEditFieldValueChanged(app, event)
-            app.scan_res = app.DOAresolutionEditField.Value;
-            app.reset_req = 1;
         end
 
         % Value changed function: BFtypeListBox
@@ -328,6 +323,12 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         function UpdRateEditFieldValueChanged(app, event)
             app.updrate = app.UpdRateEditField.Value;
 
+        end
+
+        % Value changed function: DOAresolutionEditField
+        function DOAresolutionEditFieldValueChanged(app, event)
+            app.scan_res = app.DOAresolutionEditField.Value;
+            app.reset_req = 1;
         end
 
         % Changes arrangement of the app based on UIFigure width
@@ -455,6 +456,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             % Create DOAresolutionEditField
             app.DOAresolutionEditField = uieditfield(app.MainTab, 'numeric');
             app.DOAresolutionEditField.Limits = [0.0001 Inf];
+            app.DOAresolutionEditField.ValueChangedFcn = createCallbackFcn(app, @DOAresolutionEditFieldValueChanged, true);
             app.DOAresolutionEditField.Position = [77 182 77 22];
             app.DOAresolutionEditField.Value = 1;
 
