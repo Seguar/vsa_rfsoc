@@ -50,16 +50,15 @@ clf(app.UIAxes);
 yspec = zeros(1, length(scan_axis));
 plot_handle = plot(app.UIAxes, scan_axis, yspec);
 
-% p1 = pattern(ula,fc,scan_axis,0,'PropagationSpeed',c,'CoordinateSystem','rectangular','Type','directivity', 'Weights',double(ones(4,1)));
-% patt_handle = plot(app.UIAxes2 ,app.scan_axis, p1, LineWidth=1.5);
-
 app.UIAxes.XLim = [min_ang max_ang];
 app.UIAxes2.XLim = [min_ang max_ang];
 app.UIAxes.YLim = [-20 0];
+app.UIAxes2.YLim = [-30 0];
 app.UIAxes.LineWidth = 1.5;
 app.UIAxes2.LineWidth = 1.5;
 app.UIAxes.XLabel.String  = ('\Theta^o');
-app.UIAxes.YLabel.String  = ('Power_{MVDR}');
+app.UIAxes.YLabel.String  = ('Power');
+app.UIAxes2.XLabel.String  = ('\Theta^o');
+app.UIAxes2.YLabel.String  = ('Power');
 app.UIAxes.FontSize = 16;
 app.UIAxes2.FontSize = 16;
-app.UIAxes2.YLim = [-30 0];

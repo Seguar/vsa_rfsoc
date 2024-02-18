@@ -22,6 +22,8 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         BFtypeListBox                  matlab.ui.control.ListBox
         BFtypeListBoxLabel             matlab.ui.control.Label
         DebugTab                       matlab.ui.container.Tab
+        MagicEditField                 matlab.ui.control.NumericEditField
+        MagicEditFieldLabel            matlab.ui.control.Label
         UpdRateEditField               matlab.ui.control.NumericEditField
         UpdRateEditFieldLabel          matlab.ui.control.Label
         DebugCheckBox                  matlab.ui.control.CheckBox
@@ -131,7 +133,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             addpath(genpath([pwd '\Packet-Creator-VHT']))
             addpath(genpath([pwd '\Functions']))
             app.c = physconst('LightSpeed'); % propagation velocity [m/s]
-            warning('off','all')
+%             warning('off','all')
             while true
                 if app.reset_req
                     app.ResetButton.Text = 'Processing...';
@@ -162,7 +164,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                 [p_manual_mean_db, p_manual_mean]  = avgData(p_manual, p_manual_mean);
                 [yspec_db, yspec_mean]  = avgData(yspec, yspec_mean);
                 %% Plot
-                app.UIAxes.Title.String = (['Direction of arrival', '   ||   Estimated angle = ' num2str(estimated_angle)]);
+                app.UIAxes.Title.String = (['Direction of arrival' newline  'Estimated angle = ' num2str(estimated_angle)]);
                 set(plot_handle, 'YData', yspec_db, 'LineWidth', 1.5);
                 plot(app.UIAxes2, app.scan_axis,p_manual_mean_db, 'LineWidth', 1.5);
                 % Xlines
@@ -331,6 +333,12 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.reset_req = 1;
         end
 
+        % Value changed function: MagicEditField
+        function MagicEditFieldValueChanged2(app, event)
+            app.magic = app.MagicEditField.Value;
+            
+        end
+
         % Changes arrangement of the app based on UIFigure width
         function updateAppLayout(app, event)
             currentFigureWidth = app.RFSoCBeamformerUIFigure.Position(3);
@@ -412,7 +420,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
 
             % Create BFtypeListBox
             app.BFtypeListBox = uilistbox(app.MainTab);
-            app.BFtypeListBox.Items = {'Without', 'Steering', 'MVDR', 'DMR', 'PC', 'LCMV'};
+            app.BFtypeListBox.Items = {'Without', 'Steering', 'MVDR', 'DMR', 'PC', 'LCMV', 'RVL'};
             app.BFtypeListBox.ValueChangedFcn = createCallbackFcn(app, @BFtypeListBoxValueChanged, true);
             app.BFtypeListBox.Position = [77 363 74 111];
             app.BFtypeListBox.Value = 'Steering';
@@ -553,6 +561,18 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.UpdRateEditField.Position = [72 138 77 22];
             app.UpdRateEditField.Value = 10;
 
+            % Create MagicEditFieldLabel
+            app.MagicEditFieldLabel = uilabel(app.DebugTab);
+            app.MagicEditFieldLabel.HorizontalAlignment = 'right';
+            app.MagicEditFieldLabel.Position = [1 219 55 22];
+            app.MagicEditFieldLabel.Text = 'Magic';
+
+            % Create MagicEditField
+            app.MagicEditField = uieditfield(app.DebugTab, 'numeric');
+            app.MagicEditField.ValueChangedFcn = createCallbackFcn(app, @MagicEditFieldValueChanged2, true);
+            app.MagicEditField.Position = [71 219 78 22];
+            app.MagicEditField.Value = 0.1;
+
             % Create SystemTab
             app.SystemTab = uitab(app.TabGroup);
             app.SystemTab.Title = 'System';
@@ -646,9 +666,11 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
 
             % Create UIAxes2
             app.UIAxes2 = uiaxes(app.GridLayout2);
+            title(app.UIAxes2, 'Beam Pattern')
             xlabel(app.UIAxes2, 'X')
             ylabel(app.UIAxes2, 'Y')
             zlabel(app.UIAxes2, 'Z')
+            app.UIAxes2.FontWeight = 'bold';
             app.UIAxes2.XGrid = 'on';
             app.UIAxes2.XMinorGrid = 'on';
             app.UIAxes2.YGrid = 'on';
