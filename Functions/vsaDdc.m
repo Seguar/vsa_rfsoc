@@ -66,7 +66,7 @@ Mask = NET.createArray('Agilent.SA.Vsa.UserInputChangeBits', 1);
 Mask(1) = Agilent.SA.Vsa.UserInputChangeBits.IsRequiredSamplesPositive;
 userInput.UserInputChange.Mask = Mask(1);
 % userInput.changebits
-userInput.Setup.SetFrequencyParameters(true, fc_v, sr_v, bw_v / 1.28);
+userInput.Setup.SetFrequencyParameters(true, fc_v, sr_v, bw_v);
 
 userInput.Setup.CaptureSizeMaximum = dataLen;
 % userInput.Setup.IsContinuousCapable = false;
