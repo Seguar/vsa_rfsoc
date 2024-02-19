@@ -87,15 +87,11 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         num = 3;
         %% Flags
         reset_req = 1;
-
-        %         scan_axis = -90:1:90;
-
     end
     properties (Access = public)
-        %         scan_axis = -90:scan_res:90;
         scan_axis = -90:1:90;
         %% Hardcode (temporally)
-        setupFile = 'ofdm_iq_20_cal.setx';
+        setupFile = '..\settings\ofdm_iq_20_cal.setx';
         num_elements = 4;
     end
 
@@ -133,7 +129,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             addpath(genpath([pwd '\Packet-Creator-VHT']))
             addpath(genpath([pwd '\Functions']))
             app.c = physconst('LightSpeed'); % propagation velocity [m/s]
-%             warning('off','all')
+            %             warning('off','all')
             while true
                 if app.reset_req
                     app.ResetButton.Text = 'Processing...';
@@ -336,7 +332,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         % Value changed function: MagicEditField
         function MagicEditFieldValueChanged2(app, event)
             app.magic = app.MagicEditField.Value;
-            
+
         end
 
         % Changes arrangement of the app based on UIFigure width

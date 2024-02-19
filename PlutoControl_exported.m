@@ -28,18 +28,18 @@ classdef PlutoControl_exported < matlab.apps.AppBase
         fs = 60e6;
         gain = 0;
         state = 'off';
-        file;
-        path;
         gap = 2000;
-        updReq = 0;
+        path = '..\Signals\';
+        file = 'ofdm_60mhz.mat'
+        Y;
     end
-    
+
     properties (Access = public)
         tx % Description
     end
-    
+
     methods (Access = private)
-        
+
         function updatePluto(app)
             app.tx = sdrtx('Pluto');
             app.tx.ShowAdvancedProperties = true;
@@ -57,17 +57,19 @@ classdef PlutoControl_exported < matlab.apps.AppBase
                     sw.ComplexOutput = true;
                     sw.SampleRate = app.fs;
                     sw.SamplesPerFrame = 50000;
-                    txWaveform = sw();                    
+                    txWaveform = sw();
                 case 'OFDM'
                     [packet]= Signal_Gen(app.fs);
                     sig_org = [packet(:,1)+1j*packet(:,2) ; zeros(1,app.gap)'];
-                    sig_org   = sig_org(1:floor(length(sig_org)/24)*24);        
+                    sig_org   = sig_org(1:floor(length(sig_org)/24)*24);
                     txWaveform    = sig_org/max(abs(sig_org));
                 case 'Custom'
-                    
+                    if isempty(app.Y)
+                        disp('No proper signal is selected')
+                    end
+                    txWaveform = app.Y.';
                 case 'Off'
                     release(app.tx)
-%                     delete(app.tx)
             end
             if not(isempty(app.tx))
                 transmitRepeat(app.tx,txWaveform);
@@ -82,65 +84,51 @@ classdef PlutoControl_exported < matlab.apps.AppBase
         % Code that executes after component creation
         function startupFcn(app)
             addpath(genpath([pwd '\Packet-Creator-VHT']))
-%             while true
-%                 if app.updReq
-%                     updatePluto(app);
-%                     app.updReq = 0;
-%                 end
-%             drawnow
-%             end
+            load([app.path app.file])
+            app.Y = Y;
         end
 
         % Value changed function: FcMhzSpinner
         function FcMhzSpinnerValueChanged(app, event)
             app.fc = app.FcMhzSpinner.Value*1e6;
-            app.updReq = 1;
             updatePluto(app)
         end
 
         % Button pushed function: CustomfileButton
         function CustomfileButtonPushed(app, event)
             [app.file, app.path] = uigetfile('*.mat');  %open a mat file
+            load([app.path app.file])
+            app.Y = Y;
             updatePluto(app)
         end
 
         % Value changed function: FsMhzSpinner
         function FsMhzSpinnerValueChanged(app, event)
             app.fs = app.FsMhzSpinner.Value*1e6;
-            app.updReq = 1;
             updatePluto(app)
         end
 
         % Value changed function: GainKnob
         function GainKnobValueChanged(app, event)
             app.gain = app.GainKnob.Value;
-            app.updReq = 1;
             updatePluto(app)
         end
 
         % Selection changed function: SignalButtonGroup
         function SignalButtonGroupSelectionChanged(app, event)
             app.state = app.SignalButtonGroup.SelectedObject.Text;
-            app.updReq = 1;
-            updatePluto(app)
-        end
-
-        % Callback function
-        function UpdateButtonPushed(app, event)
             updatePluto(app)
         end
 
         % Value changed function: FcCWEditField
         function FcCWEditFieldValueChanged(app, event)
             app.cwFc = app.FcCWEditField.Value;
-            app.updReq = 1;
             updatePluto(app)
         end
 
         % Value changed function: GapEditField
         function GapEditFieldValueChanged(app, event)
             app.gap = app.GapEditField.Value;
-            app.updReq = 1;
             updatePluto(app)
         end
     end
