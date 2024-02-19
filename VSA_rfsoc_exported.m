@@ -38,6 +38,8 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         CutoffsetEditFieldLabel        matlab.ui.control.Label
         GetPatternButton               matlab.ui.control.StateButton
         SystemTab                      matlab.ui.container.Tab
+        ScanBWEditField                matlab.ui.control.NumericEditField
+        ScanBWEditFieldLabel           matlab.ui.control.Label
         LoadVSAsetupButton             matlab.ui.control.Button
         SigBWEditField                 matlab.ui.control.NumericEditField
         SigBWEditFieldLabel            matlab.ui.control.Label
@@ -90,6 +92,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         fsRfsoc = 125e6;
         bw = 20e6;
         num = 3;
+        scan_bw = 180;
         %% Flags
         reset_req = 1;
         estimator;
@@ -120,7 +123,6 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.RFSoCBeamformerUIFigure.Visible = 'off';
             movegui(app.RFSoCBeamformerUIFigure,"east")
             app.RFSoCBeamformerUIFigure.Visible = 'on';
-            app.num_elements = 4;
             main.line = '-b';
             main.txt = 'Main';
             sub.line = '--c';
@@ -136,14 +138,14 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             addpath(genpath([pwd '\Packet-Creator-VHT']))
             addpath(genpath([pwd '\Functions']))
             app.c = physconst('LightSpeed'); % propagation velocity [m/s]
-            warning('off','all')
+%             warning('off','all')
             while true
                 if app.reset_req
                     app.ResetButton.Text = 'Processing...';
                     app.ResetButton.BackgroundColor = 'r';
-%                     drawnow limitrate%!!!!
-                    [data_v, tcp_client, plot_handle, app.ula] = rfsocBfPrep(app, app.dataChan, app.setupFile, app.scan_res, app.fc, app.fsRfsoc);
-                    app.scan_axis = -90:app.scan_res:90;
+                    drawnow%!!!!
+                    app.scan_axis = -app.scan_bw/2:app.scan_res:app.scan_bw/2;
+                    [data_v, tcp_client, plot_handle, app.ula] = rfsocBfPrep(app, app.dataChan, app.setupFile, app.fc, app.fsRfsoc, app.c, app.scan_axis, app.num_elements);                    
                     p_manual_mean = zeros(length(app.scan_axis), app.avg_factor);
                     yspec_mean = zeros(length(app.scan_axis), app.avg_factor);
                     clf(app.UIAxes);
@@ -359,6 +361,12 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         function LoadVSAsetupButtonPushed(app, event)
             [file, path] = uigetfile('*.setx');
             app.setupFile = [path file];
+            app.reset_req = 1;
+        end
+
+        % Value changed function: ScanBWEditField
+        function ScanBWEditFieldValueChanged(app, event)
+            app.scan_bw = app.ScanBWEditField.Value;
             app.reset_req = 1;
         end
 
@@ -666,6 +674,20 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.LoadVSAsetupButton.ButtonPushedFcn = createCallbackFcn(app, @LoadVSAsetupButtonPushed, true);
             app.LoadVSAsetupButton.Position = [33 211 102 22];
             app.LoadVSAsetupButton.Text = 'Load VSA setup';
+
+            % Create ScanBWEditFieldLabel
+            app.ScanBWEditFieldLabel = uilabel(app.SystemTab);
+            app.ScanBWEditFieldLabel.HorizontalAlignment = 'right';
+            app.ScanBWEditFieldLabel.Position = [27 158 33 28];
+            app.ScanBWEditFieldLabel.Text = {'Scan'; 'BW'};
+
+            % Create ScanBWEditField
+            app.ScanBWEditField = uieditfield(app.SystemTab, 'numeric');
+            app.ScanBWEditField.Limits = [2 360];
+            app.ScanBWEditField.RoundFractionalValues = 'on';
+            app.ScanBWEditField.ValueChangedFcn = createCallbackFcn(app, @ScanBWEditFieldValueChanged, true);
+            app.ScanBWEditField.Position = [75 164 100 22];
+            app.ScanBWEditField.Value = 180;
 
             % Create CutterCheckBox
             app.CutterCheckBox = uicheckbox(app.LeftPanel);
