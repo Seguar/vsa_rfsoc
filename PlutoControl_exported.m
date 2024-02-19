@@ -29,7 +29,7 @@ classdef PlutoControl_exported < matlab.apps.AppBase
         gain = 0;
         state = 'off';
         gap = 2000;
-        path = '..\Signals\';
+        path = '.\Signals\';
         file = 'ofdm_60mhz.mat'
         Y;
     end
