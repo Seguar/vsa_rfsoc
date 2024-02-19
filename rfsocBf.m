@@ -1,4 +1,5 @@
-function [yspec, estimated_angle, bfSig, weights, rawData, estimator] = rfsocBf(app, vsa, ch, bf, off, gap, cutter, ang_num, doa, data_v, tcp_client, fc, dataChan, magic, ula, num, scan_axis, c1, c2)
+function [yspec, estimated_angle, bfSig, weights, rawData, estimator] = rfsocBf(app, vsa, ch, bf, off, gap, cutter, ang_num, doa, data_v, tcp_client, fc, dataChan, magic, ula, num, scan_axis, ...
+    c1, c2, fsRfsoc, bw)
 test_z = zeros(1, gap);
 
 c = physconst('LightSpeed'); % propagation velocity [m/s]
@@ -12,7 +13,7 @@ dataLen = data_size/channels;
 %% TCP
 rawData = tcpDataRec(tcp_client, data_size, channels);
 %% Matlab MVDR DOA FUNC
-rawData = filtSig(rawData, 125e6, 20e6);
+rawData = filtSig(rawData, fsRfsoc, bw);
 %% DOA
 switch doa
     case 'MVDR'

@@ -38,6 +38,9 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         CutoffsetEditFieldLabel        matlab.ui.control.Label
         GetPatternButton               matlab.ui.control.StateButton
         SystemTab                      matlab.ui.container.Tab
+        LoadVSAsetupButton             matlab.ui.control.Button
+        SigBWEditField                 matlab.ui.control.NumericEditField
+        SigBWEditFieldLabel            matlab.ui.control.Label
         SignalsSpinner                 matlab.ui.control.Spinner
         SignalsSpinnerLabel            matlab.ui.control.Label
         RFSoCFsEditField               matlab.ui.control.NumericEditField
@@ -85,6 +88,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         %%
         fc = 5.7e9;
         fsRfsoc = 125e6;
+        bw = 20e6;
         num = 3;
         %% Flags
         reset_req = 1;
@@ -93,7 +97,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
     properties (Access = public)
         scan_axis = -90:1:90;
         %% Hardcode (temporally)
-        setupFile = '..\settings\ofdm_iq_20_cal.setx';
+        setupFile = '.\settings\ofdm_iq_20_cal.setx';
         num_elements = 4;
     end
 
@@ -112,6 +116,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
 
         % Code that executes after component creation
         function startupFcn(app)
+            pwd
             app.RFSoCBeamformerUIFigure.Visible = 'off';
             movegui(app.RFSoCBeamformerUIFigure,"east")
             app.RFSoCBeamformerUIFigure.Visible = 'on';
@@ -131,12 +136,12 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             addpath(genpath([pwd '\Packet-Creator-VHT']))
             addpath(genpath([pwd '\Functions']))
             app.c = physconst('LightSpeed'); % propagation velocity [m/s]
-            %             warning('off','all')
+            warning('off','all')
             while true
                 if app.reset_req
                     app.ResetButton.Text = 'Processing...';
                     app.ResetButton.BackgroundColor = 'r';
-                    drawnow %!!!!
+%                     drawnow limitrate%!!!!
                     [data_v, tcp_client, plot_handle, app.ula] = rfsocBfPrep(app, app.dataChan, app.setupFile, app.scan_res, app.fc, app.fsRfsoc);
                     app.scan_axis = -90:app.scan_res:90;
                     p_manual_mean = zeros(length(app.scan_axis), app.avg_factor);
@@ -148,7 +153,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                 end
                 try
                     [yspec, estimated_angle, ~, app.weights, ~, app.estimator] = rfsocBf(app, app.vsa, app.ch, app.bf, app.off, app.gap, app.cutter, app.ang_num, app.doa, data_v, tcp_client, app.fc, app.dataChan, app.magic, app.ula, app.num, app.scan_axis, ...
-                        app.c1, app.c2);
+                        app.c1, app.c2, app.fsRfsoc, app.bw);
                     if isnan(app.weights)
                         continue
                     end
@@ -344,6 +349,19 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             
         end
 
+        % Value changed function: SigBWEditField
+        function SigBWEditFieldValueChanged(app, event)
+            app.bw = app.SigBWEditField.Value*1e6;
+            
+        end
+
+        % Button pushed function: LoadVSAsetupButton
+        function LoadVSAsetupButtonPushed(app, event)
+            [file, path] = uigetfile('*.setx');
+            app.setupFile = [path file];
+            app.reset_req = 1;
+        end
+
         % Changes arrangement of the app based on UIFigure width
         function updateAppLayout(app, event)
             currentFigureWidth = app.RFSoCBeamformerUIFigure.Position(3);
@@ -356,7 +374,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             else
                 % Change to a 1x2 grid
                 app.GridLayout.RowHeight = {'1x'};
-                app.GridLayout.ColumnWidth = {163, '1x'};
+                app.GridLayout.ColumnWidth = {234, '1x'};
                 app.RightPanel.Layout.Row = 1;
                 app.RightPanel.Layout.Column = 2;
             end
@@ -372,14 +390,14 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             % Create RFSoCBeamformerUIFigure and hide until all components are created
             app.RFSoCBeamformerUIFigure = uifigure('Visible', 'off');
             app.RFSoCBeamformerUIFigure.AutoResizeChildren = 'off';
-            app.RFSoCBeamformerUIFigure.Position = [100 100 729 666];
+            app.RFSoCBeamformerUIFigure.Position = [100 100 800 666];
             app.RFSoCBeamformerUIFigure.Name = 'RFSoC Beamformer';
             app.RFSoCBeamformerUIFigure.SizeChangedFcn = createCallbackFcn(app, @updateAppLayout, true);
             app.RFSoCBeamformerUIFigure.Scrollable = 'on';
 
             % Create GridLayout
             app.GridLayout = uigridlayout(app.RFSoCBeamformerUIFigure);
-            app.GridLayout.ColumnWidth = {163, '1x'};
+            app.GridLayout.ColumnWidth = {234, '1x'};
             app.GridLayout.RowHeight = {'1x'};
             app.GridLayout.ColumnSpacing = 0;
             app.GridLayout.RowSpacing = 0;
@@ -394,24 +412,24 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             % Create IQtoolsButton
             app.IQtoolsButton = uibutton(app.LeftPanel, 'push');
             app.IQtoolsButton.ButtonPushedFcn = createCallbackFcn(app, @IQtoolsButtonPushed, true);
-            app.IQtoolsButton.Position = [41 41 100 22];
+            app.IQtoolsButton.Position = [112 41 100 22];
             app.IQtoolsButton.Text = 'IQtools';
 
             % Create PlutoButton
             app.PlutoButton = uibutton(app.LeftPanel, 'push');
             app.PlutoButton.ButtonPushedFcn = createCallbackFcn(app, @PlutoButtonPushed, true);
-            app.PlutoButton.Position = [41 73 100 22];
+            app.PlutoButton.Position = [112 73 100 22];
             app.PlutoButton.Text = 'Pluto';
 
             % Create ResetButton
             app.ResetButton = uibutton(app.LeftPanel, 'state');
             app.ResetButton.ValueChangedFcn = createCallbackFcn(app, @ResetButtonValueChanged, true);
             app.ResetButton.Text = 'Reset';
-            app.ResetButton.Position = [40 11 100 22];
+            app.ResetButton.Position = [111 11 100 22];
 
             % Create TabGroup
             app.TabGroup = uitabgroup(app.LeftPanel);
-            app.TabGroup.Position = [6 158 151 507];
+            app.TabGroup.Position = [9 158 219 507];
 
             % Create MainTab
             app.MainTab = uitab(app.TabGroup);
@@ -618,7 +636,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             % Create SignalsSpinnerLabel
             app.SignalsSpinnerLabel = uilabel(app.SystemTab);
             app.SignalsSpinnerLabel.HorizontalAlignment = 'right';
-            app.SignalsSpinnerLabel.Position = [15 337 45 22];
+            app.SignalsSpinnerLabel.Position = [15 269 45 22];
             app.SignalsSpinnerLabel.Text = 'Signals';
 
             % Create SignalsSpinner
@@ -626,26 +644,46 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.SignalsSpinner.Limits = [1 5];
             app.SignalsSpinner.ValueDisplayFormat = '%.0f';
             app.SignalsSpinner.ValueChangedFcn = createCallbackFcn(app, @SignalsSpinnerValueChanged, true);
-            app.SignalsSpinner.Position = [75 337 77 22];
+            app.SignalsSpinner.Position = [75 269 77 22];
             app.SignalsSpinner.Value = 3;
+
+            % Create SigBWEditFieldLabel
+            app.SigBWEditFieldLabel = uilabel(app.SystemTab);
+            app.SigBWEditFieldLabel.HorizontalAlignment = 'right';
+            app.SigBWEditFieldLabel.Position = [4 327 55 28];
+            app.SigBWEditFieldLabel.Text = {'Sig'; 'BW'};
+
+            % Create SigBWEditField
+            app.SigBWEditField = uieditfield(app.SystemTab, 'numeric');
+            app.SigBWEditField.Limits = [1 125];
+            app.SigBWEditField.ValueDisplayFormat = '%.0f';
+            app.SigBWEditField.ValueChangedFcn = createCallbackFcn(app, @SigBWEditFieldValueChanged, true);
+            app.SigBWEditField.Position = [74 333 77 22];
+            app.SigBWEditField.Value = 20;
+
+            % Create LoadVSAsetupButton
+            app.LoadVSAsetupButton = uibutton(app.SystemTab, 'push');
+            app.LoadVSAsetupButton.ButtonPushedFcn = createCallbackFcn(app, @LoadVSAsetupButtonPushed, true);
+            app.LoadVSAsetupButton.Position = [33 211 102 22];
+            app.LoadVSAsetupButton.Text = 'Load VSA setup';
 
             % Create CutterCheckBox
             app.CutterCheckBox = uicheckbox(app.LeftPanel);
             app.CutterCheckBox.ValueChangedFcn = createCallbackFcn(app, @CutterCheckBoxValueChanged, true);
             app.CutterCheckBox.Text = 'Cutter';
-            app.CutterCheckBox.Position = [67 103 55 22];
+            app.CutterCheckBox.Position = [138 103 55 22];
 
             % Create AvgSpinnerLabel
             app.AvgSpinnerLabel = uilabel(app.LeftPanel);
             app.AvgSpinnerLabel.HorizontalAlignment = 'right';
-            app.AvgSpinnerLabel.Position = [41 124 26 22];
+            app.AvgSpinnerLabel.Position = [112 124 26 22];
             app.AvgSpinnerLabel.Text = 'Avg';
 
             % Create AvgSpinner
             app.AvgSpinner = uispinner(app.LeftPanel);
             app.AvgSpinner.Limits = [1 Inf];
             app.AvgSpinner.ValueChangedFcn = createCallbackFcn(app, @AvgSpinnerValueChanged, true);
-            app.AvgSpinner.Position = [81 124 56 22];
+            app.AvgSpinner.Position = [152 124 56 22];
             app.AvgSpinner.Value = 10;
 
             % Create RightPanel
