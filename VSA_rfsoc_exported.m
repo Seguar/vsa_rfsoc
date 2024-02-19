@@ -22,6 +22,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         BFtypeListBox                  matlab.ui.control.ListBox
         BFtypeListBoxLabel             matlab.ui.control.Label
         DebugTab                       matlab.ui.container.Tab
+        GetSpectrumButton              matlab.ui.control.StateButton
         MagicEditField                 matlab.ui.control.NumericEditField
         MagicEditFieldLabel            matlab.ui.control.Label
         UpdRateEditField               matlab.ui.control.NumericEditField
@@ -87,6 +88,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         num = 3;
         %% Flags
         reset_req = 1;
+        estimator;
     end
     properties (Access = public)
         scan_axis = -90:1:90;
@@ -135,7 +137,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                     app.ResetButton.Text = 'Processing...';
                     app.ResetButton.BackgroundColor = 'r';
                     drawnow %!!!!
-                    [data_v, estimator, tcp_client, plot_handle, app.ula] = rfsocBfPrep(app, app.dataChan, app.setupFile, app.num, app.scan_res, app.fc, app.fsRfsoc, app.doa);
+                    [data_v, tcp_client, plot_handle, app.ula] = rfsocBfPrep(app, app.dataChan, app.setupFile, app.scan_res, app.fc, app.fsRfsoc);
                     app.scan_axis = -90:app.scan_res:90;
                     p_manual_mean = zeros(length(app.scan_axis), app.avg_factor);
                     yspec_mean = zeros(length(app.scan_axis), app.avg_factor);
@@ -145,12 +147,13 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                     app.ResetButton.BackgroundColor = 'g';
                 end
                 try
-                    [yspec, estimated_angle, ~, app.weights, ~] = rfsocBf(app, app.vsa, app.ch, app.bf, app.off, app.gap, app.cutter, app.ang_num, estimator, data_v, tcp_client, app.fc, app.dataChan, app.magic, app.ula, ...
+                    [yspec, estimated_angle, ~, app.weights, ~, app.estimator] = rfsocBf(app, app.vsa, app.ch, app.bf, app.off, app.gap, app.cutter, app.ang_num, app.doa, data_v, tcp_client, app.fc, app.dataChan, app.magic, app.ula, app.num, app.scan_axis, ...
                         app.c1, app.c2);
                     if isnan(app.weights)
                         continue
                     end
                 catch
+                    print("Error in rfsocBf")
                     continue
                 end
                 %% Pattern calc
@@ -160,7 +163,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                 [p_manual_mean_db, p_manual_mean]  = avgData(p_manual, p_manual_mean);
                 [yspec_db, yspec_mean]  = avgData(yspec, yspec_mean);
                 %% Plot
-                app.UIAxes.Title.String = (['Direction of arrival' newline  'Estimated angle = ' num2str(estimated_angle)]);
+                app.UIAxes.Title.String = (['Direction of arrival' newline  'Estimated angles = ' num2str(estimated_angle)]);
                 set(plot_handle, 'YData', yspec_db, 'LineWidth', 1.5);
                 plot(app.UIAxes2, app.scan_axis,p_manual_mean_db, 'LineWidth', 1.5);
                 % Xlines
@@ -308,7 +311,6 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         % Value changed function: DOAtypeListBox
         function DOAtypeListBoxValueChanged(app, event)
             app.doa = app.DOAtypeListBox.Value;
-            app.reset_req = 1;
         end
 
         % Value changed function: AvgSpinner
@@ -333,6 +335,13 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         function MagicEditFieldValueChanged2(app, event)
             app.magic = app.MagicEditField.Value;
 
+        end
+
+        % Value changed function: GetSpectrumButton
+        function GetSpectrumButtonValueChanged(app, event)
+            plotSpectrum(app.estimator)
+            uistack(gcf,'top')
+            
         end
 
         % Changes arrangement of the app based on UIFigure width
@@ -472,7 +481,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
 
             % Create DOAtypeListBox
             app.DOAtypeListBox = uilistbox(app.MainTab);
-            app.DOAtypeListBox.Items = {'MVDR', 'MUSIC', 'Beamscan', ''};
+            app.DOAtypeListBox.Items = {'MVDR', 'MUSIC', 'MUSICR', 'Beamscan', 'ESPRITE', 'ESPRITEBS', 'WSFR', 'Monopulse'};
             app.DOAtypeListBox.ValueChangedFcn = createCallbackFcn(app, @DOAtypeListBoxValueChanged, true);
             app.DOAtypeListBox.Position = [78 49 74 111];
             app.DOAtypeListBox.Value = 'MVDR';
@@ -560,14 +569,20 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             % Create MagicEditFieldLabel
             app.MagicEditFieldLabel = uilabel(app.DebugTab);
             app.MagicEditFieldLabel.HorizontalAlignment = 'right';
-            app.MagicEditFieldLabel.Position = [1 219 55 22];
+            app.MagicEditFieldLabel.Position = [3 248 55 22];
             app.MagicEditFieldLabel.Text = 'Magic';
 
             % Create MagicEditField
             app.MagicEditField = uieditfield(app.DebugTab, 'numeric');
             app.MagicEditField.ValueChangedFcn = createCallbackFcn(app, @MagicEditFieldValueChanged2, true);
-            app.MagicEditField.Position = [71 219 78 22];
+            app.MagicEditField.Position = [73 248 78 22];
             app.MagicEditField.Value = 0.1;
+
+            % Create GetSpectrumButton
+            app.GetSpectrumButton = uibutton(app.DebugTab, 'state');
+            app.GetSpectrumButton.ValueChangedFcn = createCallbackFcn(app, @GetSpectrumButtonValueChanged, true);
+            app.GetSpectrumButton.Text = 'GetSpectrum';
+            app.GetSpectrumButton.Position = [36 211 100 22];
 
             % Create SystemTab
             app.SystemTab = uitab(app.TabGroup);

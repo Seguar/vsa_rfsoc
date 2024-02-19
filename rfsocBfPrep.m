@@ -1,4 +1,4 @@
-function [data_v, estimator, tcp_client, plot_handle, ula] = rfsocBfPrep(app, dataChan, setupFile, num, scan_res, fc, fsRfsoc, doa)
+function [data_v, tcp_client, plot_handle, ula] = rfsocBfPrep(app, dataChan, setupFile, scan_res, fc, fsRfsoc)
 
 c = physconst('LightSpeed'); % propagation velocity [m/s]
 lambda = c / fc; % wavelength
@@ -25,21 +25,6 @@ raw = zeros(channels, data_size / 8);
 server_ip = 'pynq'; % Use the appropriate IP address or hostname
 server_port = 4000; % Use the same port number used in the Python server
 dataLen = data_size/channels;
-
-switch doa
-    case 'MVDR'
-        estimator = phased.MVDREstimator('SensorArray',ula,...
-            'OperatingFrequency',fc,'ScanAngles',scan_axis,...
-            'DOAOutputPort',true,'NumSignals', num);
-    case 'MUSIC'
-        estimator = phased.MUSICEstimator('SensorArray',ula,...
-            'OperatingFrequency',fc,'ScanAngles',scan_axis,...
-            'DOAOutputPort',true);
-    case 'Beamscan'
-         estimator = phased.BeamscanEstimator('SensorArray',ula,...
-            'OperatingFrequency',fc,'ScanAngles',scan_axis,...
-            'DOAOutputPort',true,'NumSignals', num);       
-end
 
 tcp_client = tcpclient(server_ip, server_port);
 curr_data_size = dataChan * 8;
