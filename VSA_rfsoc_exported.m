@@ -210,7 +210,6 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         % Callback function
         function BeamformingButtonGroupSizeChanged(app, event)
             app.position = app.BeamformingButtonGroup.Position;
-
         end
 
         % Callback function
@@ -252,19 +251,16 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         % Callback function
         function MagicEditFieldValueChanged(app, event)
             app.magic = app.MagicEditField.Value;
-
         end
 
         % Value changed function: CutoffsetEditField
         function CutoffsetEditFieldValueChanged(app, event)
             app.off = app.CutoffsetEditField.Value;
-
         end
 
         % Value changed function: DebugCheckBox
         function DebugCheckBoxValueChanged(app, event)
             app.debug = app.DebugCheckBox.Value;
-
         end
 
         % Value changed function: GetPatternButton
@@ -279,7 +275,6 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         % Value changed function: ResetButton
         function ResetButtonValueChanged(app, event)
             app.reset_req = app.ResetButton.Value;
-
         end
 
         % Button pushed function: PlutoButton
@@ -290,13 +285,11 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         % Value changed function: c1CheckBox
         function c1CheckBoxValueChanged(app, event)
             app.c1 = app.c1CheckBox.Value;
-
         end
 
         % Value changed function: c2CheckBox
         function c2CheckBoxValueChanged(app, event)
             app.c2 = app.c2CheckBox.Value;
-
         end
 
         % Value changed function: RFSoCFcEditField
@@ -331,7 +324,6 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         % Value changed function: UpdRateEditField
         function UpdRateEditFieldValueChanged(app, event)
             app.updrate = app.UpdRateEditField.Value;
-
         end
 
         % Value changed function: DOAresolutionEditField
@@ -343,20 +335,17 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         % Value changed function: MagicEditField
         function MagicEditFieldValueChanged2(app, event)
             app.magic = app.MagicEditField.Value;
-
         end
 
         % Value changed function: GetSpectrumButton
         function GetSpectrumButtonValueChanged(app, event)
             plotSpectrum(app.estimator)
-            uistack(gcf,'top')
-            
+            uistack(gcf,'top')            
         end
 
         % Value changed function: SigBWEditField
         function SigBWEditFieldValueChanged(app, event)
-            app.bw = app.SigBWEditField.Value*1e6;
-            
+            app.bw = app.SigBWEditField.Value*1e6;            
         end
 
         % Button pushed function: LoadVSAsetupButton
