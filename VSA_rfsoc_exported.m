@@ -5,11 +5,14 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         RFSoCBeamformerUIFigure        matlab.ui.Figure
         GridLayout                     matlab.ui.container.GridLayout
         LeftPanel                      matlab.ui.container.Panel
+        VSACheckBox                    matlab.ui.control.CheckBox
         AvgSpinner                     matlab.ui.control.Spinner
         AvgSpinnerLabel                matlab.ui.control.Label
         CutterCheckBox                 matlab.ui.control.CheckBox
         TabGroup                       matlab.ui.container.TabGroup
         MainTab                        matlab.ui.container.Tab
+        BFtypeListBox                  matlab.ui.control.ListBox
+        BFtypeListBoxLabel             matlab.ui.control.Label
         DOAtypeListBox                 matlab.ui.control.ListBox
         DOAtypeListBoxLabel            matlab.ui.control.Label
         DOAresolutionEditField         matlab.ui.control.NumericEditField
@@ -18,9 +21,6 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         Button_3                       matlab.ui.control.RadioButton
         Button_2                       matlab.ui.control.RadioButton
         Button                         matlab.ui.control.RadioButton
-        VSACheckBox                    matlab.ui.control.CheckBox
-        BFtypeListBox                  matlab.ui.control.ListBox
-        BFtypeListBoxLabel             matlab.ui.control.Label
         DebugTab                       matlab.ui.container.Tab
         GetSpectrumButton              matlab.ui.control.StateButton
         MagicEditField                 matlab.ui.control.NumericEditField
@@ -63,7 +63,6 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         onePanelWidth = 576;
     end
 
-
     properties (Access = private)
         Property % Description
         %% App fields
@@ -93,7 +92,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         bw = 20e6;
         num = 3;
         scan_bw = 180;
-        setupFile = '.\settings\ofdm_iq_20_cal.setx';
+        setupFile = [fileparts(mfilename('fullpath')) '\Settings\ofdm_iq_20_cal.setx'];
         %% Flags
         reset_req = 1;
         estimator;
@@ -110,7 +109,6 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
     end
 
     methods (Access = private)
-
 
     end
 
@@ -434,32 +432,12 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.MainTab = uitab(app.TabGroup);
             app.MainTab.Title = 'Main';
 
-            % Create BFtypeListBoxLabel
-            app.BFtypeListBoxLabel = uilabel(app.MainTab);
-            app.BFtypeListBoxLabel.HorizontalAlignment = 'right';
-            app.BFtypeListBoxLabel.Position = [-6 429 79 43];
-            app.BFtypeListBoxLabel.Text = {'BF'; 'type'};
-
-            % Create BFtypeListBox
-            app.BFtypeListBox = uilistbox(app.MainTab);
-            app.BFtypeListBox.Items = {'Without', 'Steering', 'MVDR', 'DMR', 'PC', 'LCMV', 'RVL'};
-            app.BFtypeListBox.ValueChangedFcn = createCallbackFcn(app, @BFtypeListBoxValueChanged, true);
-            app.BFtypeListBox.Position = [77 363 74 111];
-            app.BFtypeListBox.Value = 'Steering';
-
-            % Create VSACheckBox
-            app.VSACheckBox = uicheckbox(app.MainTab);
-            app.VSACheckBox.ValueChangedFcn = createCallbackFcn(app, @VSACheckBoxValueChanged, true);
-            app.VSACheckBox.Text = 'VSA';
-            app.VSACheckBox.Position = [83 219 46 22];
-            app.VSACheckBox.Value = true;
-
             % Create SignalpositionButtonGroup
             app.SignalpositionButtonGroup = uibuttongroup(app.MainTab);
             app.SignalpositionButtonGroup.AutoResizeChildren = 'off';
             app.SignalpositionButtonGroup.SelectionChangedFcn = createCallbackFcn(app, @SignalpositionButtonGroupSelectionChanged, true);
             app.SignalpositionButtonGroup.Title = 'Signal position';
-            app.SignalpositionButtonGroup.Position = [51 253 100 106];
+            app.SignalpositionButtonGroup.Position = [71 71 100 106];
 
             % Create Button
             app.Button = uiradiobutton(app.SignalpositionButtonGroup);
@@ -480,28 +458,41 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             % Create DOAresolutionEditField_3Label
             app.DOAresolutionEditField_3Label = uilabel(app.MainTab);
             app.DOAresolutionEditField_3Label.HorizontalAlignment = 'right';
-            app.DOAresolutionEditField_3Label.Position = [4 176 58 28];
+            app.DOAresolutionEditField_3Label.Position = [37 444 58 28];
             app.DOAresolutionEditField_3Label.Text = {'DOA'; 'resolution'};
 
             % Create DOAresolutionEditField
             app.DOAresolutionEditField = uieditfield(app.MainTab, 'numeric');
             app.DOAresolutionEditField.Limits = [0.0001 Inf];
             app.DOAresolutionEditField.ValueChangedFcn = createCallbackFcn(app, @DOAresolutionEditFieldValueChanged, true);
-            app.DOAresolutionEditField.Position = [77 182 77 22];
+            app.DOAresolutionEditField.Position = [110 450 77 22];
             app.DOAresolutionEditField.Value = 1;
 
             % Create DOAtypeListBoxLabel
             app.DOAtypeListBoxLabel = uilabel(app.MainTab);
             app.DOAtypeListBoxLabel.HorizontalAlignment = 'right';
-            app.DOAtypeListBoxLabel.Position = [-5 115 79 43];
+            app.DOAtypeListBoxLabel.Position = [44 393 79 43];
             app.DOAtypeListBoxLabel.Text = {'DOA'; 'type'};
 
             % Create DOAtypeListBox
             app.DOAtypeListBox = uilistbox(app.MainTab);
-            app.DOAtypeListBox.Items = {'MVDR', 'MUSIC', 'MUSICR', 'Beamscan', 'ESPRITE', 'ESPRITEBS', 'WSFR', 'Monopulse'};
+            app.DOAtypeListBox.Items = {'MVDR', 'MUSIC', 'MUSICR', 'Beamscan', 'ESPRITE', 'ESPRITEBS', 'WSFR'};
             app.DOAtypeListBox.ValueChangedFcn = createCallbackFcn(app, @DOAtypeListBoxValueChanged, true);
-            app.DOAtypeListBox.Position = [78 49 74 111];
+            app.DOAtypeListBox.Position = [127 327 74 111];
             app.DOAtypeListBox.Value = 'MVDR';
+
+            % Create BFtypeListBoxLabel
+            app.BFtypeListBoxLabel = uilabel(app.MainTab);
+            app.BFtypeListBoxLabel.HorizontalAlignment = 'right';
+            app.BFtypeListBoxLabel.Position = [44 263 79 43];
+            app.BFtypeListBoxLabel.Text = {'BF'; 'type'};
+
+            % Create BFtypeListBox
+            app.BFtypeListBox = uilistbox(app.MainTab);
+            app.BFtypeListBox.Items = {'Without', 'Steering', 'MVDR', 'DMR', 'PC', 'LCMV', 'RVL'};
+            app.BFtypeListBox.ValueChangedFcn = createCallbackFcn(app, @BFtypeListBoxValueChanged, true);
+            app.BFtypeListBox.Position = [127 197 74 111];
+            app.BFtypeListBox.Value = 'Steering';
 
             % Create DebugTab
             app.DebugTab = uitab(app.TabGroup);
@@ -698,6 +689,13 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.AvgSpinner.ValueChangedFcn = createCallbackFcn(app, @AvgSpinnerValueChanged, true);
             app.AvgSpinner.Position = [152 124 56 22];
             app.AvgSpinner.Value = 10;
+
+            % Create VSACheckBox
+            app.VSACheckBox = uicheckbox(app.LeftPanel);
+            app.VSACheckBox.ValueChangedFcn = createCallbackFcn(app, @VSACheckBoxValueChanged, true);
+            app.VSACheckBox.Text = 'VSA';
+            app.VSACheckBox.Position = [66 103 46 22];
+            app.VSACheckBox.Value = true;
 
             % Create RightPanel
             app.RightPanel = uipanel(app.GridLayout);
