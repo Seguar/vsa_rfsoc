@@ -95,6 +95,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         setupFile = [fileparts(mfilename('fullpath')) '\Settings\ofdm_iq_20_cal.setx'];
         %% Flags
         reset_req = 1;
+        part_reset_req = 1;
         estimator;
     end
     properties (Access = public)
@@ -110,6 +111,32 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
 
     methods (Access = private)
 
+        
+        function [data_v, tcp_client, plot_handle, p_manual_mean, yspec_mean] = resetApp(app)
+            app.ResetButton.Text = 'Reseting...';
+            app.ResetButton.BackgroundColor = 'r';
+            drawnow%!!!!
+            [p_manual_mean, yspec_mean] = partReset(app);
+            [data_v, tcp_client, plot_handle, app.ula] = rfsocBfPrep(app, app.dataChan, app.fc, app.fsRfsoc, app.c, app.scan_axis, app.num_elements);
+            vsaSetup(app.setupFile)
+            clf(app.UIAxes);
+            app.reset_req = 0;
+            app.part_reset_req = 0;
+            app.ResetButton.Text = 'Reset';
+            app.ResetButton.BackgroundColor = 'g';
+        end
+
+        function [p_manual_mean, yspec_mean] = partReset(app)
+            app.ResetButton.Text = 'Reseting...';
+            app.ResetButton.BackgroundColor = 'y';
+            drawnow%!!!!
+            app.scan_axis = -app.scan_bw/2:app.scan_res:app.scan_bw/2;
+            p_manual_mean = zeros(length(app.scan_axis), app.avg_factor);
+            yspec_mean = zeros(length(app.scan_axis), app.avg_factor);
+            app.part_reset_req = 0;
+            app.ResetButton.Text = 'Reset';
+            app.ResetButton.BackgroundColor = 'g';
+        end
     end
 
 
@@ -119,7 +146,10 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         % Code that executes after component creation
         function startupFcn(app)
             cd(fileparts(mfilename('fullpath')))
-            pwd
+            addpath(genpath([pwd '\iqtools_2023_10_24']))
+            addpath(genpath([pwd '\Packet-Creator-VHT']))
+            addpath(genpath([pwd '\Functions']))
+
             app.RFSoCBeamformerUIFigure.Visible = 'off';
             movegui(app.RFSoCBeamformerUIFigure,"east")
             app.RFSoCBeamformerUIFigure.Visible = 'on';
@@ -134,24 +164,14 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             am2 = [];
             bs2 = [];
             cs2 = [];
-            addpath(genpath([pwd '\iqtools_2023_10_24']))
-            addpath(genpath([pwd '\Packet-Creator-VHT']))
-            addpath(genpath([pwd '\Functions']))
             app.c = physconst('LightSpeed'); % propagation velocity [m/s]
+
 %             warning('off','all')
             while true
-                if app.reset_req
-                    app.ResetButton.Text = 'Processing...';
-                    app.ResetButton.BackgroundColor = 'r';
-                    drawnow%!!!!
-                    app.scan_axis = -app.scan_bw/2:app.scan_res:app.scan_bw/2;
-                    [data_v, tcp_client, plot_handle, app.ula] = rfsocBfPrep(app, app.dataChan, app.setupFile, app.fc, app.fsRfsoc, app.c, app.scan_axis, app.num_elements);                    
-                    p_manual_mean = zeros(length(app.scan_axis), app.avg_factor);
-                    yspec_mean = zeros(length(app.scan_axis), app.avg_factor);
-                    clf(app.UIAxes);
-                    app.reset_req = 0;
-                    app.ResetButton.Text = 'Reset';
-                    app.ResetButton.BackgroundColor = 'g';
+                if app.reset_req                    
+                    [data_v, tcp_client, plot_handle, p_manual_mean, yspec_mean] = resetApp(app);
+                elseif app.part_reset_req                    
+                    [p_manual_mean, yspec_mean] = partReset(app);
                 end
                 try
                     [yspec, estimated_angle, ~, app.weights, ~, app.estimator] = rfsocBf(app, app.vsa, app.ch, app.bf, app.off, app.gap, app.cutter, app.ang_num, app.doa, data_v, tcp_client, app.fc, app.dataChan, app.magic, app.ula, app.num, app.scan_axis, ...
@@ -305,7 +325,6 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         % Value changed function: SignalsSpinner
         function SignalsSpinnerValueChanged(app, event)
             app.num = app.SignalsSpinner.Value;
-            app.reset_req = 1;
         end
 
         % Value changed function: DOAtypeListBox
@@ -316,7 +335,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         % Value changed function: AvgSpinner
         function AvgSpinnerValueChanged(app, event)
             app.avg_factor = app.AvgSpinner.Value;
-            app.reset_req = 1;
+            app.part_reset_req = 1;
         end
 
         % Value changed function: UpdRateEditField
@@ -327,7 +346,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         % Value changed function: DOAresolutionEditField
         function DOAresolutionEditFieldValueChanged(app, event)
             app.scan_res = app.DOAresolutionEditField.Value;
-            app.reset_req = 1;
+            app.part_reset_req = 1;
         end
 
         % Value changed function: MagicEditField
@@ -356,7 +375,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         % Value changed function: ScanBWEditField
         function ScanBWEditFieldValueChanged(app, event)
             app.scan_bw = app.ScanBWEditField.Value;
-            app.reset_req = 1;
+            app.part_reset_req = 1;
         end
 
         % Changes arrangement of the app based on UIFigure width

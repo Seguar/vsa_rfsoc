@@ -1,4 +1,4 @@
-function [data_v, tcp_client, plot_handle, ula] = rfsocBfPrep(app, dataChan, setupFile, fc, fsRfsoc, c, scan_axis, num_elements)
+function [data_v, tcp_client, plot_handle, ula] = rfsocBfPrep(app, dataChan, fc, fsRfsoc, c, scan_axis, num_elements)
 lambda = c / fc; % wavelength
 d = lambda/2; % spacsing antenna elemnts
 ula = phased.ULA('NumElements',num_elements,'ElementSpacing',d);
@@ -7,7 +7,7 @@ max_ang = scan_axis(end);
 fc_v = 0;
 sr_v = fsRfsoc;
 bw_v = fsRfsoc;
-[data_v] = vsaDdc(fc_v, sr_v, bw_v, dataChan, 1, setupFile);
+[data_v] = vsaDdc(fc_v, sr_v, bw_v, dataChan, 1);
 
 %% TCP prep
 % Define the server IP and port (should match the server settings)

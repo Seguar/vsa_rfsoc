@@ -1,4 +1,4 @@
-function [data_v] = vsaDdc(fc_v, sr_v, bw_v, dataLen, channelCount, setupFile)
+function [data_v] = vsaDdc(fc_v, sr_v, bw_v, dataLen, channelCount)
 %% 1. Connect to VSA
 asmPath = 'C:\Program Files\Keysight\89600 Software 2024\89600 VSA Software\Examples\DotNET\Interfaces\';
 addpath(asmPath)
@@ -72,15 +72,7 @@ userInput.Setup.CaptureSizeMaximum = dataLen;
 % userInput.Setup.IsContinuousCapable = false;
 userInput.Setup.IsContinuousCapable = true;
 userInput.Setup.ApplyChanges();
-vsaApp.Title = ['Measurement Demo fc ' num2str(fc_v/1e6) ];
 vsaApp.Measurements.SelectedItem.IsContinuous = false;
 vsaApp.Measurements.SelectedItem.Restart();
 samples = userInput.Data.RequiredSamples;
 changed = userInput.UserInputChange.Value;
-if not(isempty(instrfind))
-    delete(instrfind)
-end
-format long g
-pcvsa = visa('keysight', 'TCPIP0::localhost::hislip_vsa0::INSTR');
-fopen(pcvsa)
-fprintf(pcvsa, sprintf(':MMEMory:LOAD:SETup "%s"', setupFile));
