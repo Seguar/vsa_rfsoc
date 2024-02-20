@@ -26,30 +26,30 @@ switch doa
             'DOAOutputPort',true);
     case 'MUSICR'
         estimator = phased.RootMUSICEstimator('SensorArray',ula,...
-            'OperatingFrequency',fc,'ScanAngles',scan_axis,...
-            'DOAOutputPort',true,'NumSignals', num);
+            'OperatingFrequency',fc);
     case 'Beamscan'
         estimator = phased.BeamscanEstimator('SensorArray',ula,...
             'OperatingFrequency',fc,'ScanAngles',scan_axis,...
             'DOAOutputPort',true,'NumSignals', num);
     case 'ESPRITE'
         estimator = phased.ESPRITEstimator('SensorArray',ula,...
-            'OperatingFrequency',fc,'ScanAngles',scan_axis,...
-            'DOAOutputPort',true,'NumSignals', num);
+            'OperatingFrequency',fc);
     case 'ESPRITEBS'
         estimator = phased.BeamspaceESPRITEstimator('SensorArray',ula,...
-            'OperatingFrequency',fc,'ScanAngles',scan_axis,...
-            'DOAOutputPort',true,'NumSignals', num);
+            'OperatingFrequency',fc);
     case 'WSFR'
         estimator = phased.RootWSFEstimator('SensorArray',ula,...
-            'OperatingFrequency',fc,'ScanAngles',scan_axis,...
-            'DOAOutputPort',true,'NumSignals', num);
-    case 'Monopulse'
-        estimator = phased.SumDifferenceMonopulseTracker('SensorArray',ula,...
-            'OperatingFrequency',fc,'ScanAngles',scan_axis,...
-            'DOAOutputPort',true,'NumSignals', num);
+            'OperatingFrequency',fc);
+        %     case 'Monopulse'
+        %         estimator = phased.SumDifferenceMonopulseTracker('SensorArray',ula,...
+        %             'OperatingFrequency',fc);
 end
-[yspec, estimated_angle] = estimator(rawData'*rawData);
+try
+    [yspec, estimated_angle] = estimator(rawData'*rawData);
+catch
+    estimated_angle = estimator(rawData'*rawData);
+    yspec = zeros(size(scan_axis));
+end
 %% Angles
 
 if ch>4
@@ -78,7 +78,7 @@ switch bf
         weights = conj(weights);
     otherwise
         rawDataAdj = rawData;
-        weights = ones(1,4);        
+        weights = ones(1,4);
 end
 
 if c1
@@ -121,7 +121,7 @@ if (cutter)
             cut_e = dataLen;
         end
         cutInds = cut_b:cut_e;
-%         cutInds = fb_lines(1):fe_lines(end);
+        %         cutInds = fb_lines(1):fe_lines(end);
     end
 else cutInds = 1:dataChan;
 end
@@ -133,6 +133,5 @@ if (vsa)
     buff = zeros(size(rawSum));
     buff(cutInds) = bfSig;
     vsaSendData(buff, data_v)
-%     vsaSendData(bfSig, data_v)
+    %     vsaSendData(bfSig, data_v)
 end
-
