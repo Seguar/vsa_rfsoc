@@ -28,10 +28,11 @@ classdef PlutoControl_exported < matlab.apps.AppBase
         fs = 60e6;
         gain = 0;
         state = 'off';
-        gap = 2000;
-        path = '.\Signals\';
+        gap = 2000;        
         file = 'ofdm_60mhz.mat'
         Y;
+        absPath = fileparts(mfilename('fullpath')); % absolute path to the folder containing the mlapp file
+        path = [fileparts(mfilename('fullpath')) '.\Signals\'];
     end
 
     properties (Access = public)
@@ -67,9 +68,12 @@ classdef PlutoControl_exported < matlab.apps.AppBase
                     if isempty(app.Y)
                         disp('No proper signal is selected')
                     end
-                    txWaveform = app.Y.';
+                    txWaveform = app.Y;
                 case 'Off'
                     release(app.tx)
+            end
+            if (size(txWaveform,1) < size(txWaveform,2))
+                txWaveform = txWaveform.';
             end
             if not(isempty(app.tx))
                 transmitRepeat(app.tx,txWaveform);

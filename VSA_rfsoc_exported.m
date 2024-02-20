@@ -87,12 +87,13 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         ula
         weights
         c
-        %%
+        %% System
         fc = 5.7e9;
         fsRfsoc = 125e6;
         bw = 20e6;
         num = 3;
         scan_bw = 180;
+        setupFile = '.\settings\ofdm_iq_20_cal.setx';
         %% Flags
         reset_req = 1;
         estimator;
@@ -100,7 +101,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
     properties (Access = public)
         scan_axis = -90:1:90;
         %% Hardcode (temporally)
-        setupFile = '.\settings\ofdm_iq_20_cal.setx';
+        
         num_elements = 4;
     end
 
@@ -119,6 +120,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
 
         % Code that executes after component creation
         function startupFcn(app)
+            cd(fileparts(mfilename('fullpath')))
             pwd
             app.RFSoCBeamformerUIFigure.Visible = 'off';
             movegui(app.RFSoCBeamformerUIFigure,"east")
