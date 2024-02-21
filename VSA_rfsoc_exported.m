@@ -17,14 +17,16 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         DOAtypeListBoxLabel            matlab.ui.control.Label
         DOAresolutionEditField         matlab.ui.control.NumericEditField
         DOAresolutionEditField_3Label  matlab.ui.control.Label
-        SignalpositionButtonGroup      matlab.ui.container.ButtonGroup
+        SignalpriorityButtonGroup      matlab.ui.container.ButtonGroup
         Button_3                       matlab.ui.control.RadioButton
         Button_2                       matlab.ui.control.RadioButton
         Button                         matlab.ui.control.RadioButton
         DebugTab                       matlab.ui.container.Tab
+        BWoffsetEditField              matlab.ui.control.NumericEditField
+        BWoffsetEditFieldLabel         matlab.ui.control.Label
         GetSpectrumButton              matlab.ui.control.StateButton
-        MagicEditField                 matlab.ui.control.NumericEditField
-        MagicEditFieldLabel            matlab.ui.control.Label
+        DiagonalFactorEditField        matlab.ui.control.NumericEditField
+        DiagonalFactorEditFieldLabel   matlab.ui.control.Label
         UpdRateEditField               matlab.ui.control.NumericEditField
         UpdRateEditFieldLabel          matlab.ui.control.Label
         DebugCheckBox                  matlab.ui.control.CheckBox
@@ -74,7 +76,10 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         off = 500;
         gap = 0;
         ang_num = 1;
-        magic = 0.1;
+
+        diag = 0.1;
+        bwOff = 0.1;
+
         dataChan = 2^14;
         scan_res = 1;
         debug = 0;
@@ -166,7 +171,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             cs2 = [];
             app.c = physconst('LightSpeed'); % propagation velocity [m/s]
 
-%             warning('off','all')
+            warning('off','all')
             while true
                 if app.reset_req                    
                     [data_v, tcp_client, plot_handle, p_manual_mean, yspec_mean] = resetApp(app);
@@ -174,7 +179,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                     [p_manual_mean, yspec_mean] = partReset(app);
                 end
                 try
-                    [yspec, estimated_angle, ~, app.weights, ~, app.estimator] = rfsocBf(app, app.vsa, app.ch, app.bf, app.off, app.gap, app.cutter, app.ang_num, app.doa, data_v, tcp_client, app.fc, app.dataChan, app.magic, app.ula, app.num, app.scan_axis, ...
+                    [yspec, estimated_angle, ~, app.weights, ~, app.estimator] = rfsocBf(app, app.vsa, app.ch, app.bf, app.off, app.gap, app.cutter, app.ang_num, app.doa, data_v, tcp_client, app.fc, app.dataChan, app.diag, app.bwOff, app.ula, app.num, app.scan_axis, ...
                         app.c1, app.c2, app.fsRfsoc, app.bw);
                     if isnan(app.weights)
                         continue
@@ -261,14 +266,14 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.bf = app.BFtypeListBox.Value;
         end
 
-        % Selection changed function: SignalpositionButtonGroup
-        function SignalpositionButtonGroupSelectionChanged(app, event)
-            app.ang_num = str2double(app.SignalpositionButtonGroup.SelectedObject.Text);
+        % Selection changed function: SignalpriorityButtonGroup
+        function SignalpriorityButtonGroupSelectionChanged(app, event)
+            app.ang_num = str2double(app.SignalpriorityButtonGroup.SelectedObject.Text);
         end
 
         % Callback function
         function MagicEditFieldValueChanged(app, event)
-            app.magic = app.MagicEditField.Value;
+            app.magic = app.DiagonalFactorEditField.Value;
         end
 
         % Value changed function: CutoffsetEditField
@@ -349,9 +354,9 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.part_reset_req = 1;
         end
 
-        % Value changed function: MagicEditField
-        function MagicEditFieldValueChanged2(app, event)
-            app.magic = app.MagicEditField.Value;
+        % Value changed function: DiagonalFactorEditField
+        function DiagonalFactorEditFieldValueChanged2(app, event)
+            app.diag = app.DiagonalFactorEditField.Value;
         end
 
         % Value changed function: GetSpectrumButton
@@ -376,6 +381,11 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         function ScanBWEditFieldValueChanged(app, event)
             app.scan_bw = app.ScanBWEditField.Value;
             app.part_reset_req = 1;
+        end
+
+        % Value changed function: BWoffsetEditField
+        function BWoffsetEditFieldValueChanged(app, event)
+            app.bwOff = app.BWoffsetEditField.Value;            
         end
 
         % Changes arrangement of the app based on UIFigure width
@@ -451,66 +461,66 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.MainTab = uitab(app.TabGroup);
             app.MainTab.Title = 'Main';
 
-            % Create SignalpositionButtonGroup
-            app.SignalpositionButtonGroup = uibuttongroup(app.MainTab);
-            app.SignalpositionButtonGroup.AutoResizeChildren = 'off';
-            app.SignalpositionButtonGroup.SelectionChangedFcn = createCallbackFcn(app, @SignalpositionButtonGroupSelectionChanged, true);
-            app.SignalpositionButtonGroup.Title = 'Signal position';
-            app.SignalpositionButtonGroup.Position = [71 71 100 106];
+            % Create SignalpriorityButtonGroup
+            app.SignalpriorityButtonGroup = uibuttongroup(app.MainTab);
+            app.SignalpriorityButtonGroup.AutoResizeChildren = 'off';
+            app.SignalpriorityButtonGroup.SelectionChangedFcn = createCallbackFcn(app, @SignalpriorityButtonGroupSelectionChanged, true);
+            app.SignalpriorityButtonGroup.Title = 'Signal priority';
+            app.SignalpriorityButtonGroup.Position = [76 10 100 106];
 
             % Create Button
-            app.Button = uiradiobutton(app.SignalpositionButtonGroup);
+            app.Button = uiradiobutton(app.SignalpriorityButtonGroup);
             app.Button.Text = '1';
             app.Button.Position = [11 60 58 22];
             app.Button.Value = true;
 
             % Create Button_2
-            app.Button_2 = uiradiobutton(app.SignalpositionButtonGroup);
+            app.Button_2 = uiradiobutton(app.SignalpriorityButtonGroup);
             app.Button_2.Text = '2';
             app.Button_2.Position = [11 38 65 22];
 
             % Create Button_3
-            app.Button_3 = uiradiobutton(app.SignalpositionButtonGroup);
+            app.Button_3 = uiradiobutton(app.SignalpriorityButtonGroup);
             app.Button_3.Text = '3';
             app.Button_3.Position = [11 16 65 22];
 
             % Create DOAresolutionEditField_3Label
             app.DOAresolutionEditField_3Label = uilabel(app.MainTab);
             app.DOAresolutionEditField_3Label.HorizontalAlignment = 'right';
-            app.DOAresolutionEditField_3Label.Position = [37 444 58 28];
+            app.DOAresolutionEditField_3Label.Position = [28 444 58 28];
             app.DOAresolutionEditField_3Label.Text = {'DOA'; 'resolution'};
 
             % Create DOAresolutionEditField
             app.DOAresolutionEditField = uieditfield(app.MainTab, 'numeric');
             app.DOAresolutionEditField.Limits = [0.0001 Inf];
             app.DOAresolutionEditField.ValueChangedFcn = createCallbackFcn(app, @DOAresolutionEditFieldValueChanged, true);
-            app.DOAresolutionEditField.Position = [110 450 77 22];
+            app.DOAresolutionEditField.Position = [101 450 77 22];
             app.DOAresolutionEditField.Value = 1;
 
             % Create DOAtypeListBoxLabel
             app.DOAtypeListBoxLabel = uilabel(app.MainTab);
             app.DOAtypeListBoxLabel.HorizontalAlignment = 'right';
-            app.DOAtypeListBoxLabel.Position = [44 393 79 43];
+            app.DOAtypeListBoxLabel.Position = [-6 381 79 43];
             app.DOAtypeListBoxLabel.Text = {'DOA'; 'type'};
 
             % Create DOAtypeListBox
             app.DOAtypeListBox = uilistbox(app.MainTab);
-            app.DOAtypeListBox.Items = {'MVDR', 'MUSIC', 'MUSICR', 'Beamscan', 'ESPRITE', 'ESPRITEBS', 'WSFR'};
+            app.DOAtypeListBox.Items = {'MVDR', 'MUSIC', 'Beamscan', 'MUSICR', 'ESPRITE', 'ESPRITEBS', 'WSFR'};
             app.DOAtypeListBox.ValueChangedFcn = createCallbackFcn(app, @DOAtypeListBoxValueChanged, true);
-            app.DOAtypeListBox.Position = [127 327 74 111];
+            app.DOAtypeListBox.Position = [77 280 98 146];
             app.DOAtypeListBox.Value = 'MVDR';
 
             % Create BFtypeListBoxLabel
             app.BFtypeListBoxLabel = uilabel(app.MainTab);
             app.BFtypeListBoxLabel.HorizontalAlignment = 'right';
-            app.BFtypeListBoxLabel.Position = [44 263 79 43];
+            app.BFtypeListBoxLabel.Position = [-6 219 79 43];
             app.BFtypeListBoxLabel.Text = {'BF'; 'type'};
 
             % Create BFtypeListBox
             app.BFtypeListBox = uilistbox(app.MainTab);
             app.BFtypeListBox.Items = {'Without', 'Steering', 'MVDR', 'DMR', 'PC', 'LCMV', 'RVL'};
             app.BFtypeListBox.ValueChangedFcn = createCallbackFcn(app, @BFtypeListBoxValueChanged, true);
-            app.BFtypeListBox.Position = [127 197 74 111];
+            app.BFtypeListBox.Position = [77 126 98 138];
             app.BFtypeListBox.Value = 'Steering';
 
             % Create DebugTab
@@ -593,23 +603,36 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.UpdRateEditField.Position = [72 138 77 22];
             app.UpdRateEditField.Value = 10;
 
-            % Create MagicEditFieldLabel
-            app.MagicEditFieldLabel = uilabel(app.DebugTab);
-            app.MagicEditFieldLabel.HorizontalAlignment = 'right';
-            app.MagicEditFieldLabel.Position = [3 248 55 22];
-            app.MagicEditFieldLabel.Text = 'Magic';
+            % Create DiagonalFactorEditFieldLabel
+            app.DiagonalFactorEditFieldLabel = uilabel(app.DebugTab);
+            app.DiagonalFactorEditFieldLabel.HorizontalAlignment = 'right';
+            app.DiagonalFactorEditFieldLabel.Position = [10 327 55 28];
+            app.DiagonalFactorEditFieldLabel.Text = {'Diagonal'; 'Factor'};
 
-            % Create MagicEditField
-            app.MagicEditField = uieditfield(app.DebugTab, 'numeric');
-            app.MagicEditField.ValueChangedFcn = createCallbackFcn(app, @MagicEditFieldValueChanged2, true);
-            app.MagicEditField.Position = [73 248 78 22];
-            app.MagicEditField.Value = 0.1;
+            % Create DiagonalFactorEditField
+            app.DiagonalFactorEditField = uieditfield(app.DebugTab, 'numeric');
+            app.DiagonalFactorEditField.ValueChangedFcn = createCallbackFcn(app, @DiagonalFactorEditFieldValueChanged2, true);
+            app.DiagonalFactorEditField.Position = [80 333 78 22];
+            app.DiagonalFactorEditField.Value = 0.1;
 
             % Create GetSpectrumButton
             app.GetSpectrumButton = uibutton(app.DebugTab, 'state');
             app.GetSpectrumButton.ValueChangedFcn = createCallbackFcn(app, @GetSpectrumButtonValueChanged, true);
             app.GetSpectrumButton.Text = 'GetSpectrum';
             app.GetSpectrumButton.Position = [36 211 100 22];
+
+            % Create BWoffsetEditFieldLabel
+            app.BWoffsetEditFieldLabel = uilabel(app.DebugTab);
+            app.BWoffsetEditFieldLabel.HorizontalAlignment = 'right';
+            app.BWoffsetEditFieldLabel.Position = [8 286 55 28];
+            app.BWoffsetEditFieldLabel.Text = {'BW'; 'offset'};
+
+            % Create BWoffsetEditField
+            app.BWoffsetEditField = uieditfield(app.DebugTab, 'numeric');
+            app.BWoffsetEditField.Limits = [0 45];
+            app.BWoffsetEditField.ValueChangedFcn = createCallbackFcn(app, @BWoffsetEditFieldValueChanged, true);
+            app.BWoffsetEditField.Position = [78 292 78 22];
+            app.BWoffsetEditField.Value = 0.1;
 
             % Create SystemTab
             app.SystemTab = uitab(app.TabGroup);
@@ -687,7 +710,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.ScanBWEditField.Limits = [2 360];
             app.ScanBWEditField.RoundFractionalValues = 'on';
             app.ScanBWEditField.ValueChangedFcn = createCallbackFcn(app, @ScanBWEditFieldValueChanged, true);
-            app.ScanBWEditField.Position = [75 164 100 22];
+            app.ScanBWEditField.Position = [75 164 77 22];
             app.ScanBWEditField.Value = 180;
 
             % Create CutterCheckBox

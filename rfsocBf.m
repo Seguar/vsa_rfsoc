@@ -1,4 +1,4 @@
-function [yspec, estimated_angle, bfSig, weights, rawData, estimator] = rfsocBf(app, vsa, ch, bf, off, gap, cutter, ang_num, doa, data_v, tcp_client, fc, dataChan, magic, ula, num, scan_axis, ...
+function [yspec, estimated_angle, bfSig, weights, rawData, estimator] = rfsocBf(app, vsa, ch, bf, off, gap, cutter, ang_num, doa, data_v, tcp_client, fc, dataChan, diag, bwOff, ula, num, scan_axis, ...
     c1, c2, fsRfsoc, bw)
 test_z = zeros(1, gap);
 
@@ -64,17 +64,17 @@ switch bf
     case 'Steering'
         [rawDataAdj, weights] = steerBf(rawData, estimated_angle(1), lambda);
     case 'MVDR'
-        [rawDataAdj, weights] = mvdrBf(rawData, estimated_angle(1), magic, ula, fc, c);
+        [rawDataAdj, weights] = mvdrBf(rawData, estimated_angle(1), diag, ula, fc, c);
     case 'DMR'
         [rawDataAdj, weights] = dmr_beamformer(rawData, npc, ula, estimated_angle(1));
     case 'PC'
         [rawDataAdj, weights] = pc_beamformer(rawData, npc, ula, estimated_angle(1));
         weights = conj(weights) ;
     case 'LCMV'
-        [rawDataAdj, weights] = lcmv_beamformer(rawData, estimated_angle(1), estimated_angle(2), ula, magic, fc);
+        [rawDataAdj, weights] = lcmv_beamformer(rawData, estimated_angle(1), estimated_angle(2), ula, bwOff, fc);
         weights = conj(weights);
     case 'RVL'
-        [rawDataAdj, weights] = rvl_beamformer(rawData, magic, ula, estimated_angle(1));
+        [rawDataAdj, weights] = rvl_beamformer(rawData, diag, ula, estimated_angle(1));
         weights = conj(weights);
     otherwise
         rawDataAdj = rawData;

@@ -1,9 +1,9 @@
-function [rawDataAdj, weights] = mvdrBf(rawData, estimated_angle, magic, ula, fc, c)
+function [rawDataAdj, weights] = mvdrBf(rawData, estimated_angle, diag, ula, fc, c)
 
     beamformer = phased.MVDRBeamformer('SensorArray',ula,...
 'PropagationSpeed',c,'OperatingFrequency',fc,...
 'Direction',[estimated_angle;0],'WeightsOutputPort',true, ...
-'TrainingInputPort',false, 'DiagonalLoadingFactor', magic);
+'TrainingInputPort',false, 'DiagonalLoadingFactor', diag);
 
     [~,weights] = beamformer(rawData); 
     weights = weights.';
