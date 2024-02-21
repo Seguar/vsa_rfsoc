@@ -20,6 +20,7 @@ curr_data_size_bytes = typecast(uint64(curr_data_size), 'uint8');
 write(tcp_client, curr_data_size_bytes);
 %% Graph handles
 clf(app.UIAxes);
+clf(app.UIAxes2);
 yspec = zeros(1, length(scan_axis));
 plot_handle = plot(app.UIAxes, scan_axis, yspec);
 

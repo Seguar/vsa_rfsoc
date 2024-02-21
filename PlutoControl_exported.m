@@ -15,7 +15,7 @@ classdef PlutoControl_exported < matlab.apps.AppBase
         SignalButtonGroup     matlab.ui.container.ButtonGroup
         OffButton             matlab.ui.control.RadioButton
         CustomButton          matlab.ui.control.RadioButton
-        OFDMButton            matlab.ui.control.RadioButton
+        WLANButton            matlab.ui.control.RadioButton
         CWButton              matlab.ui.control.RadioButton
         FcMhzSpinner          matlab.ui.control.Spinner
         FcMhzSpinnerLabel     matlab.ui.control.Label
@@ -174,10 +174,10 @@ classdef PlutoControl_exported < matlab.apps.AppBase
             app.CWButton.Text = 'CW';
             app.CWButton.Position = [11 90 58 22];
 
-            % Create OFDMButton
-            app.OFDMButton = uiradiobutton(app.SignalButtonGroup);
-            app.OFDMButton.Text = 'OFDM';
-            app.OFDMButton.Position = [11 68 65 22];
+            % Create WLANButton
+            app.WLANButton = uiradiobutton(app.SignalButtonGroup);
+            app.WLANButton.Text = 'WLAN';
+            app.WLANButton.Position = [11 68 65 22];
 
             % Create CustomButton
             app.CustomButton = uiradiobutton(app.SignalButtonGroup);

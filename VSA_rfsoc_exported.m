@@ -72,7 +72,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         ch = 5;
         bf = 'Steering';
         doa = 'MVDR';
-        cutter = 1;
+        cutter = 0;
         off = 500;
         gap = 0;
         ang_num = 1;
