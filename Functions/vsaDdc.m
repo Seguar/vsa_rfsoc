@@ -1,4 +1,4 @@
-function [data_v] = vsaDdc(fc_v, sr_v, bw_v, dataLen, channelCount)
+function data_v = vsaDdc(fc_v, sr_v, bw_v, dataLen, channelCount)
 %% 1. Connect to VSA
 asmPath = 'C:\Program Files\Keysight\89600 Software 2024\89600 VSA Software\Examples\DotNET\Interfaces\';
 addpath(asmPath)

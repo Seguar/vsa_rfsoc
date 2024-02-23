@@ -90,7 +90,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         %%
         ula
         weights
-        c
+        c = physconst('LightSpeed'); % propagation velocity [m/s]
         %% System
         fc = 5.7e9;
         fsRfsoc = 125e6;
@@ -98,6 +98,9 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         num = 3;
         scan_bw = 180;
         setupFile = [fileparts(mfilename('fullpath')) '\Settings\ofdm_iq_20_cal.setx'];
+        
+        server_ip = 'pynq'; % Use the appropriate IP address or hostname
+        server_port = 4000; % Use the same port number used in the Python server
         %% Flags
         reset_req = 1;
         part_reset_req = 1;
@@ -118,12 +121,13 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
 
         
         function [data_v, tcp_client, plot_handle, p_manual_mean, yspec_mean] = resetApp(app)
+            [p_manual_mean, yspec_mean, plot_handle] = partReset(app);
             app.ResetButton.Text = 'Reseting...';
             app.ResetButton.BackgroundColor = 'r';
             drawnow%!!!!
-            [p_manual_mean, yspec_mean] = partReset(app);
-            [data_v, tcp_client, plot_handle, app.ula] = rfsocBfPrep(app, app.dataChan, app.fc, app.fsRfsoc, app.c, app.scan_axis, app.num_elements);
+            data_v = vsaDdc(0, app.fsRfsoc, app.fsRfsoc, app.dataChan, 1);
             vsaSetup(app.setupFile)
+            tcp_client = rfsocConnect(app.server_ip, app.server_port, app.dataChan);
             clf(app.UIAxes);
             app.reset_req = 0;
             app.part_reset_req = 0;
@@ -131,11 +135,13 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.ResetButton.BackgroundColor = 'g';
         end
 
-        function [p_manual_mean, yspec_mean] = partReset(app)
+        function [p_manual_mean, yspec_mean, plot_handle] = partReset(app)
             app.ResetButton.Text = 'Reseting...';
             app.ResetButton.BackgroundColor = 'y';
             drawnow%!!!!
+            app.ula = antPrep(app.num_elements, app.c, app.fc);
             app.scan_axis = -app.scan_bw/2:app.scan_res:app.scan_bw/2;
+            plot_handle = plotPrep(app, app.scan_axis);
             p_manual_mean = zeros(length(app.scan_axis), app.avg_factor);
             yspec_mean = zeros(length(app.scan_axis), app.avg_factor);
             app.part_reset_req = 0;
@@ -169,23 +175,23 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             am2 = [];
             bs2 = [];
             cs2 = [];
-            app.c = physconst('LightSpeed'); % propagation velocity [m/s]
 
             warning('off','all')
             while true
                 if app.reset_req                    
                     [data_v, tcp_client, plot_handle, p_manual_mean, yspec_mean] = resetApp(app);
                 elseif app.part_reset_req                    
-                    [p_manual_mean, yspec_mean] = partReset(app);
+                    [p_manual_mean, yspec_mean, plot_handle] = partReset(app);
                 end
                 try
                     [yspec, estimated_angle, ~, app.weights, ~, app.estimator] = rfsocBf(app, app.vsa, app.ch, app.bf, app.off, app.gap, app.cutter, app.ang_num, app.doa, data_v, tcp_client, app.fc, app.dataChan, app.diag, app.bwOff, app.ula, app.num, app.scan_axis, ...
                         app.c1, app.c2, app.fsRfsoc, app.bw);
                     if isnan(app.weights)
+                        disp("No signal")
                         continue
                     end
                 catch
-                    print("Error in rfsocBf")
+                    disp("Error in rfsocBf")
                     continue
                 end
                 %% Pattern calc
