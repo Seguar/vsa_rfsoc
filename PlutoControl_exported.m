@@ -19,6 +19,8 @@ classdef PlutoControl_exported < matlab.apps.AppBase
         CWButton              matlab.ui.control.RadioButton
         FcMhzSpinner          matlab.ui.control.Spinner
         FcMhzSpinnerLabel     matlab.ui.control.Label
+        ContextMenu           matlab.ui.container.ContextMenu
+        WLANsettingsMenu      matlab.ui.container.Menu
     end
 
 
@@ -59,7 +61,7 @@ classdef PlutoControl_exported < matlab.apps.AppBase
                     sw.SampleRate = app.fs;
                     sw.SamplesPerFrame = 50000;
                     txWaveform = sw();
-                case 'OFDM'
+                case 'WLAN'
                     [packet]= Signal_Gen(app.fs);
                     sig_org = [packet(:,1)+1j*packet(:,2) ; zeros(1,app.gap)'];
                     sig_org   = sig_org(1:floor(length(sig_org)/24)*24);
@@ -134,6 +136,11 @@ classdef PlutoControl_exported < matlab.apps.AppBase
         function GapEditFieldValueChanged(app, event)
             app.gap = app.GapEditField.Value;
             updatePluto(app)
+        end
+
+        % Menu selected function: WLANsettingsMenu
+        function WLANsettingsMenuSelected(app, event)
+            WLAN_gen
         end
     end
 
@@ -243,6 +250,17 @@ classdef PlutoControl_exported < matlab.apps.AppBase
             app.GapEditField.ValueChangedFcn = createCallbackFcn(app, @GapEditFieldValueChanged, true);
             app.GapEditField.Position = [193 97 45 22];
             app.GapEditField.Value = 5000;
+
+            % Create ContextMenu
+            app.ContextMenu = uicontextmenu(app.PlutoControlUIFigure);
+
+            % Create WLANsettingsMenu
+            app.WLANsettingsMenu = uimenu(app.ContextMenu);
+            app.WLANsettingsMenu.MenuSelectedFcn = createCallbackFcn(app, @WLANsettingsMenuSelected, true);
+            app.WLANsettingsMenu.Text = 'WLAN settings';
+            
+            % Assign app.ContextMenu
+            app.WLANButton.ContextMenu = app.ContextMenu;
 
             % Show the figure after all components are created
             app.PlutoControlUIFigure.Visible = 'on';
