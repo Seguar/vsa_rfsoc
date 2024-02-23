@@ -71,7 +71,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         vsa = 1;
         ch = 5;
         bf = 'Steering';
-        doa = 'MVDR';
+        doa = 'MUSIC';
         cutter = 0;
         off = 500;
         gap = 0;
@@ -516,7 +516,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.DOAtypeListBox.Items = {'MVDR', 'MUSIC', 'Beamscan', 'MUSICR', 'ESPRITE', 'ESPRITEBS', 'WSFR'};
             app.DOAtypeListBox.ValueChangedFcn = createCallbackFcn(app, @DOAtypeListBoxValueChanged, true);
             app.DOAtypeListBox.Position = [77 280 98 146];
-            app.DOAtypeListBox.Value = 'MVDR';
+            app.DOAtypeListBox.Value = 'MUSIC';
 
             % Create BFtypeListBoxLabel
             app.BFtypeListBoxLabel = uilabel(app.MainTab);
