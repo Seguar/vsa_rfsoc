@@ -1,49 +1,15 @@
-function [yspec, estimated_angle, bfSig, weights, rawData, estimator] = rfsocBf(app, vsa, ch, bf, off, gap, cutter, ang_num, doa, data_v, tcp_client, fc, dataChan, diag, bwOff, ula, num, scan_axis, ...
-    c1, c2, fsRfsoc, bw)
+function [yspec, estimated_angle, bfSig, weights, rawData] = rfsocBf(app, vsa, ch, bf, off, gap, cutter, ang_num, doa, data_v, tcp_client, fc, dataChan, diag, bwOff, ula, num, scan_axis, ...
+    c1, c2, fsRfsoc, bw, c, estimator)
 test_z = zeros(1, gap);
 
-c = physconst('LightSpeed'); % propagation velocity [m/s]
-lambda = c / fc; % wavelength
-
-
-%% TCP prep
+%% TCP
 data_size = dataChan * 8;
 channels = 8;
-dataLen = data_size/channels;
-%% TCP
 rawData = tcpDataRec(tcp_client, data_size, channels);
 %% Matlab MVDR DOA FUNC
 rawData = filtSig(rawData, fsRfsoc, bw);
 %% DOA
-switch doa
-    case 'MVDR'
-        estimator = phased.MVDREstimator('SensorArray',ula,...
-            'OperatingFrequency',fc,'ScanAngles',scan_axis,...
-            'DOAOutputPort',true,'NumSignals', num);
-    case 'MUSIC'
-        estimator = phased.MUSICEstimator('SensorArray',ula,...
-            'OperatingFrequency',fc,'ScanAngles',scan_axis,...
-            'DOAOutputPort',true);
-    case 'MUSICR'
-        estimator = phased.RootMUSICEstimator('SensorArray',ula,...
-            'OperatingFrequency',fc);
-    case 'Beamscan'
-        estimator = phased.BeamscanEstimator('SensorArray',ula,...
-            'OperatingFrequency',fc,'ScanAngles',scan_axis,...
-            'DOAOutputPort',true,'NumSignals', num);
-    case 'ESPRITE'
-        estimator = phased.ESPRITEstimator('SensorArray',ula,...
-            'OperatingFrequency',fc);
-    case 'ESPRITEBS'
-        estimator = phased.BeamspaceESPRITEstimator('SensorArray',ula,...
-            'OperatingFrequency',fc);
-    case 'WSFR'
-        estimator = phased.RootWSFEstimator('SensorArray',ula,...
-            'OperatingFrequency',fc);
-        %     case 'Monopulse'
-        %         estimator = phased.SumDifferenceMonopulseTracker('SensorArray',ula,...
-        %             'OperatingFrequency',fc);
-end
+
 try
     [yspec, estimated_angle] = estimator(rawData'*rawData);
 catch
@@ -62,7 +28,7 @@ estimated_angle = [estimated_angle(ang_num) estimated_angle];
 estimated_angle(ang_num + 1) = [];
 switch bf
     case 'Steering'
-        [rawDataAdj, weights] = steerBf(rawData, estimated_angle(1), lambda);
+        [rawDataAdj, weights] = steerBf(rawData, estimated_angle(1), ula, fc);
     case 'MVDR'
         [rawDataAdj, weights] = mvdrBf(rawData, estimated_angle(1), diag, ula, fc, c);
     case 'DMR'
@@ -117,8 +83,8 @@ if (cutter)
 
             end
         end
-        if cut_e > dataLen
-            cut_e = dataLen;
+        if cut_e > dataChan
+            cut_e = dataChan;
         end
         cutInds = cut_b:cut_e;
         %         cutInds = fb_lines(1):fe_lines(end);

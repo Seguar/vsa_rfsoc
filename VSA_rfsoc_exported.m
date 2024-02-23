@@ -144,6 +144,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             plot_handle = plotPrep(app, app.scan_axis);
             p_manual_mean = zeros(length(app.scan_axis), app.avg_factor);
             yspec_mean = zeros(length(app.scan_axis), app.avg_factor);
+            app.estimator = doaEst(app.doa, app.ula, app.scan_axis, app.num, app.fc);
             app.part_reset_req = 0;
             app.ResetButton.Text = 'Reset';
             app.ResetButton.BackgroundColor = 'g';
@@ -184,8 +185,8 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                     [p_manual_mean, yspec_mean, plot_handle] = partReset(app);
                 end
                 try
-                    [yspec, estimated_angle, ~, app.weights, ~, app.estimator] = rfsocBf(app, app.vsa, app.ch, app.bf, app.off, app.gap, app.cutter, app.ang_num, app.doa, data_v, tcp_client, app.fc, app.dataChan, app.diag, app.bwOff, app.ula, app.num, app.scan_axis, ...
-                        app.c1, app.c2, app.fsRfsoc, app.bw);
+                    [yspec, estimated_angle, ~, app.weights, ~] = rfsocBf(app, app.vsa, app.ch, app.bf, app.off, app.gap, app.cutter, app.ang_num, app.doa, data_v, tcp_client, app.fc, app.dataChan, app.diag, app.bwOff, app.ula, app.num, app.scan_axis, ...
+                        app.c1, app.c2, app.fsRfsoc, app.bw, app.c, app.estimator);
                     if isnan(app.weights)
                         disp("No signal")
                         continue
@@ -341,6 +342,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         % Value changed function: DOAtypeListBox
         function DOAtypeListBoxValueChanged(app, event)
             app.doa = app.DOAtypeListBox.Value;
+            app.part_reset_req = 1;
         end
 
         % Value changed function: AvgSpinner
