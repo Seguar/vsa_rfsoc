@@ -380,7 +380,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
 
         % Button pushed function: LoadVSAsetupButton
         function LoadVSAsetupButtonPushed(app, event)
-            [file, path] = uigetfile('*.setx');
+            [file, path] = uigetfile('.\Settings\*.setx');
             app.setupFile = [path file];
             app.reset_req = 1;
         end
