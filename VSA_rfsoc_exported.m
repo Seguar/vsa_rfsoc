@@ -278,11 +278,6 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.ang_num = str2double(app.SignalpriorityButtonGroup.SelectedObject.Text);
         end
 
-        % Callback function
-        function MagicEditFieldValueChanged(app, event)
-            app.magic = app.DiagonalFactorEditField.Value;
-        end
-
         % Value changed function: CutoffsetEditField
         function CutoffsetEditFieldValueChanged(app, event)
             app.off = app.CutoffsetEditField.Value;
@@ -380,7 +375,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
 
         % Button pushed function: LoadVSAsetupButton
         function LoadVSAsetupButtonPushed(app, event)
-            [file, path] = uigetfile('.\Settings\*.setx');
+            [file, path] = uigetfile([pwd '.\Settings\*.setx']);
             app.setupFile = [path file];
             app.reset_req = 1;
         end

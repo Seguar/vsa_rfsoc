@@ -102,7 +102,7 @@ classdef PlutoControl_exported < matlab.apps.AppBase
 
         % Button pushed function: CustomfileButton
         function CustomfileButtonPushed(app, event)
-            [app.file, app.path] = uigetfile('.\Signals\*.mat');  %open a mat file
+            [app.file, app.path] = uigetfile([pwd '.\Signals\*.mat']);  %open a mat file
             load([app.path app.file])
             app.Y = Y;
             updatePluto(app)

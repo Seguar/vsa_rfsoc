@@ -65,7 +65,7 @@ classdef WLAN_gen_exported < matlab.apps.AppBase
             XDelta = 1/app.fs;
             InputZoom = 1;
             XStart = 0;
-            [baseFileName, folder] = uiputfile('.\Signals\wlan_ofdm_FSmhz_BWmhz.mat');
+            [baseFileName, folder] = uiputfile([pwd '.\Signals\wlan_ofdm_FSmhz_BWmhz.mat']);
             fullFileName = fullfile(folder, baseFileName);
             save(fullFileName, "Y", "XDelta", "InputZoom", "XStart")
         end
