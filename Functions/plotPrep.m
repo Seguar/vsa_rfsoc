@@ -9,7 +9,7 @@ plot_handle = plot(app.UIAxes, scan_axis, yspec);
 
 app.UIAxes.XLim = [min_ang max_ang];
 app.UIAxes2.XLim = [min_ang max_ang];
-app.UIAxes.YLim = [-20 0];
+app.UIAxes.YLim = [0 1];
 app.UIAxes2.YLim = [-30 0];
 app.UIAxes.LineWidth = 1.5;
 app.UIAxes2.LineWidth = 1.5;
