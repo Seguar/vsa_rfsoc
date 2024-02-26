@@ -109,8 +109,9 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
     properties (Access = public)
         scan_axis = -90:1:90;
         %% Hardcode (temporally)
-        
+        koef;
         num_elements = 4;
+        maxkoef = 5;
     end
 
     methods (Access = public)
@@ -144,7 +145,8 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             plot_handle = plotPrep(app, app.scan_axis);
             p_manual_mean = zeros(length(app.scan_axis), app.avg_factor);
             yspec_mean = zeros(length(app.scan_axis), app.avg_factor);
-            app.estimator = doaEst(app.doa, app.ula, app.scan_axis, app.num, app.fc);
+            app.estimator = doaEst(app.doa, app.ula, app.scan_axis, app.num, app.fc); %% Need to fix scan_axis
+            app.koef = antSinglePattern(app.fc, app.scan_axis)';
             app.part_reset_req = 0;
             app.ResetButton.Text = 'Reset';
             app.ResetButton.BackgroundColor = 'g';
@@ -185,7 +187,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                     [p_manual_mean, yspec_mean, plot_handle] = partReset(app);
                 end
                 try
-                    [yspec, estimated_angle, ~, app.weights, ~] = rfsocBf(app, app.vsa, app.ch, app.bf, app.off, app.gap, app.cutter, app.ang_num, app.doa, data_v, tcp_client, app.fc, app.dataChan, app.diag, app.bwOff, app.ula, app.num, app.scan_axis, ...
+                    [yspec, estimated_angle, bfSig, app.weights, rawData] = rfsocBf(app, app.vsa, app.ch, app.bf, app.off, app.gap, app.cutter, app.ang_num, data_v, tcp_client, app.fc, app.dataChan, app.diag, app.bwOff, app.ula, app.num, app.scan_axis, ...
                         app.c1, app.c2, app.fsRfsoc, app.bw, app.c, app.estimator);
                     if isnan(app.weights)
                         disp("No signal")
@@ -200,10 +202,16 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                 p_manual = beamPatternCalc(app.weights, app.fc, app.scan_axis, app.num_elements);
                 %% Avg
                 [p_manual_mean_db, p_manual_mean]  = avgData(p_manual, p_manual_mean);
-                [yspec_db, yspec_mean]  = avgData(yspec, yspec_mean);
+                yspec = pow2db(db2pow(yspec).*(app.koef));
+%                 [yspec_db, yspec_mean]  = avgData(yspec, yspec_mean);
+%                 yspec_db = yspec_db.*app.koef;
+%                 yspec_norm = ((yspec_db/min(yspec_db))*-1)+1;
+%                 yspec_norm = ((yspec_db/min(yspec_db))*-1)-app.koef;
+%                 yspec_norm = yspec_norm.*app.koef;
                 %% Plot
                 app.UIAxes.Title.String = (['Direction of arrival' newline  'Estimated angles = ' num2str(estimated_angle)]);
-                set(plot_handle, 'YData', yspec_db, 'LineWidth', 1.5);
+                
+                set(plot_handle, 'YData', (yspec/max(yspec)), 'LineWidth', 1.5);
                 plot(app.UIAxes2, app.scan_axis,p_manual_mean_db, 'LineWidth', 1.5);
                 % Xlines
                 estimated_angle = [estimated_angle NaN NaN]; % To prevent errors in xlines indexing
