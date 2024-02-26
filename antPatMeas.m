@@ -2,7 +2,8 @@ clc
 clear
 close all
 powCalc = @(x) round(max(db(fftshift(fft(x))))/2, 1); % Power from FFT calculations
-
+dbmin = 20; % Limits of polar plot
+dbmax = 80;
 c = physconst('LightSpeed');
 server_ip = 'pynq'; % Use the appropriate IP address or hostname
 server_port = 4000; % Use the same port number used in the Python server
@@ -31,11 +32,14 @@ while true
         yspec_new(5, idx) = powCalc(bfSig);
         yspec_new(1:4, idx) = powCalc(rawData(1:4,:));
     end
-    polarplot(deg2rad(scan_axis), yspec_new)
-    title(['Estimated angle: ' num2str(estimated_angle)])
+    polarplot(deg2rad(scan_axis), yspec_new)    
     ax = gca;
     ax.ThetaZeroLocation = 'top'; % Set 0 degree angle at the top
     ax.ThetaDir = 'clockwise';    % Rotate angles clockwise
     ax.ThetaLim = [min_ang, max_ang];
     ax.ThetaTick = [min_ang:scan_res:max_ang];
+    rlim([dbmin dbmax])
+    ax.RTick = [dbmin:20:dbmax];
+
+    title(['Estimated angle: ' num2str(estimated_angle)])
 end
