@@ -187,7 +187,8 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                     [p_manual_mean, yspec_mean, plot_handle] = partReset(app);
                 end
                 try
-                    [yspec, estimated_angle, bfSig, app.weights, rawData] = rfsocBf(app, app.vsa, app.ch, app.bf, app.off, app.gap, app.cutter, app.ang_num, data_v, tcp_client, app.fc, app.dataChan, app.diag, app.bwOff, app.ula, app.num, app.scan_axis, ...
+                    [yspec, estimated_angle, bfSig, app.weights, rawData] = rfsocBf(app, app.vsa, app.ch, app.bf, app.off, app.gap, app.cutter, ...
+                        app.ang_num, data_v, tcp_client, app.fc, app.dataChan, app.diag, app.bwOff, app.ula, app.scan_axis, ...
                         app.c1, app.c2, app.fsRfsoc, app.bw, app.c, app.estimator);
                     if isnan(app.weights)
                         disp("No signal")
@@ -202,8 +203,8 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                 p_manual = beamPatternCalc(app.weights, app.fc, app.scan_axis, app.num_elements);
                 %% Avg
                 [p_manual_mean_db, p_manual_mean]  = avgData(p_manual, p_manual_mean);
-                yspec = pow2db(db2pow(yspec).*(app.koef));
-%                 [yspec_db, yspec_mean]  = avgData(yspec, yspec_mean);
+%                 yspec = pow2db(db2pow(yspec).*(app.koef));
+                [yspec_db, yspec_mean]  = avgData(yspec, yspec_mean);
 %                 yspec_db = yspec_db.*app.koef;
 %                 yspec_norm = ((yspec_db/min(yspec_db))*-1)+1;
 %                 yspec_norm = ((yspec_db/min(yspec_db))*-1)-app.koef;

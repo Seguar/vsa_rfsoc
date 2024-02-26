@@ -25,9 +25,9 @@ yspec_new = zeros(5, length(scan_axis));
 min_ang = scan_axis(1);
 max_ang = scan_axis(end);
 while true
-    [yspec, estimated_angle, bfSig, ~, rawData] = rfsocBf(0, 0, ch, bf, 0, 0, 0, 1, 0, tcp_client, fc, dataChan, 0, 0, ula, 1, scan_axis, ...
+    [yspec, estimated_angle, bfSig, ~, rawData] = rfsocBf(0, 0, ch, bf, 0, 0, 0, 1, 0, tcp_client, fc, dataChan, 0, 0, ula, scan_axis, ...
         0, 0, fsRfsoc, bw, c, estimator);
-    idx = find(scan_axis == estimated_angle);
+    idx = find(scan_axis == estimated_angle(1));
     if powCalc(bfSig) > yspec_new(5, idx)
         yspec_new(5, idx) = powCalc(bfSig);
         yspec_new(1:4, idx) = powCalc(rawData(1:4,:));
