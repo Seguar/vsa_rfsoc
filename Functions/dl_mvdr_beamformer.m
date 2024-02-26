@@ -1,6 +1,8 @@
 function [rawDataAdj, weights] = dl_mvdr_beamformer(rawData, ula, estimated_angle)
 % calc diagonal loading:
 % Nonedegenerate elipsoied constraints
+opts=optimoptions(@fmincon,'Display','off');
+
 R = rawData'*rawData;
 numelements = ula.NumElements;
 % 1) Compute eigendecomposition of R
@@ -20,9 +22,9 @@ prob.Constraints.cons2 = (norm(a_hat)-sqrt(eps))/(D(4)*sqrt(eps)) >= lam;
 prob.Constraints.cons3 = sqrt((1/eps)*sum((abs(z).^2)./(D.^2)))  >= lam;
 prob.Constraints.cons4 = eps >= 0;
 prob.Constraints.cons5 = lam >= 0;
-x0.lam = D(3);
+x0.lam = D(1)*1e4;
 x0.eps = 1;
-sol = solve(prob, x0);
+sol = solve(prob, x0, 'Options',opts);
 
 % 3) MVDR beamformer
 v_m = exp(1j*pi*((0:numelements-1)')*sin(deg2rad(estimated_angle)));
