@@ -146,7 +146,10 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             p_manual_mean = zeros(length(app.scan_axis), app.avg_factor);
             yspec_mean = zeros(length(app.scan_axis), app.avg_factor);
             app.estimator = doaEst(app.doa, app.ula, app.scan_axis, app.num, app.fc); %% Need to fix scan_axis
-            app.koef = antSinglePattern(app.fc, app.scan_axis)';
+%             app.koef = antSinglePattern(app.fc, app.scan_axis)';
+            load koef
+            app.koef = koef;
+            app.koef = interp1(linspace(1,length(app.koef),length(app.koef))', app.koef, linspace(1,length(app.koef),length(app.scan_axis))', 'linear', 'extrap');
             app.part_reset_req = 0;
             app.ResetButton.Text = 'Reset';
             app.ResetButton.BackgroundColor = 'g';
@@ -163,7 +166,8 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             addpath(genpath([pwd '\iqtools_2023_10_24']))
             addpath(genpath([pwd '\Packet-Creator-VHT']))
             addpath(genpath([pwd '\Functions']))
-
+%             load koef
+%             app.koef = koef;
             app.RFSoCBeamformerUIFigure.Visible = 'off';
             movegui(app.RFSoCBeamformerUIFigure,"east")
             app.RFSoCBeamformerUIFigure.Visible = 'on';
@@ -207,11 +211,8 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                 p_manual_mean_db = 20*log10(p_manual_mean_vec) - max(20*log10(p_manual_mean_vec));    
 %                 yspec = pow2db(db2pow(yspec).*(app.koef));
                 [yspec_mean_vec, yspec_mean]  = avgData(yspec, yspec_mean);
-%                 yspec_db = yspec_db.*app.koef;
-%                 yspec_norm = ((yspec_db/min(yspec_db))*-1)+1;
+                yspec_mean_vec = yspec_mean_vec.*(1./app.koef);
 
-%                 yspec_norm = ((yspec_db/min(yspec_db))*-1)-app.koef;
-%                 yspec_norm = yspec_norm.*app.koef;
                 %% Plot
                 app.UIAxes.Title.String = (['Direction of arrival' newline  'Estimated angles = ' num2str(estimated_angle)]);
                 
