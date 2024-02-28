@@ -215,8 +215,8 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                 %% Plot
                 app.UIAxes.Title.String = (['Direction of arrival' newline  'Estimated angles = ' num2str(estimated_angle)]);
                 
-%                 set(plot_handle, 'YData', (yspec/max(yspec)), 'LineWidth', 1.5);
-                set(plot_handle, 'YData', (yspec_mean_vec), 'LineWidth', 1.5);
+                set(plot_handle, 'YData', (yspec_mean_vec/max(yspec_mean_vec)), 'LineWidth', 1.5);
+%                 set(plot_handle, 'YData', (yspec_mean_vec), 'LineWidth', 1.5);
                 plot(app.UIAxes2, app.scan_axis,p_manual_mean_db, 'LineWidth', 1.5);
                 % Xlines
                 estimated_angle = [estimated_angle NaN NaN]; % To prevent errors in xlines indexing
