@@ -22,6 +22,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         Button_2                       matlab.ui.control.RadioButton
         Button                         matlab.ui.control.RadioButton
         DebugTab                       matlab.ui.container.Tab
+        patternCorrCheckBox            matlab.ui.control.CheckBox
         BWoffsetEditField              matlab.ui.control.NumericEditField
         BWoffsetEditFieldLabel         matlab.ui.control.Label
         GetSpectrumButton              matlab.ui.control.StateButton
@@ -40,6 +41,12 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         CutoffsetEditFieldLabel        matlab.ui.control.Label
         GetPatternButton               matlab.ui.control.StateButton
         SystemTab                      matlab.ui.container.Tab
+        PowerCheckBox                  matlab.ui.control.CheckBox
+        ModCheckBox                    matlab.ui.control.CheckBox
+        gainGenEditField               matlab.ui.control.NumericEditField
+        gainGenEditFieldLabel          matlab.ui.control.Label
+        fcGenEditField                 matlab.ui.control.NumericEditField
+        fcGenEditFieldLabel            matlab.ui.control.Label
         ScanBWEditField                matlab.ui.control.NumericEditField
         ScanBWEditFieldLabel           matlab.ui.control.Label
         LoadVSAsetupButton             matlab.ui.control.Button
@@ -102,6 +109,9 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         
         server_ip = 'pynq'; % Use the appropriate IP address or hostname
         server_port = 4000; % Use the same port number used in the Python server
+
+        gen_ip = '132.68.138.229';
+        gen_port = 5025;
         %% Flags
         reset_req = 1;
         part_reset_req = 1;
@@ -114,6 +124,9 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         num_elements = 4;
         maxkoef = 5;
         fcInt = 5.7e9;
+        stateInt = 0;
+        powInt = 0;
+        modInt = 0;
     end
 
     methods (Access = public)
@@ -407,6 +420,35 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.bwOff = app.BWoffsetEditField.Value;            
         end
 
+        % Value changed function: fcGenEditField
+        function fcGenEditFieldValueChanged(app, event)
+            app.fcInt = app.fcGenEditField.Value*1e6;
+            genCtrl(app.gen_ip, app.gen_port, app.stateInt, app.powInt, app.fcInt, app.modInt);
+        end
+
+        % Value changed function: gainGenEditField
+        function gainGenEditFieldValueChanged(app, event)
+            app.powInt = app.gainGenEditField.Value;
+            genCtrl(app.gen_ip, app.gen_port, app.stateInt, app.powInt, app.fcInt, app.modInt);
+        end
+
+        % Value changed function: ModCheckBox
+        function ModCheckBoxValueChanged(app, event)
+            app.modInt = app.ModCheckBox.Value;
+            genCtrl(app.gen_ip, app.gen_port, app.stateInt, app.powInt, app.fcInt, app.modInt);
+        end
+
+        % Value changed function: PowerCheckBox
+        function PowerCheckBoxValueChanged(app, event)
+            app.stateInt = app.PowerCheckBox.Value;
+            genCtrl(app.gen_ip, app.gen_port, app.stateInt, app.powInt, app.fcInt, app.modInt);
+        end
+
+        % Value changed function: patternCorrCheckBox
+        function patternCorrCheckBoxValueChanged(app, event)
+            app.patternCorr = app.patternCorrCheckBox.Value;            
+        end
+
         % Changes arrangement of the app based on UIFigure width
         function updateAppLayout(app, event)
             currentFigureWidth = app.RFSoCBeamformerUIFigure.Position(3);
@@ -653,6 +695,12 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.BWoffsetEditField.Position = [78 292 78 22];
             app.BWoffsetEditField.Value = 0.1;
 
+            % Create patternCorrCheckBox
+            app.patternCorrCheckBox = uicheckbox(app.DebugTab);
+            app.patternCorrCheckBox.ValueChangedFcn = createCallbackFcn(app, @patternCorrCheckBoxValueChanged, true);
+            app.patternCorrCheckBox.Text = 'patternCorr';
+            app.patternCorrCheckBox.Position = [15 5 83 22];
+
             % Create SystemTab
             app.SystemTab = uitab(app.TabGroup);
             app.SystemTab.Title = 'System';
@@ -731,6 +779,43 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.ScanBWEditField.ValueChangedFcn = createCallbackFcn(app, @ScanBWEditFieldValueChanged, true);
             app.ScanBWEditField.Position = [75 164 77 22];
             app.ScanBWEditField.Value = 180;
+
+            % Create fcGenEditFieldLabel
+            app.fcGenEditFieldLabel = uilabel(app.SystemTab);
+            app.fcGenEditFieldLabel.HorizontalAlignment = 'right';
+            app.fcGenEditFieldLabel.Position = [35 117 38 22];
+            app.fcGenEditFieldLabel.Text = 'fcGen';
+
+            % Create fcGenEditField
+            app.fcGenEditField = uieditfield(app.SystemTab, 'numeric');
+            app.fcGenEditField.ValueChangedFcn = createCallbackFcn(app, @fcGenEditFieldValueChanged, true);
+            app.fcGenEditField.Position = [88 117 64 22];
+            app.fcGenEditField.Value = 5700;
+
+            % Create gainGenEditFieldLabel
+            app.gainGenEditFieldLabel = uilabel(app.SystemTab);
+            app.gainGenEditFieldLabel.HorizontalAlignment = 'right';
+            app.gainGenEditFieldLabel.Position = [21 84 51 22];
+            app.gainGenEditFieldLabel.Text = 'gainGen';
+
+            % Create gainGenEditField
+            app.gainGenEditField = uieditfield(app.SystemTab, 'numeric');
+            app.gainGenEditField.Limits = [-144 30];
+            app.gainGenEditField.RoundFractionalValues = 'on';
+            app.gainGenEditField.ValueChangedFcn = createCallbackFcn(app, @gainGenEditFieldValueChanged, true);
+            app.gainGenEditField.Position = [87 84 64 22];
+
+            % Create ModCheckBox
+            app.ModCheckBox = uicheckbox(app.SystemTab);
+            app.ModCheckBox.ValueChangedFcn = createCallbackFcn(app, @ModCheckBoxValueChanged, true);
+            app.ModCheckBox.Text = 'Mod';
+            app.ModCheckBox.Position = [25 50 45 22];
+
+            % Create PowerCheckBox
+            app.PowerCheckBox = uicheckbox(app.SystemTab);
+            app.PowerCheckBox.ValueChangedFcn = createCallbackFcn(app, @PowerCheckBoxValueChanged, true);
+            app.PowerCheckBox.Text = 'Power';
+            app.PowerCheckBox.Position = [118 52 56 22];
 
             % Create CutterCheckBox
             app.CutterCheckBox = uicheckbox(app.LeftPanel);
