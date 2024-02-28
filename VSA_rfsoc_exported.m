@@ -87,6 +87,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         updrate = 10;
         c1 = 0;
         c2 = 0;
+        patternCorr = 0;
         %%
         ula
         weights
@@ -210,10 +211,10 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                 %% Avg
                 [p_manual_mean_vec, p_manual_mean]  = avgData(p_manual, p_manual_mean);
                 p_manual_mean_db = 20*log10(p_manual_mean_vec) - max(20*log10(p_manual_mean_vec));    
-%                 yspec = pow2db(db2pow(yspec).*(app.koef));
                 [yspec_mean_vec, yspec_mean]  = avgData(yspec, yspec_mean);
-                yspec_mean_vec = yspec_mean_vec.*(1./app.koef);
-
+                if app.patternCorr
+                    yspec_mean_vec = yspec_mean_vec.*(1./app.koef);
+                end
                 %% Plot
                 app.UIAxes.Title.String = (['Direction of arrival' newline  'Estimated angles = ' num2str(estimated_angle)]);
                 

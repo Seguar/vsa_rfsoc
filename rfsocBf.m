@@ -32,17 +32,17 @@ end
 % estimated_angle = [estimated_angle(ang_num) estimated_angle];
 % estimated_angle(ang_num + 1) = [];
 % compOff = 1e6;
-compOff = 0;
+compOff = 1e6;
 for i = 1:npc
     [rawDataAdjM, ~] = steerBf(rawData, estimated_angle(i), ula, fc);
-    rawSumM = sum(rawDataAdjM(:,ch), 2);
+    rawSumM = sum(rawDataAdjM, 2);
     a(i,:) = (abs(fftshift(fft(rawSumM))));
 end
 fStep = fsRfsoc/length(rawSumM);
 sample = round((fsRfsoc/2-compOff/2)/fStep:(fsRfsoc/2+compOff/2)/fStep);
-b = a(:,sample);
+b = sum(a(:,sample),2 );
 [~, idx] = sort(b, 'ascend');
-if idx(2) == 1
+if idx(ang_num) == 1
     estimated_angle = flip(estimated_angle);
 end
 %% Beamforming
