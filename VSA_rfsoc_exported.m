@@ -95,7 +95,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         fc = 5.7e9;
         fsRfsoc = 125e6;
         bw = 20e6;
-        num = 3;
+        num = 2;
         scan_bw = 180;
         setupFile = [fileparts(mfilename('fullpath')) '\Settings\ofdm_iq_20_cal.setx'];
         
@@ -112,6 +112,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         koef;
         num_elements = 4;
         maxkoef = 5;
+        fcInt = 5.7e9;
     end
 
     methods (Access = public)
@@ -193,7 +194,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                 try
                     [yspec, estimated_angle, bfSig, app.weights, rawData] = rfsocBf(app, app.vsa, app.ch, app.bf, app.off, app.gap, app.cutter, ...
                         app.ang_num, data_v, tcp_client, app.fc, app.dataChan, app.diag, app.bwOff, app.ula, app.scan_axis, ...
-                        app.c1, app.c2, app.fsRfsoc, app.bw, app.c, app.estimator);
+                        app.c1, app.c2, app.fsRfsoc, app.bw, app.c, app.estimator, app.fcInt);
                     if isnan(app.weights)
                         disp("No signal")
                         continue
@@ -694,7 +695,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.SignalsSpinner.ValueDisplayFormat = '%.0f';
             app.SignalsSpinner.ValueChangedFcn = createCallbackFcn(app, @SignalsSpinnerValueChanged, true);
             app.SignalsSpinner.Position = [75 269 77 22];
-            app.SignalsSpinner.Value = 3;
+            app.SignalsSpinner.Value = 2;
 
             % Create SigBWEditFieldLabel
             app.SigBWEditFieldLabel = uilabel(app.SystemTab);

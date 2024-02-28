@@ -1,6 +1,7 @@
 function [yspec, estimated_angle, bfSig, weights, rawData] = rfsocBf(app, vsa, ch, bf, off, gap, cutter, ang_num, data_v, tcp_client, fc, dataChan, diag, bwOff, ula, scan_axis, ...
-    c1, c2, fsRfsoc, bw, c, estimator)
+    c1, c2, fsRfsoc, bw, c, estimator, fcInt)
 test_z = zeros(1, gap);
+powCalc = @(x) round(max(db(fftshift(fft(x))))/2, 1); % Power from FFT calculations
 
 %% TCP
 data_size = dataChan * 8;
@@ -21,11 +22,30 @@ end
 if ch>4
     ch = 1:4;
 end
+%% Signal choice
 
 npc = sum(~isnan(estimated_angle));
-
-estimated_angle = [estimated_angle(ang_num) estimated_angle];
-estimated_angle(ang_num + 1) = [];
+if npc > 2
+    estimated_angle = estimated_angle(1:2);
+    npc = 2;
+end
+% estimated_angle = [estimated_angle(ang_num) estimated_angle];
+% estimated_angle(ang_num + 1) = [];
+% compOff = 1e6;
+compOff = 0;
+for i = 1:npc
+    [rawDataAdjM, ~] = steerBf(rawData, estimated_angle(i), ula, fc);
+    rawSumM = sum(rawDataAdjM(:,ch), 2);
+    a(i,:) = (abs(fftshift(fft(rawSumM))));
+end
+fStep = fsRfsoc/length(rawSumM);
+sample = round((fsRfsoc/2-compOff/2)/fStep:(fsRfsoc/2+compOff/2)/fStep);
+b = a(:,sample);
+[~, idx] = sort(b, 'ascend');
+if idx(2) == 1
+    estimated_angle = flip(estimated_angle);
+end
+%% Beamforming
 switch bf
     case 'Steering'
         [rawDataAdj, weights] = steerBf(rawData, estimated_angle(1), ula, fc);
