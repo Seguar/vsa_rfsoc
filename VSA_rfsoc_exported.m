@@ -201,18 +201,22 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                 %% Pattern calc
                 app.weights = conj(app.weights);
                 p_manual = beamPatternCalc(app.weights, app.fc, app.scan_axis, app.num_elements);
+                
                 %% Avg
-                [p_manual_mean_db, p_manual_mean]  = avgData(p_manual, p_manual_mean);
+                [p_manual_mean_vec, p_manual_mean]  = avgData(p_manual, p_manual_mean);
+                p_manual_mean_db = 20*log10(p_manual_mean_vec) - max(20*log10(p_manual_mean_vec));    
 %                 yspec = pow2db(db2pow(yspec).*(app.koef));
-                [yspec_db, yspec_mean]  = avgData(yspec, yspec_mean);
+                [yspec_mean_vec, yspec_mean]  = avgData(yspec, yspec_mean);
 %                 yspec_db = yspec_db.*app.koef;
 %                 yspec_norm = ((yspec_db/min(yspec_db))*-1)+1;
+
 %                 yspec_norm = ((yspec_db/min(yspec_db))*-1)-app.koef;
 %                 yspec_norm = yspec_norm.*app.koef;
                 %% Plot
                 app.UIAxes.Title.String = (['Direction of arrival' newline  'Estimated angles = ' num2str(estimated_angle)]);
                 
-                set(plot_handle, 'YData', (yspec/max(yspec)), 'LineWidth', 1.5);
+%                 set(plot_handle, 'YData', (yspec/max(yspec)), 'LineWidth', 1.5);
+                set(plot_handle, 'YData', (yspec_mean_vec), 'LineWidth', 1.5);
                 plot(app.UIAxes2, app.scan_axis,p_manual_mean_db, 'LineWidth', 1.5);
                 % Xlines
                 estimated_angle = [estimated_angle NaN NaN]; % To prevent errors in xlines indexing
