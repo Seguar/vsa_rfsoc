@@ -5,6 +5,8 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         RFSoCBeamformerUIFigure        matlab.ui.Figure
         GridLayout                     matlab.ui.container.GridLayout
         LeftPanel                      matlab.ui.container.Panel
+        ChannelselectListBox           matlab.ui.control.ListBox
+        ChannelselectListBoxLabel      matlab.ui.control.Label
         VSACheckBox                    matlab.ui.control.CheckBox
         AvgSpinner                     matlab.ui.control.Spinner
         AvgSpinnerLabel                matlab.ui.control.Label
@@ -18,9 +20,8 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         DOAresolutionEditField         matlab.ui.control.NumericEditField
         DOAresolutionEditField_3Label  matlab.ui.control.Label
         SignalpriorityButtonGroup      matlab.ui.container.ButtonGroup
-        Button_3                       matlab.ui.control.RadioButton
-        Button_2                       matlab.ui.control.RadioButton
-        Button                         matlab.ui.control.RadioButton
+        LessPowerfullButton            matlab.ui.control.RadioButton
+        MostPowerfullButton            matlab.ui.control.RadioButton
         DebugTab                       matlab.ui.container.Tab
         patternCorrCheckBox            matlab.ui.control.CheckBox
         BWoffsetEditField              matlab.ui.control.NumericEditField
@@ -31,8 +32,6 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         UpdRateEditField               matlab.ui.control.NumericEditField
         UpdRateEditFieldLabel          matlab.ui.control.Label
         DebugCheckBox                  matlab.ui.control.CheckBox
-        ChannelselectListBox           matlab.ui.control.ListBox
-        ChannelselectLabel             matlab.ui.control.Label
         c2CheckBox                     matlab.ui.control.CheckBox
         c1CheckBox                     matlab.ui.control.CheckBox
         dataChanEditField              matlab.ui.control.NumericEditField
@@ -43,17 +42,17 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         SystemTab                      matlab.ui.container.Tab
         PowerCheckBox                  matlab.ui.control.CheckBox
         ModCheckBox                    matlab.ui.control.CheckBox
-        gainGenEditField               matlab.ui.control.NumericEditField
-        gainGenEditFieldLabel          matlab.ui.control.Label
-        fcGenEditField                 matlab.ui.control.NumericEditField
-        fcGenEditFieldLabel            matlab.ui.control.Label
+        gainGenSpinner                 matlab.ui.control.Spinner
+        gainGenSpinnerLabel            matlab.ui.control.Label
+        fcGenSpinner                   matlab.ui.control.Spinner
+        fcGenSpinnerLabel              matlab.ui.control.Label
         ScanBWEditField                matlab.ui.control.NumericEditField
         ScanBWEditFieldLabel           matlab.ui.control.Label
         LoadVSAsetupButton             matlab.ui.control.Button
         SigBWEditField                 matlab.ui.control.NumericEditField
         SigBWEditFieldLabel            matlab.ui.control.Label
-        SignalsSpinner                 matlab.ui.control.Spinner
-        SignalsSpinnerLabel            matlab.ui.control.Label
+        MaxSignalsSpinner              matlab.ui.control.Spinner
+        MaxSignalsSpinnerLabel         matlab.ui.control.Label
         RFSoCFsEditField               matlab.ui.control.NumericEditField
         RFSoCFsEditFieldLabel          matlab.ui.control.Label
         RFSoCFcEditField               matlab.ui.control.NumericEditField
@@ -238,9 +237,13 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                 estimated_angle = [estimated_angle NaN NaN]; % To prevent errors in xlines indexing
                 am = guiXline(am, app.UIAxes, main, estimated_angle(1));
                 am2 = guiXline(am2, app.UIAxes2, main, estimated_angle(1));
+
                 if sum(~isnan(estimated_angle)) > 1
                     bs = guiXline(bs, app.UIAxes, sub, estimated_angle(2));
                     bs2 = guiXline(bs2, app.UIAxes2, sub, estimated_angle(2));
+                    null_diff = p_manual_mean_db(find(app.scan_axis == estimated_angle(1))) - p_manual_mean_db(find(app.scan_axis == estimated_angle(2)));
+                    app.UIAxes2.Title.String = (['Beam Pattern' newline  'Power Advantage = ' ...
+                        num2str(abs(null_diff)) ' dB']);
                     if sum(~isnan(estimated_angle)) > 2
                         cs = guiXline(cs, app.UIAxes, sub, estimated_angle(3));
                         cs2 = guiXline(cs2, app.UIAxes2, sub, estimated_angle(3));
@@ -304,7 +307,13 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
 
         % Selection changed function: SignalpriorityButtonGroup
         function SignalpriorityButtonGroupSelectionChanged(app, event)
-            app.ang_num = str2double(app.SignalpriorityButtonGroup.SelectedObject.Text);
+            ang_num_txt  = app.SignalpriorityButtonGroup.SelectedObject.Text;
+            switch ang_num_txt
+                case 'Most Powerfull'
+                    app.ang_num = 1;
+                case 'Less Powerfull'
+                    app.ang_num = 2;
+            end
         end
 
         % Value changed function: CutoffsetEditField
@@ -358,9 +367,9 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.reset_req = 1;
         end
 
-        % Value changed function: SignalsSpinner
-        function SignalsSpinnerValueChanged(app, event)
-            app.num = app.SignalsSpinner.Value;
+        % Value changed function: MaxSignalsSpinner
+        function MaxSignalsSpinnerValueChanged(app, event)
+            app.num = app.MaxSignalsSpinner.Value;
         end
 
         % Value changed function: DOAtypeListBox
@@ -420,15 +429,15 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.bwOff = app.BWoffsetEditField.Value;            
         end
 
-        % Value changed function: fcGenEditField
-        function fcGenEditFieldValueChanged(app, event)
-            app.fcInt = app.fcGenEditField.Value*1e6;
+        % Value changed function: fcGenSpinner
+        function fcGenSpinnerValueChanged(app, event)
+            app.fcInt = app.fcGenSpinner.Value*1e6;
             genCtrl(app.gen_ip, app.gen_port, app.stateInt, app.powInt, app.fcInt, app.modInt);
         end
 
-        % Value changed function: gainGenEditField
-        function gainGenEditFieldValueChanged(app, event)
-            app.powInt = app.gainGenEditField.Value;
+        % Value changed function: gainGenSpinner
+        function gainGenSpinnerValueChanged(app, event)
+            app.powInt = app.gainGenSpinner.Value;
             genCtrl(app.gen_ip, app.gen_port, app.stateInt, app.powInt, app.fcInt, app.modInt);
         end
 
@@ -527,23 +536,18 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.SignalpriorityButtonGroup.AutoResizeChildren = 'off';
             app.SignalpriorityButtonGroup.SelectionChangedFcn = createCallbackFcn(app, @SignalpriorityButtonGroupSelectionChanged, true);
             app.SignalpriorityButtonGroup.Title = 'Signal priority';
-            app.SignalpriorityButtonGroup.Position = [76 10 100 106];
+            app.SignalpriorityButtonGroup.Position = [69 26 113 83];
 
-            % Create Button
-            app.Button = uiradiobutton(app.SignalpriorityButtonGroup);
-            app.Button.Text = '1';
-            app.Button.Position = [11 60 58 22];
-            app.Button.Value = true;
+            % Create MostPowerfullButton
+            app.MostPowerfullButton = uiradiobutton(app.SignalpriorityButtonGroup);
+            app.MostPowerfullButton.Text = 'Most Powerfull';
+            app.MostPowerfullButton.Position = [11 37 101 22];
+            app.MostPowerfullButton.Value = true;
 
-            % Create Button_2
-            app.Button_2 = uiradiobutton(app.SignalpriorityButtonGroup);
-            app.Button_2.Text = '2';
-            app.Button_2.Position = [11 38 65 22];
-
-            % Create Button_3
-            app.Button_3 = uiradiobutton(app.SignalpriorityButtonGroup);
-            app.Button_3.Text = '3';
-            app.Button_3.Position = [11 16 65 22];
+            % Create LessPowerfullButton
+            app.LessPowerfullButton = uiradiobutton(app.SignalpriorityButtonGroup);
+            app.LessPowerfullButton.Text = 'Less Powerfull';
+            app.LessPowerfullButton.Position = [11 15 100 22];
 
             % Create DOAresolutionEditField_3Label
             app.DOAresolutionEditField_3Label = uilabel(app.MainTab);
@@ -581,7 +585,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.BFtypeListBox = uilistbox(app.MainTab);
             app.BFtypeListBox.Items = {'Without', 'Steering', 'MVDR', 'DMR', 'PC', 'LCMV', 'RVL', 'RAB PC', 'DL MVDR'};
             app.BFtypeListBox.ValueChangedFcn = createCallbackFcn(app, @BFtypeListBoxValueChanged, true);
-            app.BFtypeListBox.Position = [77 126 98 161];
+            app.BFtypeListBox.Position = [77 117 98 170];
             app.BFtypeListBox.Value = 'Steering';
 
             % Create DebugTab
@@ -630,20 +634,6 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.c2CheckBox.ValueChangedFcn = createCallbackFcn(app, @c2CheckBoxValueChanged, true);
             app.c2CheckBox.Text = 'c2';
             app.c2CheckBox.Position = [117 105 35 22];
-
-            % Create ChannelselectLabel
-            app.ChannelselectLabel = uilabel(app.DebugTab);
-            app.ChannelselectLabel.HorizontalAlignment = 'right';
-            app.ChannelselectLabel.Position = [6 444 50 28];
-            app.ChannelselectLabel.Text = {'Channel'; 'select'};
-
-            % Create ChannelselectListBox
-            app.ChannelselectListBox = uilistbox(app.DebugTab);
-            app.ChannelselectListBox.Items = {'Ch1', 'Ch2', 'Ch3', 'Ch4', 'All'};
-            app.ChannelselectListBox.ItemsData = {'1', '2', '3', '4', '5', ''};
-            app.ChannelselectListBox.ValueChangedFcn = createCallbackFcn(app, @ChannelselectListBoxValueChanged, true);
-            app.ChannelselectListBox.Position = [70 376 81 98];
-            app.ChannelselectListBox.Value = '5';
 
             % Create DebugCheckBox
             app.DebugCheckBox = uicheckbox(app.DebugTab);
@@ -732,19 +722,19 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.RFSoCFsEditField.Position = [75 382 77 22];
             app.RFSoCFsEditField.Value = 125;
 
-            % Create SignalsSpinnerLabel
-            app.SignalsSpinnerLabel = uilabel(app.SystemTab);
-            app.SignalsSpinnerLabel.HorizontalAlignment = 'right';
-            app.SignalsSpinnerLabel.Position = [15 269 45 22];
-            app.SignalsSpinnerLabel.Text = 'Signals';
+            % Create MaxSignalsSpinnerLabel
+            app.MaxSignalsSpinnerLabel = uilabel(app.SystemTab);
+            app.MaxSignalsSpinnerLabel.HorizontalAlignment = 'right';
+            app.MaxSignalsSpinnerLabel.Position = [21 269 71 22];
+            app.MaxSignalsSpinnerLabel.Text = 'Max Signals';
 
-            % Create SignalsSpinner
-            app.SignalsSpinner = uispinner(app.SystemTab);
-            app.SignalsSpinner.Limits = [1 5];
-            app.SignalsSpinner.ValueDisplayFormat = '%.0f';
-            app.SignalsSpinner.ValueChangedFcn = createCallbackFcn(app, @SignalsSpinnerValueChanged, true);
-            app.SignalsSpinner.Position = [75 269 77 22];
-            app.SignalsSpinner.Value = 2;
+            % Create MaxSignalsSpinner
+            app.MaxSignalsSpinner = uispinner(app.SystemTab);
+            app.MaxSignalsSpinner.Limits = [1 5];
+            app.MaxSignalsSpinner.ValueDisplayFormat = '%.0f';
+            app.MaxSignalsSpinner.ValueChangedFcn = createCallbackFcn(app, @MaxSignalsSpinnerValueChanged, true);
+            app.MaxSignalsSpinner.Position = [107 269 45 22];
+            app.MaxSignalsSpinner.Value = 2;
 
             % Create SigBWEditFieldLabel
             app.SigBWEditFieldLabel = uilabel(app.SystemTab);
@@ -769,7 +759,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             % Create ScanBWEditFieldLabel
             app.ScanBWEditFieldLabel = uilabel(app.SystemTab);
             app.ScanBWEditFieldLabel.HorizontalAlignment = 'right';
-            app.ScanBWEditFieldLabel.Position = [27 158 33 28];
+            app.ScanBWEditFieldLabel.Position = [52 158 33 28];
             app.ScanBWEditFieldLabel.Text = {'Scan'; 'BW'};
 
             % Create ScanBWEditField
@@ -777,33 +767,34 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.ScanBWEditField.Limits = [2 360];
             app.ScanBWEditField.RoundFractionalValues = 'on';
             app.ScanBWEditField.ValueChangedFcn = createCallbackFcn(app, @ScanBWEditFieldValueChanged, true);
-            app.ScanBWEditField.Position = [75 164 77 22];
+            app.ScanBWEditField.Position = [100 164 44 22];
             app.ScanBWEditField.Value = 180;
 
-            % Create fcGenEditFieldLabel
-            app.fcGenEditFieldLabel = uilabel(app.SystemTab);
-            app.fcGenEditFieldLabel.HorizontalAlignment = 'right';
-            app.fcGenEditFieldLabel.Position = [35 117 38 22];
-            app.fcGenEditFieldLabel.Text = 'fcGen';
+            % Create fcGenSpinnerLabel
+            app.fcGenSpinnerLabel = uilabel(app.SystemTab);
+            app.fcGenSpinnerLabel.HorizontalAlignment = 'right';
+            app.fcGenSpinnerLabel.Position = [35 117 38 22];
+            app.fcGenSpinnerLabel.Text = 'fcGen';
 
-            % Create fcGenEditField
-            app.fcGenEditField = uieditfield(app.SystemTab, 'numeric');
-            app.fcGenEditField.ValueChangedFcn = createCallbackFcn(app, @fcGenEditFieldValueChanged, true);
-            app.fcGenEditField.Position = [88 117 64 22];
-            app.fcGenEditField.Value = 5700;
+            % Create fcGenSpinner
+            app.fcGenSpinner = uispinner(app.SystemTab);
+            app.fcGenSpinner.Limits = [1 6000];
+            app.fcGenSpinner.ValueChangedFcn = createCallbackFcn(app, @fcGenSpinnerValueChanged, true);
+            app.fcGenSpinner.Position = [81 117 69 22];
+            app.fcGenSpinner.Value = 5700;
 
-            % Create gainGenEditFieldLabel
-            app.gainGenEditFieldLabel = uilabel(app.SystemTab);
-            app.gainGenEditFieldLabel.HorizontalAlignment = 'right';
-            app.gainGenEditFieldLabel.Position = [21 84 51 22];
-            app.gainGenEditFieldLabel.Text = 'gainGen';
+            % Create gainGenSpinnerLabel
+            app.gainGenSpinnerLabel = uilabel(app.SystemTab);
+            app.gainGenSpinnerLabel.HorizontalAlignment = 'right';
+            app.gainGenSpinnerLabel.Position = [21 84 51 22];
+            app.gainGenSpinnerLabel.Text = 'gainGen';
 
-            % Create gainGenEditField
-            app.gainGenEditField = uieditfield(app.SystemTab, 'numeric');
-            app.gainGenEditField.Limits = [-144 30];
-            app.gainGenEditField.RoundFractionalValues = 'on';
-            app.gainGenEditField.ValueChangedFcn = createCallbackFcn(app, @gainGenEditFieldValueChanged, true);
-            app.gainGenEditField.Position = [87 84 64 22];
+            % Create gainGenSpinner
+            app.gainGenSpinner = uispinner(app.SystemTab);
+            app.gainGenSpinner.Limits = [-144 30];
+            app.gainGenSpinner.RoundFractionalValues = 'on';
+            app.gainGenSpinner.ValueChangedFcn = createCallbackFcn(app, @gainGenSpinnerValueChanged, true);
+            app.gainGenSpinner.Position = [87 84 64 22];
 
             % Create ModCheckBox
             app.ModCheckBox = uicheckbox(app.SystemTab);
@@ -821,7 +812,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.CutterCheckBox = uicheckbox(app.LeftPanel);
             app.CutterCheckBox.ValueChangedFcn = createCallbackFcn(app, @CutterCheckBoxValueChanged, true);
             app.CutterCheckBox.Text = 'Cutter';
-            app.CutterCheckBox.Position = [138 103 55 22];
+            app.CutterCheckBox.Position = [172 103 55 22];
 
             % Create AvgSpinnerLabel
             app.AvgSpinnerLabel = uilabel(app.LeftPanel);
@@ -840,8 +831,22 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.VSACheckBox = uicheckbox(app.LeftPanel);
             app.VSACheckBox.ValueChangedFcn = createCallbackFcn(app, @VSACheckBoxValueChanged, true);
             app.VSACheckBox.Text = 'VSA';
-            app.VSACheckBox.Position = [66 103 46 22];
+            app.VSACheckBox.Position = [117 103 46 22];
             app.VSACheckBox.Value = true;
+
+            % Create ChannelselectListBoxLabel
+            app.ChannelselectListBoxLabel = uilabel(app.LeftPanel);
+            app.ChannelselectListBoxLabel.HorizontalAlignment = 'right';
+            app.ChannelselectListBoxLabel.Position = [1 94 50 43];
+            app.ChannelselectListBoxLabel.Text = {'Channel'; 'select'};
+
+            % Create ChannelselectListBox
+            app.ChannelselectListBox = uilistbox(app.LeftPanel);
+            app.ChannelselectListBox.Items = {'Ch1', 'Ch2', 'Ch3', 'Ch4', 'All'};
+            app.ChannelselectListBox.ItemsData = {'1', '2', '3', '4', '5', ''};
+            app.ChannelselectListBox.ValueChangedFcn = createCallbackFcn(app, @ChannelselectListBoxValueChanged, true);
+            app.ChannelselectListBox.Position = [55 41 52 98];
+            app.ChannelselectListBox.Value = '5';
 
             % Create RightPanel
             app.RightPanel = uipanel(app.GridLayout);
