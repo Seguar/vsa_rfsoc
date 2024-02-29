@@ -228,7 +228,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                     yspec_mean_vec = yspec_mean_vec.*(1./app.koef);
                 end
                 %% Plot
-                app.UIAxes.Title.String = (['Direction of arrival' newline  'Estimated angles = ' num2str(estimated_angle)]);
+                app.UIAxes.Title.String = (['Direction of Arrival' newline  'Estimated Angles = ' num2str(estimated_angle)]);
                 
                 set(plot_handle, 'YData', (yspec_mean_vec/max(yspec_mean_vec)), 'LineWidth', 1.5);
 %                 set(plot_handle, 'YData', (yspec_mean_vec), 'LineWidth', 1.5);
@@ -248,6 +248,10 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                         cs = guiXline(cs, app.UIAxes, sub, estimated_angle(3));
                         cs2 = guiXline(cs2, app.UIAxes2, sub, estimated_angle(3));
                     end
+                else
+                    null_diff = p_manual_mean_db(find(app.scan_axis == estimated_angle(1))) - min(p_manual_mean_db);
+                    app.UIAxes2.Title.String = (['Beam Pattern' newline  'Power Advantage = ' ...
+                        num2str(abs(null_diff)) ' dB']);
                 end
 
                 if app.debug
