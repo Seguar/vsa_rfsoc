@@ -50,8 +50,8 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         ScanBWEditField                matlab.ui.control.NumericEditField
         ScanBWEditFieldLabel           matlab.ui.control.Label
         LoadVSAsetupButton             matlab.ui.control.Button
-        SigBWEditField                 matlab.ui.control.NumericEditField
-        SigBWEditFieldLabel            matlab.ui.control.Label
+        SigBWSpinner                   matlab.ui.control.Spinner
+        SigBWSpinnerLabel              matlab.ui.control.Label
         MaxSignalsSpinner              matlab.ui.control.Spinner
         MaxSignalsSpinnerLabel         matlab.ui.control.Label
         RFSoCFsEditField               matlab.ui.control.NumericEditField
@@ -232,7 +232,6 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                 app.UIAxes.Title.String = (['Direction of Arrival' newline  'Estimated Angles = ' num2str(estimated_angle)]);
                 
                 set(plot_handle, 'YData', (yspec_mean_vec/max(yspec_mean_vec)), 'LineWidth', 1.5);
-%                 set(plot_handle, 'YData', (yspec_mean_vec), 'LineWidth', 1.5);
                 plot(app.UIAxes2, app.scan_axis,p_manual_mean_db, 'LineWidth', 1.5);
                 % Xlines
                 estimated_angle = [estimated_angle NaN NaN]; % To prevent errors in xlines indexing
@@ -242,7 +241,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                 if sum(~isnan(estimated_angle)) > 1
                     bs = guiXline(bs, app.UIAxes, sub, estimated_angle(2));
                     bs2 = guiXline(bs2, app.UIAxes2, sub, estimated_angle(2));
-                    null_diff = p_manual_mean_db(find(app.scan_axis == estimated_angle(1))) - p_manual_mean_db(find(app.scan_axis == estimated_angle(2)));
+                    null_diff = round(p_manual_mean_db(find(app.scan_axis == estimated_angle(1))) - p_manual_mean_db(find(app.scan_axis == estimated_angle(2))));
                     app.UIAxes2.Title.String = (['Beam Pattern' newline  'Power Advantage = ' ...
                         num2str(abs(null_diff)) ' dB']);
                     if sum(~isnan(estimated_angle)) > 2
@@ -250,7 +249,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                         cs2 = guiXline(cs2, app.UIAxes2, sub, estimated_angle(3));
                     end
                 else
-                    null_diff = p_manual_mean_db(find(app.scan_axis == estimated_angle(1))) - min(p_manual_mean_db);
+                    null_diff = round(p_manual_mean_db(find(app.scan_axis == estimated_angle(1))) - min(p_manual_mean_db));
                     app.UIAxes2.Title.String = (['Beam Pattern' newline  'Power Advantage = ' ...
                         num2str(abs(null_diff)) ' dB']);
                 end
@@ -411,9 +410,9 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             uistack(gcf,'top')            
         end
 
-        % Value changed function: SigBWEditField
-        function SigBWEditFieldValueChanged(app, event)
-            app.bw = app.SigBWEditField.Value*1e6;            
+        % Value changed function: SigBWSpinner
+        function SigBWSpinnerValueChanged(app, event)
+            app.bw = app.SigBWSpinner.Value*1e6;            
         end
 
         % Button pushed function: LoadVSAsetupButton
@@ -747,19 +746,19 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.MaxSignalsSpinner.Position = [107 269 45 22];
             app.MaxSignalsSpinner.Value = 2;
 
-            % Create SigBWEditFieldLabel
-            app.SigBWEditFieldLabel = uilabel(app.SystemTab);
-            app.SigBWEditFieldLabel.HorizontalAlignment = 'right';
-            app.SigBWEditFieldLabel.Position = [4 327 55 28];
-            app.SigBWEditFieldLabel.Text = {'Sig'; 'BW'};
+            % Create SigBWSpinnerLabel
+            app.SigBWSpinnerLabel = uilabel(app.SystemTab);
+            app.SigBWSpinnerLabel.HorizontalAlignment = 'right';
+            app.SigBWSpinnerLabel.Position = [34 327 25 28];
+            app.SigBWSpinnerLabel.Text = {'Sig'; 'BW'};
 
-            % Create SigBWEditField
-            app.SigBWEditField = uieditfield(app.SystemTab, 'numeric');
-            app.SigBWEditField.Limits = [1 125];
-            app.SigBWEditField.ValueDisplayFormat = '%.0f';
-            app.SigBWEditField.ValueChangedFcn = createCallbackFcn(app, @SigBWEditFieldValueChanged, true);
-            app.SigBWEditField.Position = [74 333 77 22];
-            app.SigBWEditField.Value = 20;
+            % Create SigBWSpinner
+            app.SigBWSpinner = uispinner(app.SystemTab);
+            app.SigBWSpinner.Limits = [1 125];
+            app.SigBWSpinner.ValueDisplayFormat = '%.0f';
+            app.SigBWSpinner.ValueChangedFcn = createCallbackFcn(app, @SigBWSpinnerValueChanged, true);
+            app.SigBWSpinner.Position = [74 333 77 22];
+            app.SigBWSpinner.Value = 20;
 
             % Create LoadVSAsetupButton
             app.LoadVSAsetupButton = uibutton(app.SystemTab, 'push');
@@ -802,8 +801,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
 
             % Create gainGenSpinner
             app.gainGenSpinner = uispinner(app.SystemTab);
-            app.gainGenSpinner.Limits = [-144 30];
-            app.gainGenSpinner.RoundFractionalValues = 'on';
+            app.gainGenSpinner.Limits = [-144 18.8];
             app.gainGenSpinner.ValueChangedFcn = createCallbackFcn(app, @gainGenSpinnerValueChanged, true);
             app.gainGenSpinner.Position = [87 84 64 22];
 
