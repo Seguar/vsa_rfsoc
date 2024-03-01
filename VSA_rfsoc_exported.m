@@ -219,7 +219,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                 end
                 %% Pattern calc
                 app.weights = conj(app.weights);
-                p_manual = beamPatternCalc(app.weights, app.fc, app.scan_axis, app.num_elements);
+                p_manual = beamPatternCalc(app.weights, app.fc, app.scan_axis, length(app.weights));
                 
                 %% Avg
                 [p_manual_mean_vec, p_manual_mean]  = avgData(p_manual, p_manual_mean);

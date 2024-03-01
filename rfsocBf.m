@@ -81,6 +81,7 @@ rawSum = sum(rawDataAdj(:,ch), 2);
 if c2
     weights = conj(weights);
 end
+weights = weights(ch);
 %% Cutter
 if (cutter)
     [~, fb_lines, fe_lines, ~, ~] = sigFinder(rawSum, 1, 100);
