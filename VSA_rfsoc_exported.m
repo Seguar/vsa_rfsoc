@@ -5,6 +5,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         RFSoCBeamformerUIFigure        matlab.ui.Figure
         GridLayout                     matlab.ui.container.GridLayout
         LeftPanel                      matlab.ui.container.Panel
+        Button                         matlab.ui.control.Button
         ChannelselectListBox           matlab.ui.control.ListBox
         ChannelselectListBoxLabel      matlab.ui.control.Label
         VSACheckBox                    matlab.ui.control.CheckBox
@@ -462,12 +463,18 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.patternCorr = app.patternCorrCheckBox.Value;            
         end
 
+        % Button pushed function: Button
+        function ButtonPushed(app, event)
+            app.MostPowerfullButton.Value = 1;
+            app.ang_num = 1;
+        end
+
         % Changes arrangement of the app based on UIFigure width
         function updateAppLayout(app, event)
             currentFigureWidth = app.RFSoCBeamformerUIFigure.Position(3);
             if(currentFigureWidth <= app.onePanelWidth)
                 % Change to a 2x1 grid
-                app.GridLayout.RowHeight = {666, 666};
+                app.GridLayout.RowHeight = {791, 791};
                 app.GridLayout.ColumnWidth = {'1x'};
                 app.RightPanel.Layout.Row = 2;
                 app.RightPanel.Layout.Column = 1;
@@ -490,7 +497,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             % Create RFSoCBeamformerUIFigure and hide until all components are created
             app.RFSoCBeamformerUIFigure = uifigure('Visible', 'off');
             app.RFSoCBeamformerUIFigure.AutoResizeChildren = 'off';
-            app.RFSoCBeamformerUIFigure.Position = [100 100 800 666];
+            app.RFSoCBeamformerUIFigure.Position = [100 100 813 791];
             app.RFSoCBeamformerUIFigure.Name = 'RFSoC Beamformer';
             app.RFSoCBeamformerUIFigure.SizeChangedFcn = createCallbackFcn(app, @updateAppLayout, true);
             app.RFSoCBeamformerUIFigure.Scrollable = 'on';
@@ -512,24 +519,24 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             % Create IQtoolsButton
             app.IQtoolsButton = uibutton(app.LeftPanel, 'push');
             app.IQtoolsButton.ButtonPushedFcn = createCallbackFcn(app, @IQtoolsButtonPushed, true);
-            app.IQtoolsButton.Position = [112 41 100 22];
+            app.IQtoolsButton.Position = [113 179 100 22];
             app.IQtoolsButton.Text = 'IQtools';
 
             % Create PlutoButton
             app.PlutoButton = uibutton(app.LeftPanel, 'push');
             app.PlutoButton.ButtonPushedFcn = createCallbackFcn(app, @PlutoButtonPushed, true);
-            app.PlutoButton.Position = [112 73 100 22];
+            app.PlutoButton.Position = [114 147 100 22];
             app.PlutoButton.Text = 'Pluto';
 
             % Create ResetButton
             app.ResetButton = uibutton(app.LeftPanel, 'state');
             app.ResetButton.ValueChangedFcn = createCallbackFcn(app, @ResetButtonValueChanged, true);
             app.ResetButton.Text = 'Reset';
-            app.ResetButton.Position = [111 11 100 22];
+            app.ResetButton.Position = [114 114 100 22];
 
             % Create TabGroup
             app.TabGroup = uitabgroup(app.LeftPanel);
-            app.TabGroup.Position = [9 158 219 507];
+            app.TabGroup.Position = [9 264 219 507];
 
             % Create MainTab
             app.MainTab = uitab(app.TabGroup);
@@ -816,32 +823,32 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.CutterCheckBox = uicheckbox(app.LeftPanel);
             app.CutterCheckBox.ValueChangedFcn = createCallbackFcn(app, @CutterCheckBoxValueChanged, true);
             app.CutterCheckBox.Text = 'Cutter';
-            app.CutterCheckBox.Position = [172 103 55 22];
+            app.CutterCheckBox.Position = [172 209 55 22];
 
             % Create AvgSpinnerLabel
             app.AvgSpinnerLabel = uilabel(app.LeftPanel);
             app.AvgSpinnerLabel.HorizontalAlignment = 'right';
-            app.AvgSpinnerLabel.Position = [112 124 26 22];
+            app.AvgSpinnerLabel.Position = [112 230 26 22];
             app.AvgSpinnerLabel.Text = 'Avg';
 
             % Create AvgSpinner
             app.AvgSpinner = uispinner(app.LeftPanel);
             app.AvgSpinner.Limits = [1 Inf];
             app.AvgSpinner.ValueChangedFcn = createCallbackFcn(app, @AvgSpinnerValueChanged, true);
-            app.AvgSpinner.Position = [152 124 56 22];
+            app.AvgSpinner.Position = [152 230 56 22];
             app.AvgSpinner.Value = 10;
 
             % Create VSACheckBox
             app.VSACheckBox = uicheckbox(app.LeftPanel);
             app.VSACheckBox.ValueChangedFcn = createCallbackFcn(app, @VSACheckBoxValueChanged, true);
             app.VSACheckBox.Text = 'VSA';
-            app.VSACheckBox.Position = [117 103 46 22];
+            app.VSACheckBox.Position = [117 209 46 22];
             app.VSACheckBox.Value = true;
 
             % Create ChannelselectListBoxLabel
             app.ChannelselectListBoxLabel = uilabel(app.LeftPanel);
             app.ChannelselectListBoxLabel.HorizontalAlignment = 'right';
-            app.ChannelselectListBoxLabel.Position = [1 94 50 43];
+            app.ChannelselectListBoxLabel.Position = [1 200 50 43];
             app.ChannelselectListBoxLabel.Text = {'Channel'; 'select'};
 
             % Create ChannelselectListBox
@@ -849,8 +856,13 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.ChannelselectListBox.Items = {'Ch1', 'Ch2', 'Ch3', 'Ch4', 'All'};
             app.ChannelselectListBox.ItemsData = {'1', '2', '3', '4', '5', ''};
             app.ChannelselectListBox.ValueChangedFcn = createCallbackFcn(app, @ChannelselectListBoxValueChanged, true);
-            app.ChannelselectListBox.Position = [55 41 52 98];
+            app.ChannelselectListBox.Position = [55 147 52 98];
             app.ChannelselectListBox.Value = '5';
+
+            % Create Button
+            app.Button = uibutton(app.LeftPanel, 'push');
+            app.Button.ButtonPushedFcn = createCallbackFcn(app, @ButtonPushed, true);
+            app.Button.Position = [5 114 100 22];
 
             % Create RightPanel
             app.RightPanel = uipanel(app.GridLayout);

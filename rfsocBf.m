@@ -31,17 +31,13 @@ if npc > 2
 end
 % estimated_angle = [estimated_angle(ang_num) estimated_angle];
 % estimated_angle(ang_num + 1) = [];
-% compOff = 1e6;
-compOff = 1e6;
+powbp = zeros(1,npc);
 for i = 1:npc
     [rawDataAdjM, ~] = steerBf(rawData, estimated_angle(i), ula, fc);
     rawSumM = sum(rawDataAdjM, 2);
-    a(i,:) = (abs(fftshift(fft(rawSumM))));
+    powbp(i,:) = bandpower(rawSumM,fsRfsoc,[-bw/2 bw/2]);
 end
-fStep = fsRfsoc/length(rawSumM);
-sample = round((fsRfsoc/2-compOff/2)/fStep:(fsRfsoc/2+compOff/2)/fStep);
-b = sum(a(:,sample),2 );
-[~, idx] = sort(b, 'ascend');
+[~, idx] = sort(powbp, 'ascend');
 if idx(ang_num) == 1
     estimated_angle = flip(estimated_angle);
 end
