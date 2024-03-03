@@ -5,7 +5,18 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         RFSoCBeamformerUIFigure        matlab.ui.Figure
         GridLayout                     matlab.ui.container.GridLayout
         LeftPanel                      matlab.ui.container.Panel
-        Button                         matlab.ui.control.Button
+        gainSigSpinner                 matlab.ui.control.Spinner
+        gainSigSpinnerLabel            matlab.ui.control.Label
+        fcSigSpinner                   matlab.ui.control.Spinner
+        fcSigSpinnerLabel              matlab.ui.control.Label
+        gainIntSpinner                 matlab.ui.control.Spinner
+        gainIntSpinnerLabel            matlab.ui.control.Label
+        fcIntSpinner                   matlab.ui.control.Spinner
+        fcIntSpinnerLabel              matlab.ui.control.Label
+        InterfererDropDown             matlab.ui.control.DropDown
+        InterfererDropDownLabel        matlab.ui.control.Label
+        SignalDropDown                 matlab.ui.control.DropDown
+        SignalDropDownLabel            matlab.ui.control.Label
         ChannelselectListBox           matlab.ui.control.ListBox
         ChannelselectListBoxLabel      matlab.ui.control.Label
         VSACheckBox                    matlab.ui.control.CheckBox
@@ -41,12 +52,12 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         CutoffsetEditFieldLabel        matlab.ui.control.Label
         GetPatternButton               matlab.ui.control.StateButton
         SystemTab                      matlab.ui.container.Tab
-        PowerCheckBox                  matlab.ui.control.CheckBox
-        ModCheckBox                    matlab.ui.control.CheckBox
-        gainGenSpinner                 matlab.ui.control.Spinner
-        gainGenSpinnerLabel            matlab.ui.control.Label
         fcGenSpinner                   matlab.ui.control.Spinner
         fcGenSpinnerLabel              matlab.ui.control.Label
+        gainGenSpinner                 matlab.ui.control.Spinner
+        gainGenSpinnerLabel            matlab.ui.control.Label
+        PowerCheckBox                  matlab.ui.control.CheckBox
+        ModCheckBox                    matlab.ui.control.CheckBox
         ScanBWEditField                matlab.ui.control.NumericEditField
         ScanBWEditFieldLabel           matlab.ui.control.Label
         LoadVSAsetupButton             matlab.ui.control.Button
@@ -116,17 +127,29 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         reset_req = 1;
         part_reset_req = 1;
         estimator;
+
     end
     properties (Access = public)
         scan_axis = -90:1:90;
         %% Hardcode (temporally)
         koef;
         num_elements = 4;
-        maxkoef = 5;
+
         fcInt = 5.7e9;
         stateInt = 0;
         powInt = 0;
         modInt = 0;
+
+        fcSig = 5700e6;
+        fsSig = 60e6;
+        gainSig = 0;
+        txSig = complex(zeros(1000, 1));
+        txInt;
+        tx = [];
+
+
+        sigPath = '.\Signals\';
+        settPath = '.\Settings\';
     end
 
     methods (Access = public)
@@ -181,6 +204,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             addpath(genpath([pwd '\iqtools_2023_10_24']))
             addpath(genpath([pwd '\Packet-Creator-VHT']))
             addpath(genpath([pwd '\Functions']))
+            pwd
 %             load koef
 %             app.koef = koef;
             app.RFSoCBeamformerUIFigure.Visible = 'off';
@@ -433,13 +457,13 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.bwOff = app.BWoffsetEditField.Value;            
         end
 
-        % Value changed function: fcGenSpinner
+        % Value changed function: fcGenSpinner, fcIntSpinner
         function fcGenSpinnerValueChanged(app, event)
             app.fcInt = app.fcGenSpinner.Value*1e6;
             genCtrl(app.gen_ip, app.gen_port, app.stateInt, app.powInt, app.fcInt, app.modInt);
         end
 
-        % Value changed function: gainGenSpinner
+        % Value changed function: gainGenSpinner, gainIntSpinner
         function gainGenSpinnerValueChanged(app, event)
             app.powInt = app.gainGenSpinner.Value;
             genCtrl(app.gen_ip, app.gen_port, app.stateInt, app.powInt, app.fcInt, app.modInt);
@@ -462,10 +486,82 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.patternCorr = app.patternCorrCheckBox.Value;            
         end
 
-        % Button pushed function: Button
+        % Callback function
         function ButtonPushed(app, event)
             app.MostPowerfullButton.Value = 1;
             app.ang_num = 1;
+        end
+
+        % Value changed function: fcSigSpinner
+        function fcSigSpinnerValueChanged(app, event)
+            app.fcSig = app.fcSigSpinner.Value;
+            app.tx = sdrCtrl(app.fcSig, app.fsSig, app.gainSig, app.txSig);
+        end
+
+        % Value changed function: gainSigSpinner
+        function gainSigSpinnerValueChanged(app, event)
+            app.gainSig = app.gainSigSpinner.Value;
+            app.tx = sdrCtrl(app.fcSig, app.fsSig, app.gainSig, app.txSig);
+        end
+
+        % Value changed function: SignalDropDown
+        function SignalDropDownValueChanged(app, event)
+            valueSig = app.SignalDropDown.Value;
+            switch valueSig
+                case 'Off'
+                    if not(isempty(app.tx))
+                        release(app.tx)
+                    end
+                    return
+                case 'CW'
+                    path = [pwd app.sigPath 'cw.mat'];
+                    app.setupFile = [pwd app.settPath 'cw.setx'];
+                case 'OFDM'
+                    path = [pwd app.sigPath 'ofdm_60mhz.mat'];
+                    app.setupFile = [pwd app.settPath 'ofdm_iq_20_cal.setx'];
+                case 'OFDM 64'
+                    path = [pwd app.sigPath 'ofdm_qam64_60mhz_60mhz_new.mat'];
+                    app.setupFile = [pwd app.settPath 'ofdm_iq_20_cal.setx'];
+                case 'WLAN'
+                    path = [pwd app.sigPath 'wlan_ofdm_60mhz.mat'];
+                    app.setupFile = [pwd app.settPath '1ch_fast_ddc_new.setx'];
+            end
+            load(path);
+            app.txSig = Y;
+            app.tx = sdrCtrl(app.fcSig, app.fsSig, app.gainSig, app.txSig, app.tx);
+            app.reset_req = 1;
+        end
+
+        % Value changed function: InterfererDropDown
+        function InterfererDropDownValueChanged(app, event)
+            valueInt = app.InterfererDropDown.Value;
+            switch valueInt
+                case 'Off'
+                    app.powInt = 0;
+                    app.modInt = 0;
+                    return
+                case 'CW'
+                    app.powInt = 1;
+                    app.modInt = 0;                    
+                    path = [pwd app.sigPath 'cw.mat'];
+                case 'OFDM'
+                    app.powInt = 1;
+                    app.modInt = 1;
+                    path = [pwd app.sigPath 'ofdm_60mhz.mat'];
+                case 'OFDM 64'
+                    app.powInt = 1;
+                    app.modInt = 1;
+                    path = [pwd app.sigPath 'ofdm_qam64_60mhz_60mhz_new.mat'];
+                case 'WLAN'
+                    app.powInt = 1;
+                    app.modInt = 1;
+                    path = [pwd app.sigPath 'wlan_ofdm_60mhz.mat'];
+            end
+            load(path);
+            app.txInt = Y;
+            app.gainGenSpinner.Value = app.powInt;     
+            app.ModCheckBox.Value = app.modInt;
+            genCtrl(app.gen_ip, app.gen_port, app.stateInt, app.powInt, app.fcInt, app.modInt);
         end
 
         % Changes arrangement of the app based on UIFigure width
@@ -473,7 +569,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             currentFigureWidth = app.RFSoCBeamformerUIFigure.Position(3);
             if(currentFigureWidth <= app.onePanelWidth)
                 % Change to a 2x1 grid
-                app.GridLayout.RowHeight = {791, 791};
+                app.GridLayout.RowHeight = {843, 843};
                 app.GridLayout.ColumnWidth = {'1x'};
                 app.RightPanel.Layout.Row = 2;
                 app.RightPanel.Layout.Column = 1;
@@ -496,7 +592,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             % Create RFSoCBeamformerUIFigure and hide until all components are created
             app.RFSoCBeamformerUIFigure = uifigure('Visible', 'off');
             app.RFSoCBeamformerUIFigure.AutoResizeChildren = 'off';
-            app.RFSoCBeamformerUIFigure.Position = [100 100 813 791];
+            app.RFSoCBeamformerUIFigure.Position = [100 100 835 843];
             app.RFSoCBeamformerUIFigure.Name = 'RFSoC Beamformer';
             app.RFSoCBeamformerUIFigure.SizeChangedFcn = createCallbackFcn(app, @updateAppLayout, true);
             app.RFSoCBeamformerUIFigure.Scrollable = 'on';
@@ -518,24 +614,24 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             % Create IQtoolsButton
             app.IQtoolsButton = uibutton(app.LeftPanel, 'push');
             app.IQtoolsButton.ButtonPushedFcn = createCallbackFcn(app, @IQtoolsButtonPushed, true);
-            app.IQtoolsButton.Position = [113 179 100 22];
+            app.IQtoolsButton.Position = [113 231 100 22];
             app.IQtoolsButton.Text = 'IQtools';
 
             % Create PlutoButton
             app.PlutoButton = uibutton(app.LeftPanel, 'push');
             app.PlutoButton.ButtonPushedFcn = createCallbackFcn(app, @PlutoButtonPushed, true);
-            app.PlutoButton.Position = [114 147 100 22];
+            app.PlutoButton.Position = [114 199 100 22];
             app.PlutoButton.Text = 'Pluto';
 
             % Create ResetButton
             app.ResetButton = uibutton(app.LeftPanel, 'state');
             app.ResetButton.ValueChangedFcn = createCallbackFcn(app, @ResetButtonValueChanged, true);
             app.ResetButton.Text = 'Reset';
-            app.ResetButton.Position = [114 114 100 22];
+            app.ResetButton.Position = [66 10 100 22];
 
             % Create TabGroup
             app.TabGroup = uitabgroup(app.LeftPanel);
-            app.TabGroup.Position = [9 264 219 507];
+            app.TabGroup.Position = [9 316 219 507];
 
             % Create MainTab
             app.MainTab = uitab(app.TabGroup);
@@ -780,18 +876,17 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.ScanBWEditField.Position = [100 164 44 22];
             app.ScanBWEditField.Value = 180;
 
-            % Create fcGenSpinnerLabel
-            app.fcGenSpinnerLabel = uilabel(app.SystemTab);
-            app.fcGenSpinnerLabel.HorizontalAlignment = 'right';
-            app.fcGenSpinnerLabel.Position = [35 117 38 22];
-            app.fcGenSpinnerLabel.Text = 'fcGen';
+            % Create ModCheckBox
+            app.ModCheckBox = uicheckbox(app.SystemTab);
+            app.ModCheckBox.ValueChangedFcn = createCallbackFcn(app, @ModCheckBoxValueChanged, true);
+            app.ModCheckBox.Text = 'Mod';
+            app.ModCheckBox.Position = [25 50 45 22];
 
-            % Create fcGenSpinner
-            app.fcGenSpinner = uispinner(app.SystemTab);
-            app.fcGenSpinner.Limits = [1 6000];
-            app.fcGenSpinner.ValueChangedFcn = createCallbackFcn(app, @fcGenSpinnerValueChanged, true);
-            app.fcGenSpinner.Position = [81 117 69 22];
-            app.fcGenSpinner.Value = 5700;
+            % Create PowerCheckBox
+            app.PowerCheckBox = uicheckbox(app.SystemTab);
+            app.PowerCheckBox.ValueChangedFcn = createCallbackFcn(app, @PowerCheckBoxValueChanged, true);
+            app.PowerCheckBox.Text = 'Power';
+            app.PowerCheckBox.Position = [118 52 56 22];
 
             % Create gainGenSpinnerLabel
             app.gainGenSpinnerLabel = uilabel(app.SystemTab);
@@ -805,48 +900,49 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.gainGenSpinner.ValueChangedFcn = createCallbackFcn(app, @gainGenSpinnerValueChanged, true);
             app.gainGenSpinner.Position = [87 84 64 22];
 
-            % Create ModCheckBox
-            app.ModCheckBox = uicheckbox(app.SystemTab);
-            app.ModCheckBox.ValueChangedFcn = createCallbackFcn(app, @ModCheckBoxValueChanged, true);
-            app.ModCheckBox.Text = 'Mod';
-            app.ModCheckBox.Position = [25 50 45 22];
+            % Create fcGenSpinnerLabel
+            app.fcGenSpinnerLabel = uilabel(app.SystemTab);
+            app.fcGenSpinnerLabel.HorizontalAlignment = 'right';
+            app.fcGenSpinnerLabel.Position = [35 117 38 22];
+            app.fcGenSpinnerLabel.Text = 'fcGen';
 
-            % Create PowerCheckBox
-            app.PowerCheckBox = uicheckbox(app.SystemTab);
-            app.PowerCheckBox.ValueChangedFcn = createCallbackFcn(app, @PowerCheckBoxValueChanged, true);
-            app.PowerCheckBox.Text = 'Power';
-            app.PowerCheckBox.Position = [118 52 56 22];
+            % Create fcGenSpinner
+            app.fcGenSpinner = uispinner(app.SystemTab);
+            app.fcGenSpinner.Limits = [1 6000];
+            app.fcGenSpinner.ValueChangedFcn = createCallbackFcn(app, @fcGenSpinnerValueChanged, true);
+            app.fcGenSpinner.Position = [81 117 69 22];
+            app.fcGenSpinner.Value = 5700;
 
             % Create CutterCheckBox
             app.CutterCheckBox = uicheckbox(app.LeftPanel);
             app.CutterCheckBox.ValueChangedFcn = createCallbackFcn(app, @CutterCheckBoxValueChanged, true);
             app.CutterCheckBox.Text = 'Cutter';
-            app.CutterCheckBox.Position = [172 209 55 22];
+            app.CutterCheckBox.Position = [172 261 55 22];
 
             % Create AvgSpinnerLabel
             app.AvgSpinnerLabel = uilabel(app.LeftPanel);
             app.AvgSpinnerLabel.HorizontalAlignment = 'right';
-            app.AvgSpinnerLabel.Position = [112 230 26 22];
+            app.AvgSpinnerLabel.Position = [112 282 26 22];
             app.AvgSpinnerLabel.Text = 'Avg';
 
             % Create AvgSpinner
             app.AvgSpinner = uispinner(app.LeftPanel);
             app.AvgSpinner.Limits = [1 Inf];
             app.AvgSpinner.ValueChangedFcn = createCallbackFcn(app, @AvgSpinnerValueChanged, true);
-            app.AvgSpinner.Position = [152 230 56 22];
+            app.AvgSpinner.Position = [152 282 56 22];
             app.AvgSpinner.Value = 10;
 
             % Create VSACheckBox
             app.VSACheckBox = uicheckbox(app.LeftPanel);
             app.VSACheckBox.ValueChangedFcn = createCallbackFcn(app, @VSACheckBoxValueChanged, true);
             app.VSACheckBox.Text = 'VSA';
-            app.VSACheckBox.Position = [117 209 46 22];
+            app.VSACheckBox.Position = [117 261 46 22];
             app.VSACheckBox.Value = true;
 
             % Create ChannelselectListBoxLabel
             app.ChannelselectListBoxLabel = uilabel(app.LeftPanel);
             app.ChannelselectListBoxLabel.HorizontalAlignment = 'right';
-            app.ChannelselectListBoxLabel.Position = [1 200 50 43];
+            app.ChannelselectListBoxLabel.Position = [1 252 50 43];
             app.ChannelselectListBoxLabel.Text = {'Channel'; 'select'};
 
             % Create ChannelselectListBox
@@ -854,13 +950,84 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.ChannelselectListBox.Items = {'Ch1', 'Ch2', 'Ch3', 'Ch4', 'All'};
             app.ChannelselectListBox.ItemsData = {'1', '2', '3', '4', '5', ''};
             app.ChannelselectListBox.ValueChangedFcn = createCallbackFcn(app, @ChannelselectListBoxValueChanged, true);
-            app.ChannelselectListBox.Position = [55 147 52 98];
+            app.ChannelselectListBox.Position = [55 199 52 98];
             app.ChannelselectListBox.Value = '5';
 
-            % Create Button
-            app.Button = uibutton(app.LeftPanel, 'push');
-            app.Button.ButtonPushedFcn = createCallbackFcn(app, @ButtonPushed, true);
-            app.Button.Position = [5 114 100 22];
+            % Create SignalDropDownLabel
+            app.SignalDropDownLabel = uilabel(app.LeftPanel);
+            app.SignalDropDownLabel.HorizontalAlignment = 'right';
+            app.SignalDropDownLabel.Position = [38 157 39 22];
+            app.SignalDropDownLabel.Text = 'Signal';
+
+            % Create SignalDropDown
+            app.SignalDropDown = uidropdown(app.LeftPanel);
+            app.SignalDropDown.Items = {'Off', 'CW', 'OFDM', 'OFDM 64', 'WLAN'};
+            app.SignalDropDown.ValueChangedFcn = createCallbackFcn(app, @SignalDropDownValueChanged, true);
+            app.SignalDropDown.Position = [92 157 100 22];
+            app.SignalDropDown.Value = 'Off';
+
+            % Create InterfererDropDownLabel
+            app.InterfererDropDownLabel = uilabel(app.LeftPanel);
+            app.InterfererDropDownLabel.HorizontalAlignment = 'right';
+            app.InterfererDropDownLabel.Position = [26 89 54 22];
+            app.InterfererDropDownLabel.Text = 'Interferer';
+
+            % Create InterfererDropDown
+            app.InterfererDropDown = uidropdown(app.LeftPanel);
+            app.InterfererDropDown.Items = {'Off', 'CW', 'OFDM', 'OFDM 64', 'WLAN'};
+            app.InterfererDropDown.ValueChangedFcn = createCallbackFcn(app, @InterfererDropDownValueChanged, true);
+            app.InterfererDropDown.Position = [95 89 100 22];
+            app.InterfererDropDown.Value = 'CW';
+
+            % Create fcIntSpinnerLabel
+            app.fcIntSpinnerLabel = uilabel(app.LeftPanel);
+            app.fcIntSpinnerLabel.HorizontalAlignment = 'right';
+            app.fcIntSpinnerLabel.Position = [7 57 28 22];
+            app.fcIntSpinnerLabel.Text = 'fcInt';
+
+            % Create fcIntSpinner
+            app.fcIntSpinner = uispinner(app.LeftPanel);
+            app.fcIntSpinner.Limits = [1 6000];
+            app.fcIntSpinner.ValueChangedFcn = createCallbackFcn(app, @fcGenSpinnerValueChanged, true);
+            app.fcIntSpinner.Position = [43 57 58 22];
+            app.fcIntSpinner.Value = 5700;
+
+            % Create gainIntSpinnerLabel
+            app.gainIntSpinnerLabel = uilabel(app.LeftPanel);
+            app.gainIntSpinnerLabel.HorizontalAlignment = 'right';
+            app.gainIntSpinnerLabel.Position = [107 57 42 22];
+            app.gainIntSpinnerLabel.Text = 'gainInt';
+
+            % Create gainIntSpinner
+            app.gainIntSpinner = uispinner(app.LeftPanel);
+            app.gainIntSpinner.Limits = [-144 18.8];
+            app.gainIntSpinner.ValueChangedFcn = createCallbackFcn(app, @gainGenSpinnerValueChanged, true);
+            app.gainIntSpinner.Position = [164 57 44 22];
+
+            % Create fcSigSpinnerLabel
+            app.fcSigSpinnerLabel = uilabel(app.LeftPanel);
+            app.fcSigSpinnerLabel.HorizontalAlignment = 'right';
+            app.fcSigSpinnerLabel.Position = [3 125 32 22];
+            app.fcSigSpinnerLabel.Text = 'fcSig';
+
+            % Create fcSigSpinner
+            app.fcSigSpinner = uispinner(app.LeftPanel);
+            app.fcSigSpinner.Limits = [70 6000];
+            app.fcSigSpinner.ValueChangedFcn = createCallbackFcn(app, @fcSigSpinnerValueChanged, true);
+            app.fcSigSpinner.Position = [43 125 58 22];
+            app.fcSigSpinner.Value = 5700;
+
+            % Create gainSigSpinnerLabel
+            app.gainSigSpinnerLabel = uilabel(app.LeftPanel);
+            app.gainSigSpinnerLabel.HorizontalAlignment = 'right';
+            app.gainSigSpinnerLabel.Position = [103 125 46 22];
+            app.gainSigSpinnerLabel.Text = 'gainSig';
+
+            % Create gainSigSpinner
+            app.gainSigSpinner = uispinner(app.LeftPanel);
+            app.gainSigSpinner.Limits = [-89 0];
+            app.gainSigSpinner.ValueChangedFcn = createCallbackFcn(app, @gainSigSpinnerValueChanged, true);
+            app.gainSigSpinner.Position = [164 125 50 22];
 
             % Create RightPanel
             app.RightPanel = uipanel(app.GridLayout);
