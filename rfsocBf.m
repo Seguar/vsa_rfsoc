@@ -64,6 +64,8 @@ switch bf
 %     case 'DL MVDR'
 %         [rawDataAdj, weights] = dl_mvdr_beamformer(rawData, ula, estimated_angle(1));
 % %         weights = conj(weights);
+    case 'QCB'
+        [rawDataAdj, weights] = qcb_beamformer_algo_2(rawData, ula, estimated_angle(1), 1, diag, bwOff, 10, 3, fc);
     otherwise
         rawDataAdj = rawData;
         weights = ones(1,4);

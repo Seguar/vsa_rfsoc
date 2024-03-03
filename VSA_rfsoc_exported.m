@@ -718,7 +718,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
 
             % Create BFtypeListBox
             app.BFtypeListBox = uilistbox(app.MainTab);
-            app.BFtypeListBox.Items = {'Without', 'Steering', 'MVDR', 'DMR', 'PC', 'LCMV', 'RVL', 'RAB PC', 'DL MVDR'};
+            app.BFtypeListBox.Items = {'Without', 'Steering', 'MVDR', 'DMR', 'PC', 'LCMV', 'RVL', 'RAB PC', 'DL MVDR', 'QCB'};
             app.BFtypeListBox.ValueChangedFcn = createCallbackFcn(app, @BFtypeListBoxValueChanged, true);
             app.BFtypeListBox.Position = [77 117 98 170];
             app.BFtypeListBox.Value = 'Steering';
