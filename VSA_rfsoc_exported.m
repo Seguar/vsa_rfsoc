@@ -552,8 +552,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             switch valueInt
                 case 'Off'
                     app.stateInt = 0;
-                    app.modInt = 0;
-                    return
+                    app.modInt = 0;                 
                 case 'CW'
                     app.stateInt = 1;
                     app.modInt = 0;                    
@@ -571,8 +570,10 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                     app.modInt = 1;
                     path = [pwd app.sigPath 'wlan_ofdm_60mhz.mat'];
             end
-            load(path);
-            app.txInt = Y;
+%             try 
+%                 load(path);
+%             end
+%             app.txInt = Y;
             app.PowerCheckBox.Value = app.stateInt;     
             app.ModCheckBox.Value = app.modInt;
             genCtrl(app.gen_ip, app.gen_port, app.stateInt, app.powInt, app.fcInt, app.modInt);
