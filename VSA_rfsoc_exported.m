@@ -537,29 +537,29 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             valueInt = app.InterfererDropDown.Value;
             switch valueInt
                 case 'Off'
-                    app.powInt = 0;
+                    app.stateInt = 0;
                     app.modInt = 0;
                     return
                 case 'CW'
-                    app.powInt = 1;
+                    app.stateInt = 1;
                     app.modInt = 0;                    
                     path = [pwd app.sigPath 'cw.mat'];
                 case 'OFDM'
-                    app.powInt = 1;
+                    app.stateInt = 1;
                     app.modInt = 1;
                     path = [pwd app.sigPath 'ofdm_60mhz.mat'];
                 case 'OFDM 64'
-                    app.powInt = 1;
+                    app.stateInt = 1;
                     app.modInt = 1;
                     path = [pwd app.sigPath 'ofdm_qam64_60mhz_60mhz_new.mat'];
                 case 'WLAN'
-                    app.powInt = 1;
+                    app.stateInt = 1;
                     app.modInt = 1;
                     path = [pwd app.sigPath 'wlan_ofdm_60mhz.mat'];
             end
             load(path);
             app.txInt = Y;
-            app.gainGenSpinner.Value = app.powInt;     
+            app.PowerCheckBox.Value = app.stateInt;     
             app.ModCheckBox.Value = app.modInt;
             genCtrl(app.gen_ip, app.gen_port, app.stateInt, app.powInt, app.fcInt, app.modInt);
         end
@@ -977,7 +977,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.InterfererDropDown.Items = {'Off', 'CW', 'OFDM', 'OFDM 64', 'WLAN'};
             app.InterfererDropDown.ValueChangedFcn = createCallbackFcn(app, @InterfererDropDownValueChanged, true);
             app.InterfererDropDown.Position = [95 89 100 22];
-            app.InterfererDropDown.Value = 'CW';
+            app.InterfererDropDown.Value = 'Off';
 
             % Create fcIntSpinnerLabel
             app.fcIntSpinnerLabel = uilabel(app.LeftPanel);
