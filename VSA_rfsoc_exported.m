@@ -711,7 +711,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.SignalpriorityButtonGroup.AutoResizeChildren = 'off';
             app.SignalpriorityButtonGroup.SelectionChangedFcn = createCallbackFcn(app, @SignalpriorityButtonGroupSelectionChanged, true);
             app.SignalpriorityButtonGroup.Title = 'Signal priority';
-            app.SignalpriorityButtonGroup.Position = [69 26 113 83];
+            app.SignalpriorityButtonGroup.Position = [70 10 113 83];
 
             % Create MostPowerfullButton
             app.MostPowerfullButton = uiradiobutton(app.SignalpriorityButtonGroup);
@@ -740,14 +740,14 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             % Create DOAtypeListBoxLabel
             app.DOAtypeListBoxLabel = uilabel(app.MainTab);
             app.DOAtypeListBoxLabel.HorizontalAlignment = 'right';
-            app.DOAtypeListBoxLabel.Position = [-6 381 79 43];
+            app.DOAtypeListBoxLabel.Position = [-6 388 79 43];
             app.DOAtypeListBoxLabel.Text = {'DOA'; 'type'};
 
             % Create DOAtypeListBox
             app.DOAtypeListBox = uilistbox(app.MainTab);
             app.DOAtypeListBox.Items = {'MVDR', 'MUSIC', 'Beamscan', 'MUSICR', 'ESPRITE', 'ESPRITEBS', 'WSFR'};
             app.DOAtypeListBox.ValueChangedFcn = createCallbackFcn(app, @DOAtypeListBoxValueChanged, true);
-            app.DOAtypeListBox.Position = [77 292 98 134];
+            app.DOAtypeListBox.Position = [77 299 98 134];
             app.DOAtypeListBox.Value = 'MUSIC';
 
             % Create BFtypeListBoxLabel
@@ -760,7 +760,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.BFtypeListBox = uilistbox(app.MainTab);
             app.BFtypeListBox.Items = {'Without', 'Steering', 'MVDR', 'DMR', 'PC', 'LCMV', 'RVL', 'RAB PC', 'DL MVDR', 'QCB'};
             app.BFtypeListBox.ValueChangedFcn = createCallbackFcn(app, @BFtypeListBoxValueChanged, true);
-            app.BFtypeListBox.Position = [77 117 98 170];
+            app.BFtypeListBox.Position = [77 105 98 182];
             app.BFtypeListBox.Value = 'Steering';
 
             % Create DebugTab
@@ -1030,7 +1030,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
 
             % Create gainGenSpinner
             app.gainGenSpinner = uispinner(app.SystemTab);
-            app.gainGenSpinner.Limits = [-144 18.8];
+            app.gainGenSpinner.Limits = [-144 18];
             app.gainGenSpinner.ValueChangedFcn = createCallbackFcn(app, @gainGenSpinnerValueChanged, true);
             app.gainGenSpinner.Position = [87 84 64 22];
 
@@ -1134,9 +1134,9 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
 
             % Create gainIntSpinner
             app.gainIntSpinner = uispinner(app.LeftPanel);
-            app.gainIntSpinner.Limits = [-144 18.8];
+            app.gainIntSpinner.Limits = [-144 18];
             app.gainIntSpinner.ValueChangedFcn = createCallbackFcn(app, @gainIntSpinnerValueChanged, true);
-            app.gainIntSpinner.Position = [164 57 44 22];
+            app.gainIntSpinner.Position = [164 57 63 22];
 
             % Create fcSigSpinnerLabel
             app.fcSigSpinnerLabel = uilabel(app.LeftPanel);
@@ -1161,7 +1161,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.gainSigSpinner = uispinner(app.LeftPanel);
             app.gainSigSpinner.Limits = [-89 0];
             app.gainSigSpinner.ValueChangedFcn = createCallbackFcn(app, @gainSigSpinnerValueChanged, true);
-            app.gainSigSpinner.Position = [164 125 50 22];
+            app.gainSigSpinner.Position = [164 125 63 22];
 
             % Create RightPanel
             app.RightPanel = uipanel(app.GridLayout);
