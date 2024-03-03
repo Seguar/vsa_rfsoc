@@ -35,6 +35,16 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         LessPowerfullButton            matlab.ui.control.RadioButton
         MostPowerfullButton            matlab.ui.control.RadioButton
         DebugTab                       matlab.ui.container.Tab
+        iterEditField                  matlab.ui.control.NumericEditField
+        iterEditFieldLabel             matlab.ui.control.Label
+        alphaEditField                 matlab.ui.control.NumericEditField
+        alphaEditFieldLabel            matlab.ui.control.Label
+        gammaEditField                 matlab.ui.control.NumericEditField
+        gammaEditFieldLabel            matlab.ui.control.Label
+        alg_scan_resEditField          matlab.ui.control.NumericEditField
+        alg_scan_resEditFieldLabel     matlab.ui.control.Label
+        mis_angEditField               matlab.ui.control.NumericEditField
+        mis_angEditFieldLabel          matlab.ui.control.Label
         patternCorrCheckBox            matlab.ui.control.CheckBox
         BWoffsetEditField              matlab.ui.control.NumericEditField
         BWoffsetEditFieldLabel         matlab.ui.control.Label
@@ -110,6 +120,11 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         ula
         weights
         c = physconst('LightSpeed'); % propagation velocity [m/s]
+        alg_scan_res = 1;
+        mis_ang = 1;
+        alpha = 1.1;
+        gamma = 1;
+        iter = 1;
         %% System
         fc = 5.7e9;
         fsRfsoc = 125e6;
@@ -232,7 +247,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                 try
                     [yspec, estimated_angle, bfSig, app.weights, rawData] = rfsocBf(app, app.vsa, app.ch, app.bf, app.off, app.gap, app.cutter, ...
                         app.ang_num, data_v, tcp_client, app.fc, app.dataChan, app.diag, app.bwOff, app.ula, app.scan_axis, ...
-                        app.c1, app.c2, app.fsRfsoc, app.bw, app.c, app.estimator, app.fcInt);
+                        app.c1, app.c2, app.fsRfsoc, app.bw, app.c, app.estimator, app.alg_scan_res, app.mis_ang, app.alpha, app.gamma, app.iter);
                     if isnan(app.weights)
                         disp("No signal")
                         continue
@@ -593,6 +608,31 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             genCtrl(app.gen_ip, app.gen_port, app.stateInt, app.powInt, app.fcInt, app.modInt);
         end
 
+        % Value changed function: mis_angEditField
+        function mis_angEditFieldValueChanged(app, event)
+            app.mis_ang = app.mis_angEditField.Value;            
+        end
+
+        % Value changed function: alg_scan_resEditField
+        function alg_scan_resEditFieldValueChanged(app, event)
+            app.alg_scan_ang = app.alg_scan_resEditField.Value;            
+        end
+
+        % Value changed function: gammaEditField
+        function gammaEditFieldValueChanged(app, event)
+            app.gamma = app.gammaEditField.Value;            
+        end
+
+        % Value changed function: alphaEditField
+        function alphaEditFieldValueChanged(app, event)
+            app.alpha = app.alphaEditField.Value;            
+        end
+
+        % Value changed function: iterEditField
+        function iterEditFieldValueChanged(app, event)
+            app.iter = app.iterEditField.Value;            
+        end
+
         % Changes arrangement of the app based on UIFigure width
         function updateAppLayout(app, event)
             currentFigureWidth = app.RFSoCBeamformerUIFigure.Position(3);
@@ -792,13 +832,13 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             % Create DiagonalFactorEditFieldLabel
             app.DiagonalFactorEditFieldLabel = uilabel(app.DebugTab);
             app.DiagonalFactorEditFieldLabel.HorizontalAlignment = 'right';
-            app.DiagonalFactorEditFieldLabel.Position = [10 327 55 28];
+            app.DiagonalFactorEditFieldLabel.Position = [22 333 55 28];
             app.DiagonalFactorEditFieldLabel.Text = {'Diagonal'; 'Factor'};
 
             % Create DiagonalFactorEditField
             app.DiagonalFactorEditField = uieditfield(app.DebugTab, 'numeric');
             app.DiagonalFactorEditField.ValueChangedFcn = createCallbackFcn(app, @DiagonalFactorEditFieldValueChanged2, true);
-            app.DiagonalFactorEditField.Position = [80 333 78 22];
+            app.DiagonalFactorEditField.Position = [92 339 78 22];
             app.DiagonalFactorEditField.Value = 0.1;
 
             % Create GetSpectrumButton
@@ -810,14 +850,14 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             % Create BWoffsetEditFieldLabel
             app.BWoffsetEditFieldLabel = uilabel(app.DebugTab);
             app.BWoffsetEditFieldLabel.HorizontalAlignment = 'right';
-            app.BWoffsetEditFieldLabel.Position = [8 286 55 28];
+            app.BWoffsetEditFieldLabel.Position = [22 292 55 28];
             app.BWoffsetEditFieldLabel.Text = {'BW'; 'offset'};
 
             % Create BWoffsetEditField
             app.BWoffsetEditField = uieditfield(app.DebugTab, 'numeric');
             app.BWoffsetEditField.Limits = [0 45];
             app.BWoffsetEditField.ValueChangedFcn = createCallbackFcn(app, @BWoffsetEditFieldValueChanged, true);
-            app.BWoffsetEditField.Position = [78 292 78 22];
+            app.BWoffsetEditField.Position = [92 298 78 22];
             app.BWoffsetEditField.Value = 0.1;
 
             % Create patternCorrCheckBox
@@ -825,6 +865,71 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.patternCorrCheckBox.ValueChangedFcn = createCallbackFcn(app, @patternCorrCheckBoxValueChanged, true);
             app.patternCorrCheckBox.Text = 'patternCorr';
             app.patternCorrCheckBox.Position = [15 5 83 22];
+
+            % Create mis_angEditFieldLabel
+            app.mis_angEditFieldLabel = uilabel(app.DebugTab);
+            app.mis_angEditFieldLabel.HorizontalAlignment = 'right';
+            app.mis_angEditFieldLabel.Position = [61 451 51 22];
+            app.mis_angEditFieldLabel.Text = 'mis_ang';
+
+            % Create mis_angEditField
+            app.mis_angEditField = uieditfield(app.DebugTab, 'numeric');
+            app.mis_angEditField.Limits = [0.1 20];
+            app.mis_angEditField.ValueChangedFcn = createCallbackFcn(app, @mis_angEditFieldValueChanged, true);
+            app.mis_angEditField.Position = [127 451 43 22];
+            app.mis_angEditField.Value = 1;
+
+            % Create alg_scan_resEditFieldLabel
+            app.alg_scan_resEditFieldLabel = uilabel(app.DebugTab);
+            app.alg_scan_resEditFieldLabel.HorizontalAlignment = 'right';
+            app.alg_scan_resEditFieldLabel.Position = [35 431 77 22];
+            app.alg_scan_resEditFieldLabel.Text = 'alg_scan_res';
+
+            % Create alg_scan_resEditField
+            app.alg_scan_resEditField = uieditfield(app.DebugTab, 'numeric');
+            app.alg_scan_resEditField.Limits = [0.001 10];
+            app.alg_scan_resEditField.ValueChangedFcn = createCallbackFcn(app, @alg_scan_resEditFieldValueChanged, true);
+            app.alg_scan_resEditField.Position = [127 431 43 22];
+            app.alg_scan_resEditField.Value = 1;
+
+            % Create gammaEditFieldLabel
+            app.gammaEditFieldLabel = uilabel(app.DebugTab);
+            app.gammaEditFieldLabel.HorizontalAlignment = 'right';
+            app.gammaEditFieldLabel.Position = [66 411 46 22];
+            app.gammaEditFieldLabel.Text = 'gamma';
+
+            % Create gammaEditField
+            app.gammaEditField = uieditfield(app.DebugTab, 'numeric');
+            app.gammaEditField.Limits = [0 Inf];
+            app.gammaEditField.ValueChangedFcn = createCallbackFcn(app, @gammaEditFieldValueChanged, true);
+            app.gammaEditField.Position = [127 411 43 22];
+            app.gammaEditField.Value = 1;
+
+            % Create alphaEditFieldLabel
+            app.alphaEditFieldLabel = uilabel(app.DebugTab);
+            app.alphaEditFieldLabel.HorizontalAlignment = 'right';
+            app.alphaEditFieldLabel.Position = [77 391 35 22];
+            app.alphaEditFieldLabel.Text = 'alpha';
+
+            % Create alphaEditField
+            app.alphaEditField = uieditfield(app.DebugTab, 'numeric');
+            app.alphaEditField.Limits = [0 Inf];
+            app.alphaEditField.ValueChangedFcn = createCallbackFcn(app, @alphaEditFieldValueChanged, true);
+            app.alphaEditField.Position = [127 391 43 22];
+            app.alphaEditField.Value = 1.1;
+
+            % Create iterEditFieldLabel
+            app.iterEditFieldLabel = uilabel(app.DebugTab);
+            app.iterEditFieldLabel.HorizontalAlignment = 'right';
+            app.iterEditFieldLabel.Position = [87 371 25 22];
+            app.iterEditFieldLabel.Text = 'iter';
+
+            % Create iterEditField
+            app.iterEditField = uieditfield(app.DebugTab, 'numeric');
+            app.iterEditField.Limits = [1 Inf];
+            app.iterEditField.ValueChangedFcn = createCallbackFcn(app, @iterEditFieldValueChanged, true);
+            app.iterEditField.Position = [127 371 43 22];
+            app.iterEditField.Value = 1;
 
             % Create SystemTab
             app.SystemTab = uitab(app.TabGroup);

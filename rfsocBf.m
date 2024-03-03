@@ -1,5 +1,5 @@
 function [yspec, estimated_angle, bfSig, weights, rawData] = rfsocBf(app, vsa, ch, bf, off, gap, cutter, ang_num, data_v, tcp_client, fc, dataChan, diag, bwOff, ula, scan_axis, ...
-    c1, c2, fsRfsoc, bw, c, estimator, fcInt)
+    c1, c2, fsRfsoc, bw, c, estimator, alg_scan_res, mis_ang, alpha, gamma, iter)
 test_z = zeros(1, gap);
 powCalc = @(x) round(max(db(fftshift(fft(x))))/2, 1); % Power from FFT calculations
 
@@ -56,7 +56,7 @@ switch bf
         [rawDataAdj, weights] = lcmv_beamformer(rawData, estimated_angle(1), estimated_angle(2), ula, bwOff, fc);
         weights = conj(weights);
     case 'RVL'
-        [rawDataAdj, weights] = rvl_beamformer(rawData, diag, ula, estimated_angle(1));
+        [rawDataAdj, weights] = rvl_beamformer(rawData, gamma, ula, estimated_angle(1));
         weights = conj(weights);
 %     case 'RAB PC'
 %         [rawDataAdj, weights] = rab_pc_beamformer(rawData, npc, ula, estimated_angle(1), diag);
@@ -65,7 +65,7 @@ switch bf
 %         [rawDataAdj, weights] = dl_mvdr_beamformer(rawData, ula, estimated_angle(1));
 % %         weights = conj(weights);
     case 'QCB'
-        [rawDataAdj, weights] = qcb_beamformer_algo_2(rawData, ula, estimated_angle(1), 1, diag, bwOff, 10, 3, fc);
+        [rawDataAdj, weights] = qcb_beamformer_algo_2(rawData, ula, estimated_angle(1), mis_ang, gamma, alpha, iter, alg_scan_res, fc);
     otherwise
         rawDataAdj = rawData;
         weights = ones(1,4);
