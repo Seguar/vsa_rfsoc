@@ -457,15 +457,17 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.bwOff = app.BWoffsetEditField.Value;            
         end
 
-        % Value changed function: fcGenSpinner, fcIntSpinner
+        % Value changed function: fcGenSpinner
         function fcGenSpinnerValueChanged(app, event)
             app.fcInt = app.fcGenSpinner.Value*1e6;
+            app.fcIntSpinner.Value = app.fcGenSpinner.Value;
             genCtrl(app.gen_ip, app.gen_port, app.stateInt, app.powInt, app.fcInt, app.modInt);
         end
 
-        % Value changed function: gainGenSpinner, gainIntSpinner
+        % Value changed function: gainGenSpinner
         function gainGenSpinnerValueChanged(app, event)
             app.powInt = app.gainGenSpinner.Value;
+            app.gainIntSpinner.Value = app.gainGenSpinner.Value;
             genCtrl(app.gen_ip, app.gen_port, app.stateInt, app.powInt, app.fcInt, app.modInt);
         end
 
@@ -494,19 +496,28 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
 
         % Value changed function: fcSigSpinner
         function fcSigSpinnerValueChanged(app, event)
-            app.fcSig = app.fcSigSpinner.Value;
+            app.fcSig = app.fcSigSpinner.Value*1e6;
+            if not(isempty(app.tx))
+                release(app.tx);
+            end
             app.tx = sdrCtrl(app.fcSig, app.fsSig, app.gainSig, app.txSig);
         end
 
         % Value changed function: gainSigSpinner
         function gainSigSpinnerValueChanged(app, event)
             app.gainSig = app.gainSigSpinner.Value;
+            if not(isempty(app.tx))
+                release(app.tx);
+            end
             app.tx = sdrCtrl(app.fcSig, app.fsSig, app.gainSig, app.txSig);
         end
 
         % Value changed function: SignalDropDown
         function SignalDropDownValueChanged(app, event)
             valueSig = app.SignalDropDown.Value;
+            if not(isempty(app.tx))
+                release(app.tx);
+            end
             switch valueSig
                 case 'Off'
                     if not(isempty(app.tx))
@@ -519,16 +530,19 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                 case 'OFDM'
                     path = [pwd app.sigPath 'ofdm_60mhz.mat'];
                     app.setupFile = [pwd app.settPath 'ofdm_iq_20_cal.setx'];
+                    app.bw = 20e6;
                 case 'OFDM 64'
                     path = [pwd app.sigPath 'ofdm_qam64_60mhz_60mhz_new.mat'];
-                    app.setupFile = [pwd app.settPath 'ofdm_iq_20_cal.setx'];
+                    app.setupFile = [pwd app.settPath 'ofdm_iq_60_64_new.setx'];
+                    app.bw = 60e6;
                 case 'WLAN'
                     path = [pwd app.sigPath 'wlan_ofdm_60mhz.mat'];
                     app.setupFile = [pwd app.settPath '1ch_fast_ddc_new.setx'];
+                    app.bw = 20e6;
             end
             load(path);
             app.txSig = Y;
-            app.tx = sdrCtrl(app.fcSig, app.fsSig, app.gainSig, app.txSig, app.tx);
+            app.tx = sdrCtrl(app.fcSig, app.fsSig, app.gainSig, app.txSig);
             app.reset_req = 1;
         end
 
@@ -561,6 +575,20 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.txInt = Y;
             app.PowerCheckBox.Value = app.stateInt;     
             app.ModCheckBox.Value = app.modInt;
+            genCtrl(app.gen_ip, app.gen_port, app.stateInt, app.powInt, app.fcInt, app.modInt);
+        end
+
+        % Value changed function: fcIntSpinner
+        function fcIntSpinnerValueChanged(app, event)
+            app.fcInt = app.fcIntSpinner.Value*1e6;
+            app.fcGenSpinner.Value = app.fcIntSpinner.Value;
+            genCtrl(app.gen_ip, app.gen_port, app.stateInt, app.powInt, app.fcInt, app.modInt);
+        end
+
+        % Value changed function: gainIntSpinner
+        function gainIntSpinnerValueChanged(app, event)
+            app.powInt = app.gainIntSpinner.Value;
+            app.gainGenSpinner.Value = app.gainIntSpinner.Value;
             genCtrl(app.gen_ip, app.gen_port, app.stateInt, app.powInt, app.fcInt, app.modInt);
         end
 
@@ -988,7 +1016,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             % Create fcIntSpinner
             app.fcIntSpinner = uispinner(app.LeftPanel);
             app.fcIntSpinner.Limits = [1 6000];
-            app.fcIntSpinner.ValueChangedFcn = createCallbackFcn(app, @fcGenSpinnerValueChanged, true);
+            app.fcIntSpinner.ValueChangedFcn = createCallbackFcn(app, @fcIntSpinnerValueChanged, true);
             app.fcIntSpinner.Position = [43 57 58 22];
             app.fcIntSpinner.Value = 5700;
 
@@ -1001,7 +1029,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             % Create gainIntSpinner
             app.gainIntSpinner = uispinner(app.LeftPanel);
             app.gainIntSpinner.Limits = [-144 18.8];
-            app.gainIntSpinner.ValueChangedFcn = createCallbackFcn(app, @gainGenSpinnerValueChanged, true);
+            app.gainIntSpinner.ValueChangedFcn = createCallbackFcn(app, @gainIntSpinnerValueChanged, true);
             app.gainIntSpinner.Position = [164 57 44 22];
 
             % Create fcSigSpinnerLabel
