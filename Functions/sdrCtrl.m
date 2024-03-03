@@ -1,4 +1,4 @@
-function tx = sdrCtrl(fc, fs, gain, txWaveform, tx)
+function tx = sdrCtrl(fc, fs, gain, txWaveform)
 tx = sdrtx('Pluto');
 tx.ShowAdvancedProperties = true;
 tx.CenterFrequency = fc;
