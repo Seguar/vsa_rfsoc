@@ -49,8 +49,8 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         BWEditField                    matlab.ui.control.NumericEditField
         BWEditFieldLabel               matlab.ui.control.Label
         GetSpectrumButton              matlab.ui.control.StateButton
-        DFEditField                    matlab.ui.control.NumericEditField
-        DFEditFieldLabel               matlab.ui.control.Label
+        DLFEditField                   matlab.ui.control.NumericEditField
+        DLFEditFieldLabel              matlab.ui.control.Label
         UpdRateEditField               matlab.ui.control.NumericEditField
         UpdRateEditFieldLabel          matlab.ui.control.Label
         DebugCheckBox                  matlab.ui.control.CheckBox
@@ -99,7 +99,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         vsa = 1;
         ch = 5;
         bf = 'Steering';
-        doa = 'MUSIC';
+        doa = 'MVDR';
         cutter = 0;
         off = 500;
         gap = 0;
@@ -438,9 +438,9 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.part_reset_req = 1;
         end
 
-        % Value changed function: DFEditField
-        function DFEditFieldValueChanged2(app, event)
-            app.diag = app.DFEditField.Value;
+        % Value changed function: DLFEditField
+        function DLFEditFieldValueChanged2(app, event)
+            app.diag = app.DLFEditField.Value;
         end
 
         % Value changed function: GetSpectrumButton
@@ -748,7 +748,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.DOAtypeListBox.Items = {'MVDR', 'MUSIC', 'Beamscan', 'MUSICR', 'ESPRITE', 'ESPRITEBS', 'WSFR'};
             app.DOAtypeListBox.ValueChangedFcn = createCallbackFcn(app, @DOAtypeListBoxValueChanged, true);
             app.DOAtypeListBox.Position = [77 299 98 134];
-            app.DOAtypeListBox.Value = 'MUSIC';
+            app.DOAtypeListBox.Value = 'MVDR';
 
             % Create BFtypeListBoxLabel
             app.BFtypeListBoxLabel = uilabel(app.MainTab);
@@ -829,17 +829,17 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.UpdRateEditField.Position = [72 138 77 22];
             app.UpdRateEditField.Value = 10;
 
-            % Create DFEditFieldLabel
-            app.DFEditFieldLabel = uilabel(app.DebugTab);
-            app.DFEditFieldLabel.HorizontalAlignment = 'right';
-            app.DFEditFieldLabel.Position = [58 344 55 28];
-            app.DFEditFieldLabel.Text = 'DF';
+            % Create DLFEditFieldLabel
+            app.DLFEditFieldLabel = uilabel(app.DebugTab);
+            app.DLFEditFieldLabel.HorizontalAlignment = 'right';
+            app.DLFEditFieldLabel.Position = [58 344 55 28];
+            app.DLFEditFieldLabel.Text = 'DLF';
 
-            % Create DFEditField
-            app.DFEditField = uieditfield(app.DebugTab, 'numeric');
-            app.DFEditField.ValueChangedFcn = createCallbackFcn(app, @DFEditFieldValueChanged2, true);
-            app.DFEditField.Position = [128 350 43 22];
-            app.DFEditField.Value = 0.1;
+            % Create DLFEditField
+            app.DLFEditField = uieditfield(app.DebugTab, 'numeric');
+            app.DLFEditField.ValueChangedFcn = createCallbackFcn(app, @DLFEditFieldValueChanged2, true);
+            app.DLFEditField.Position = [128 350 43 22];
+            app.DLFEditField.Value = 0.1;
 
             % Create GetSpectrumButton
             app.GetSpectrumButton = uibutton(app.DebugTab, 'state');
