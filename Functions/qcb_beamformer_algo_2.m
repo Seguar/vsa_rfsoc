@@ -22,7 +22,7 @@ function [rawDataAdj, weights] = qcb_beamformer_algo_2(rawData, ula, src_angle, 
         s = exp(1j*(pi)*((0:numelements-1)')*sin(deg2rad(ang_scan)));
         s_w_norm = abs(s'*w_gamma);
         s_w_flag = (sum(s_w_norm >= 1) == length(s_w_norm));
-        length(s_w_norm) - sum(s_w_norm >= 1)
+%         length(s_w_norm) - sum(s_w_norm >= 1)
         if s_w_flag
             stop_flag = 0;
         else
@@ -30,7 +30,8 @@ function [rawDataAdj, weights] = qcb_beamformer_algo_2(rawData, ula, src_angle, 
         end
         iter = iter - 1
     end
-    weights = w_1;
+    weights = w_gamma;
+    weights = weights';
     rawDataAdj(:,1) = rawData(:,1)*weights(1);
     rawDataAdj(:,2) = rawData(:,2)*weights(2);
     rawDataAdj(:,3) = rawData(:,3)*weights(3);

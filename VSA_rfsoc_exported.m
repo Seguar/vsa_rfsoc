@@ -46,11 +46,11 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         mis_angEditField               matlab.ui.control.NumericEditField
         mis_angEditFieldLabel          matlab.ui.control.Label
         patternCorrCheckBox            matlab.ui.control.CheckBox
-        BWoffsetEditField              matlab.ui.control.NumericEditField
-        BWoffsetEditFieldLabel         matlab.ui.control.Label
+        BWEditField                    matlab.ui.control.NumericEditField
+        BWEditFieldLabel               matlab.ui.control.Label
         GetSpectrumButton              matlab.ui.control.StateButton
-        DiagonalFactorEditField        matlab.ui.control.NumericEditField
-        DiagonalFactorEditFieldLabel   matlab.ui.control.Label
+        DFEditField                    matlab.ui.control.NumericEditField
+        DFEditFieldLabel               matlab.ui.control.Label
         UpdRateEditField               matlab.ui.control.NumericEditField
         UpdRateEditFieldLabel          matlab.ui.control.Label
         DebugCheckBox                  matlab.ui.control.CheckBox
@@ -438,9 +438,9 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.part_reset_req = 1;
         end
 
-        % Value changed function: DiagonalFactorEditField
-        function DiagonalFactorEditFieldValueChanged2(app, event)
-            app.diag = app.DiagonalFactorEditField.Value;
+        % Value changed function: DFEditField
+        function DFEditFieldValueChanged2(app, event)
+            app.diag = app.DFEditField.Value;
         end
 
         % Value changed function: GetSpectrumButton
@@ -467,9 +467,9 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.part_reset_req = 1;
         end
 
-        % Value changed function: BWoffsetEditField
-        function BWoffsetEditFieldValueChanged(app, event)
-            app.bwOff = app.BWoffsetEditField.Value;            
+        % Value changed function: BWEditField
+        function BWEditFieldValueChanged(app, event)
+            app.bwOff = app.BWEditField.Value;            
         end
 
         % Value changed function: fcGenSpinner
@@ -615,7 +615,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
 
         % Value changed function: alg_scan_resEditField
         function alg_scan_resEditFieldValueChanged(app, event)
-            app.alg_scan_ang = app.alg_scan_resEditField.Value;            
+            app.alg_scan_res = app.alg_scan_resEditField.Value;            
         end
 
         % Value changed function: gammaEditField
@@ -727,14 +727,14 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             % Create DOAresolutionEditField_3Label
             app.DOAresolutionEditField_3Label = uilabel(app.MainTab);
             app.DOAresolutionEditField_3Label.HorizontalAlignment = 'right';
-            app.DOAresolutionEditField_3Label.Position = [28 444 58 28];
+            app.DOAresolutionEditField_3Label.Position = [51 444 58 28];
             app.DOAresolutionEditField_3Label.Text = {'DOA'; 'resolution'};
 
             % Create DOAresolutionEditField
             app.DOAresolutionEditField = uieditfield(app.MainTab, 'numeric');
             app.DOAresolutionEditField.Limits = [0.0001 Inf];
             app.DOAresolutionEditField.ValueChangedFcn = createCallbackFcn(app, @DOAresolutionEditFieldValueChanged, true);
-            app.DOAresolutionEditField.Position = [101 450 77 22];
+            app.DOAresolutionEditField.Position = [124 450 77 22];
             app.DOAresolutionEditField.Value = 1;
 
             % Create DOAtypeListBoxLabel
@@ -829,17 +829,17 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.UpdRateEditField.Position = [72 138 77 22];
             app.UpdRateEditField.Value = 10;
 
-            % Create DiagonalFactorEditFieldLabel
-            app.DiagonalFactorEditFieldLabel = uilabel(app.DebugTab);
-            app.DiagonalFactorEditFieldLabel.HorizontalAlignment = 'right';
-            app.DiagonalFactorEditFieldLabel.Position = [22 333 55 28];
-            app.DiagonalFactorEditFieldLabel.Text = {'Diagonal'; 'Factor'};
+            % Create DFEditFieldLabel
+            app.DFEditFieldLabel = uilabel(app.DebugTab);
+            app.DFEditFieldLabel.HorizontalAlignment = 'right';
+            app.DFEditFieldLabel.Position = [58 344 55 28];
+            app.DFEditFieldLabel.Text = 'DF';
 
-            % Create DiagonalFactorEditField
-            app.DiagonalFactorEditField = uieditfield(app.DebugTab, 'numeric');
-            app.DiagonalFactorEditField.ValueChangedFcn = createCallbackFcn(app, @DiagonalFactorEditFieldValueChanged2, true);
-            app.DiagonalFactorEditField.Position = [92 339 78 22];
-            app.DiagonalFactorEditField.Value = 0.1;
+            % Create DFEditField
+            app.DFEditField = uieditfield(app.DebugTab, 'numeric');
+            app.DFEditField.ValueChangedFcn = createCallbackFcn(app, @DFEditFieldValueChanged2, true);
+            app.DFEditField.Position = [128 350 43 22];
+            app.DFEditField.Value = 0.1;
 
             % Create GetSpectrumButton
             app.GetSpectrumButton = uibutton(app.DebugTab, 'state');
@@ -847,18 +847,18 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.GetSpectrumButton.Text = 'GetSpectrum';
             app.GetSpectrumButton.Position = [36 211 100 22];
 
-            % Create BWoffsetEditFieldLabel
-            app.BWoffsetEditFieldLabel = uilabel(app.DebugTab);
-            app.BWoffsetEditFieldLabel.HorizontalAlignment = 'right';
-            app.BWoffsetEditFieldLabel.Position = [22 292 55 28];
-            app.BWoffsetEditFieldLabel.Text = {'BW'; 'offset'};
+            % Create BWEditFieldLabel
+            app.BWEditFieldLabel = uilabel(app.DebugTab);
+            app.BWEditFieldLabel.HorizontalAlignment = 'right';
+            app.BWEditFieldLabel.Position = [58 323 55 28];
+            app.BWEditFieldLabel.Text = 'BW';
 
-            % Create BWoffsetEditField
-            app.BWoffsetEditField = uieditfield(app.DebugTab, 'numeric');
-            app.BWoffsetEditField.Limits = [0 45];
-            app.BWoffsetEditField.ValueChangedFcn = createCallbackFcn(app, @BWoffsetEditFieldValueChanged, true);
-            app.BWoffsetEditField.Position = [92 298 78 22];
-            app.BWoffsetEditField.Value = 0.1;
+            % Create BWEditField
+            app.BWEditField = uieditfield(app.DebugTab, 'numeric');
+            app.BWEditField.Limits = [0 45];
+            app.BWEditField.ValueChangedFcn = createCallbackFcn(app, @BWEditFieldValueChanged, true);
+            app.BWEditField.Position = [128 329 43 22];
+            app.BWEditField.Value = 0.1;
 
             % Create patternCorrCheckBox
             app.patternCorrCheckBox = uicheckbox(app.DebugTab);
@@ -869,66 +869,66 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             % Create mis_angEditFieldLabel
             app.mis_angEditFieldLabel = uilabel(app.DebugTab);
             app.mis_angEditFieldLabel.HorizontalAlignment = 'right';
-            app.mis_angEditFieldLabel.Position = [61 451 51 22];
+            app.mis_angEditFieldLabel.Position = [62 451 51 22];
             app.mis_angEditFieldLabel.Text = 'mis_ang';
 
             % Create mis_angEditField
             app.mis_angEditField = uieditfield(app.DebugTab, 'numeric');
             app.mis_angEditField.Limits = [0.1 20];
             app.mis_angEditField.ValueChangedFcn = createCallbackFcn(app, @mis_angEditFieldValueChanged, true);
-            app.mis_angEditField.Position = [127 451 43 22];
+            app.mis_angEditField.Position = [128 451 43 22];
             app.mis_angEditField.Value = 1;
 
             % Create alg_scan_resEditFieldLabel
             app.alg_scan_resEditFieldLabel = uilabel(app.DebugTab);
             app.alg_scan_resEditFieldLabel.HorizontalAlignment = 'right';
-            app.alg_scan_resEditFieldLabel.Position = [35 431 77 22];
+            app.alg_scan_resEditFieldLabel.Position = [36 431 77 22];
             app.alg_scan_resEditFieldLabel.Text = 'alg_scan_res';
 
             % Create alg_scan_resEditField
             app.alg_scan_resEditField = uieditfield(app.DebugTab, 'numeric');
             app.alg_scan_resEditField.Limits = [0.001 10];
             app.alg_scan_resEditField.ValueChangedFcn = createCallbackFcn(app, @alg_scan_resEditFieldValueChanged, true);
-            app.alg_scan_resEditField.Position = [127 431 43 22];
+            app.alg_scan_resEditField.Position = [128 431 43 22];
             app.alg_scan_resEditField.Value = 1;
 
             % Create gammaEditFieldLabel
             app.gammaEditFieldLabel = uilabel(app.DebugTab);
             app.gammaEditFieldLabel.HorizontalAlignment = 'right';
-            app.gammaEditFieldLabel.Position = [66 411 46 22];
+            app.gammaEditFieldLabel.Position = [67 411 46 22];
             app.gammaEditFieldLabel.Text = 'gamma';
 
             % Create gammaEditField
             app.gammaEditField = uieditfield(app.DebugTab, 'numeric');
             app.gammaEditField.Limits = [0 Inf];
             app.gammaEditField.ValueChangedFcn = createCallbackFcn(app, @gammaEditFieldValueChanged, true);
-            app.gammaEditField.Position = [127 411 43 22];
+            app.gammaEditField.Position = [128 411 43 22];
             app.gammaEditField.Value = 1;
 
             % Create alphaEditFieldLabel
             app.alphaEditFieldLabel = uilabel(app.DebugTab);
             app.alphaEditFieldLabel.HorizontalAlignment = 'right';
-            app.alphaEditFieldLabel.Position = [77 391 35 22];
+            app.alphaEditFieldLabel.Position = [78 391 35 22];
             app.alphaEditFieldLabel.Text = 'alpha';
 
             % Create alphaEditField
             app.alphaEditField = uieditfield(app.DebugTab, 'numeric');
             app.alphaEditField.Limits = [0 Inf];
             app.alphaEditField.ValueChangedFcn = createCallbackFcn(app, @alphaEditFieldValueChanged, true);
-            app.alphaEditField.Position = [127 391 43 22];
+            app.alphaEditField.Position = [128 391 43 22];
             app.alphaEditField.Value = 1.1;
 
             % Create iterEditFieldLabel
             app.iterEditFieldLabel = uilabel(app.DebugTab);
             app.iterEditFieldLabel.HorizontalAlignment = 'right';
-            app.iterEditFieldLabel.Position = [87 371 25 22];
+            app.iterEditFieldLabel.Position = [88 371 25 22];
             app.iterEditFieldLabel.Text = 'iter';
 
             % Create iterEditField
             app.iterEditField = uieditfield(app.DebugTab, 'numeric');
             app.iterEditField.Limits = [1 Inf];
             app.iterEditField.ValueChangedFcn = createCallbackFcn(app, @iterEditFieldValueChanged, true);
-            app.iterEditField.Position = [127 371 43 22];
+            app.iterEditField.Position = [128 371 43 22];
             app.iterEditField.Value = 1;
 
             % Create SystemTab
@@ -938,14 +938,14 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             % Create RFSoCFcEditFieldLabel
             app.RFSoCFcEditFieldLabel = uilabel(app.SystemTab);
             app.RFSoCFcEditFieldLabel.HorizontalAlignment = 'right';
-            app.RFSoCFcEditFieldLabel.Position = [1 423 55 28];
+            app.RFSoCFcEditFieldLabel.Position = [5 423 55 28];
             app.RFSoCFcEditFieldLabel.Text = {'RFSoC'; 'Fc'};
 
             % Create RFSoCFcEditField
             app.RFSoCFcEditField = uieditfield(app.SystemTab, 'numeric');
             app.RFSoCFcEditField.Limits = [500 6000];
             app.RFSoCFcEditField.ValueChangedFcn = createCallbackFcn(app, @RFSoCFcEditFieldValueChanged, true);
-            app.RFSoCFcEditField.Position = [71 429 77 22];
+            app.RFSoCFcEditField.Position = [75 429 77 22];
             app.RFSoCFcEditField.Value = 5700;
 
             % Create RFSoCFsEditFieldLabel
@@ -979,7 +979,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             % Create SigBWSpinnerLabel
             app.SigBWSpinnerLabel = uilabel(app.SystemTab);
             app.SigBWSpinnerLabel.HorizontalAlignment = 'right';
-            app.SigBWSpinnerLabel.Position = [34 327 25 28];
+            app.SigBWSpinnerLabel.Position = [35 327 25 28];
             app.SigBWSpinnerLabel.Text = {'Sig'; 'BW'};
 
             % Create SigBWSpinner
@@ -987,7 +987,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.SigBWSpinner.Limits = [1 125];
             app.SigBWSpinner.ValueDisplayFormat = '%.0f';
             app.SigBWSpinner.ValueChangedFcn = createCallbackFcn(app, @SigBWSpinnerValueChanged, true);
-            app.SigBWSpinner.Position = [74 333 77 22];
+            app.SigBWSpinner.Position = [75 333 77 22];
             app.SigBWSpinner.Value = 20;
 
             % Create LoadVSAsetupButton
