@@ -4,6 +4,7 @@ function [rawDataAdj, weights] = qcb_beamformer_algo_2(rawData, ula, src_angle, 
     % alpha > 1 is the step size
     % scan_res value can be > 3;
     R_y = rawData'*rawData;
+    R_y = R_y./max(abs(R_y));
     numelements = ula.NumElements;
     c = physconst('LightSpeed');
     lambda = c/fc;
@@ -28,8 +29,9 @@ function [rawDataAdj, weights] = qcb_beamformer_algo_2(rawData, ula, src_angle, 
         else
             gamma = alpha*gamma;
         end
-        iter = iter - 1
+        iter = iter - 1;
     end
+    disp(iter)
     weights = w_gamma;
     weights = weights';
     rawDataAdj(:,1) = rawData(:,1)*weights(1);
