@@ -281,7 +281,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                     bs = guiXline(bs, app.UIAxes, sub, estimated_angle(2));
                     bs2 = guiXline(bs2, app.UIAxes2, sub, estimated_angle(2));
                     null_diff = round(p_manual_mean_db(find(app.scan_axis == estimated_angle(1))) - p_manual_mean_db(find(app.scan_axis == estimated_angle(2))));
-                    app.UIAxes2.Title.String = (['Beam Pattern' newline  'Power Advantage = ' ...
+                    app.UIAxes2.Title.String = (['Beam Pattern' newline  'Gain Difference = ' ...
                         num2str(abs(null_diff)) ' dB']);
                     if sum(~isnan(estimated_angle)) > 2
                         cs = guiXline(cs, app.UIAxes, sub, estimated_angle(3));
@@ -289,7 +289,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                     end
                 else
                     null_diff = round(p_manual_mean_db(find(app.scan_axis == estimated_angle(1))) - min(p_manual_mean_db));
-                    app.UIAxes2.Title.String = (['Beam Pattern' newline  'Power Advantage = ' ...
+                    app.UIAxes2.Title.String = (['Beam Pattern' newline  'Gain Difference = ' ...
                         num2str(abs(null_diff)) ' dB']);
                 end
 
