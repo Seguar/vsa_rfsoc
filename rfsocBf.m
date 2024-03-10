@@ -1,7 +1,58 @@
 function [yspec, estimated_angle, bfSig, weights, rawData] = rfsocBf(app, vsa, ch, bf, off, gap, cutter, ang_num, data_v, tcp_client, fc, dataChan, diag, bwOff, ula, scan_axis, ...
     c1, c2, fsRfsoc, bw, c, estimator, alg_scan_res, mis_ang, alpha, gamma, iter)
+    % Inputs:
+%   - app: Application object
+%   - vsa: Flag indicating whether to perform VSA (Vector Signal Analyzer) operation
+%   - ch: Channel number
+%   - bf: Beamforming method ('Steering', 'MVDR', 'DMR', 'PC', 'LCMV', 'RVL', 'QCB')
+%   - off: Offset value for cutter
+%   - gap: Gap value for test_z
+%   - cutter: Flag indicating whether to perform cutting operation
+%   - ang_num: Angle number
+%   - data_v: Data vector
+%   - tcp_client: TCP client object
+%   - fc: Center frequency
+%   - dataChan: Number of data channels
+%   - diag: Diagonal loading value for MVDR beamformer
+%   - bwOff: Bandwidth offset value for LCMV beamformer
+%   - ula: Uniform Linear Array object
+%   - scan_axis: Scan axis values
+%   - c1: Flag indicating whether to conjugate weights
+%   - c2: Flag indicating whether to conjugate weights for specific channels
+%   - fsRfsoc: Sampling frequency of RFSoC data
+%   - bw: Bandwidth value
+%   - c: Speed of light
+%   - estimator: DOA estimation function
+%   - alg_scan_res: Algorithm scan resolution
+%   - mis_ang: Misalignment angle
+%   - alpha: Alpha value for QCB beamformer
+%   - gamma: Gamma value for RVL beamformer
+%   - iter: Number of iterations for QCB beamformer
+%
+% Outputs:
+%   - yspec: Spectrum of the estimated angle
+%   - estimated_angle: Estimated angle
+%   - bfSig: Beamformed signal
+%   - weights: Beamforming weights
+%   - rawData: Raw RFSoC data
+%
+% Description:
+%   This function performs beamforming and direction of arrival (DOA) estimation on RFSoC data. It takes in various parameters and performs the following steps:
+%   1. Receives RFSoC data through a TCP connection.
+%   2. Filters the received data using a specified bandwidth.
+%   3. Estimates the DOA using a specified DOA estimation algorithm.
+%   4. Selects the desired channel(s) and calculates the power of the beamformed signal.
+%   5. Performs beamforming based on the specified method.
+%   6. Applies conjugation and normalization to the beamforming weights.
+%   7. Cuts the beamformed signal based on specified parameters.
+%   8. Optionally performs VSA operation by sending the beamformed signal to a Vector Signal Analyzer.
+%
+% Example:
+%   [yspec, estimated_angle, bfSig, weights, rawData] = rfsocBf(app, true, 1, 'MVDR', 10, 5, true, 2, data_v, tcp_client, 2.4e9, 8, 0.1, ula, scan_axis, ...
+%       true, false, 1e9, 100e6, 3e8, @doaEstimation, 0.01, 10, 0.5, 100);
+%
+% See also: tcpDataRec, filtSig, steerBf, mvdrBf, dmr_beamformer, pc_beamformer, lcmv_beamformer, rvl_beamformer, qcb_beamformer_algo_2
 test_z = zeros(1, gap);
-powCalc = @(x) round(max(db(fftshift(fft(x))))/2, 1); % Power from FFT calculations
 
 %% TCP
 data_size = dataChan * 8;
@@ -10,7 +61,6 @@ rawData = tcpDataRec(tcp_client, data_size, channels);
 %% Matlab MVDR DOA FUNC
 rawData = filtSig(rawData, fsRfsoc, bw);
 %% DOA
-
 try
     [yspec, estimated_angle] = estimator(rawData'*rawData);
 catch
@@ -18,12 +68,10 @@ catch
     yspec = zeros(size(scan_axis));
 end
 %% Angles
-
 if ch>4
     ch = 1:4;
 end
 %% Signal choice
-
 npc = sum(~isnan(estimated_angle));
 if npc > 2
     estimated_angle = estimated_angle(1:2);
@@ -95,7 +143,6 @@ if (cutter)
         else
             n = 1;
         end
-
         cut_b = fb_lines(n)-off;
         cut_e = fe_lines(n)+off;
         if cut_b < 1
@@ -104,8 +151,6 @@ if (cutter)
                 n = 2;
                 cut_b = fb_lines(n)-off;
                 cut_e = fe_lines(n)+off;
-            else
-
             end
         end
         if cut_e > dataChan

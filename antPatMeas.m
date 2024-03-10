@@ -1,6 +1,10 @@
+% This script performs antenna pattern measurement using a RFSoC (Radio Frequency System on Chip) device.
+% It sets up the necessary parameters, connects to the RFSoC server, and continuously measures the antenna pattern.
+% The measured data is then plotted on a polar plot, showing the power levels at different angles (based on DOA).
 clc
 clear
 close all
+addpath(genpath(pwd))
 powCalc = @(x) round(max(db(fftshift(fft(x))))/2, 1); % Power from FFT calculations
 dbmin = 20; % Limits of polar plot
 dbmax = 30;
