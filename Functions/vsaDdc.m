@@ -1,6 +1,11 @@
 function data_v = vsaDdc(fc_v, sr_v, bw_v, dataLen, channelCount)
 %% 1. Connect to VSA
-asmPath = 'C:\Program Files\Keysight\89600 Software 2024\89600 VSA Software\Examples\DotNET\Interfaces\';
+vsa_path = dir('C:\Program Files\Keysight\89600 Software 202*')
+try
+    asmPath = strcat(vsa_path.folder, '\', vsa_path.name, '\89600 VSA Software\Examples\DotNET\Interfaces\');
+catch
+    disp('Please check the path to the VSA software')
+end
 addpath(asmPath)
 
 asmName = 'Agilent.SA.Vsa.Interfaces.dll';
