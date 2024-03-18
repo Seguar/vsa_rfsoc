@@ -6,7 +6,7 @@ function [rawDataAdj, weights] = mvdrBf(rawData, estimated_angle, diag, ula, fc,
 'TrainingInputPort',false, 'DiagonalLoadingFactor', diag);
 
     [~,weights] = beamformer(rawData); 
-    weights = weights.';
+    weights = weights';
     rawDataAdj(:,1) = rawData(:,1)*weights(1);
     rawDataAdj(:,2) = rawData(:,2)*weights(2);
     rawDataAdj(:,3) = rawData(:,3)*weights(3);

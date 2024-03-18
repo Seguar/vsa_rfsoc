@@ -105,7 +105,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         gap = 0;
         ang_num = 1;
 
-        diag = 0.1;
+        diag = 1;
         bwOff = 0.1;
 
         dataChan = 2^14;
@@ -839,7 +839,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.DLFEditField = uieditfield(app.DebugTab, 'numeric');
             app.DLFEditField.ValueChangedFcn = createCallbackFcn(app, @DLFEditFieldValueChanged2, true);
             app.DLFEditField.Position = [128 350 43 22];
-            app.DLFEditField.Value = 0.1;
+            app.DLFEditField.Value = 1;
 
             % Create GetSpectrumButton
             app.GetSpectrumButton = uibutton(app.DebugTab, 'state');
@@ -877,7 +877,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.mis_angEditField.Limits = [0.1 20];
             app.mis_angEditField.ValueChangedFcn = createCallbackFcn(app, @mis_angEditFieldValueChanged, true);
             app.mis_angEditField.Position = [128 451 43 22];
-            app.mis_angEditField.Value = 1;
+            app.mis_angEditField.Value = 15;
 
             % Create alg_scan_resEditFieldLabel
             app.alg_scan_resEditFieldLabel = uilabel(app.DebugTab);

@@ -94,6 +94,7 @@ switch bf
     case 'Steering'
         [rawDataAdj, weights] = steerBf(rawData, estimated_angle(1), ula, fc);
     case 'MVDR'
+        diag = mean(var(rawData))*diag;
         [rawDataAdj, weights] = mvdrBf(rawData, estimated_angle(1), diag, ula, fc, c);
     case 'DMR'
         [rawDataAdj, weights] = dmr_beamformer(rawData, npc, ula, estimated_angle(1));
