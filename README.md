@@ -6,7 +6,7 @@ Applications for RFSoC communication and DOA with beamforming.
 
 Matlab 2021b+
 
-VSA 89600 v.2024
+VSA 89600 v.2022U1+ with [DDC](https://www.keysight.com/zz/en/assets/3121-1464/application-notes/VSA-89600-Direct-Data-Connectivity.pdf) license
 
 Ethernet/USB connection with board and SDRs/VSGs
 
