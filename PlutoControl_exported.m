@@ -3,6 +3,8 @@ classdef PlutoControl_exported < matlab.apps.AppBase
     % Properties that correspond to app components
     properties (Access = public)
         PlutoControlUIFigure  matlab.ui.Figure
+        DevIdSpinner          matlab.ui.control.Spinner
+        DevIdSpinnerLabel     matlab.ui.control.Label
         GapEditField          matlab.ui.control.NumericEditField
         GapEditFieldLabel     matlab.ui.control.Label
         FcCWEditField         matlab.ui.control.NumericEditField
@@ -30,7 +32,8 @@ classdef PlutoControl_exported < matlab.apps.AppBase
         fs = 60e6;
         gain = 0;
         state = 'off';
-        gap = 2000;        
+        gap = 2000;    
+        devId = 0;
         file = 'ofdm_60mhz.mat'
         Y;
         absPath = fileparts(mfilename('fullpath')); % absolute path to the folder containing the mlapp file
@@ -44,7 +47,7 @@ classdef PlutoControl_exported < matlab.apps.AppBase
     methods (Access = private)
 
         function updatePluto(app)
-            app.tx = sdrtx('Pluto');
+            app.tx = sdrtx('Pluto', 'RadioID', ['usb:' num2str(app.devId)]);
             app.tx.ShowAdvancedProperties = true;
             app.tx.CenterFrequency = app.fc;
             app.tx.BasebandSampleRate = app.fs;
@@ -142,6 +145,13 @@ classdef PlutoControl_exported < matlab.apps.AppBase
         function WLANsettingsMenuSelected(app, event)
             WLAN_gen
         end
+
+        % Value changed function: DevIdSpinner
+        function DevIdSpinnerValueChanged(app, event)
+            app.devId = app.DevIdSpinner.Value;
+%             release(app.tx)
+            updatePluto(app)
+        end
     end
 
     % Component initialization
@@ -158,15 +168,14 @@ classdef PlutoControl_exported < matlab.apps.AppBase
             % Create FcMhzSpinnerLabel
             app.FcMhzSpinnerLabel = uilabel(app.PlutoControlUIFigure);
             app.FcMhzSpinnerLabel.HorizontalAlignment = 'right';
-            app.FcMhzSpinnerLabel.Position = [19 317 53 22];
+            app.FcMhzSpinnerLabel.Position = [26 306 53 22];
             app.FcMhzSpinnerLabel.Text = 'Fc (Mhz)';
 
             % Create FcMhzSpinner
             app.FcMhzSpinner = uispinner(app.PlutoControlUIFigure);
-            app.FcMhzSpinner.Step = 0.5;
             app.FcMhzSpinner.Limits = [70 6000];
             app.FcMhzSpinner.ValueChangedFcn = createCallbackFcn(app, @FcMhzSpinnerValueChanged, true);
-            app.FcMhzSpinner.Position = [87 317 100 22];
+            app.FcMhzSpinner.Position = [88 306 100 22];
             app.FcMhzSpinner.Value = 5700;
 
             % Create SignalButtonGroup
@@ -200,7 +209,7 @@ classdef PlutoControl_exported < matlab.apps.AppBase
             % Create FsMhzSpinnerLabel
             app.FsMhzSpinnerLabel = uilabel(app.PlutoControlUIFigure);
             app.FsMhzSpinnerLabel.HorizontalAlignment = 'right';
-            app.FsMhzSpinnerLabel.Position = [19 267 53 22];
+            app.FsMhzSpinnerLabel.Position = [25 267 53 22];
             app.FsMhzSpinnerLabel.Text = 'Fs (Mhz)';
 
             % Create FsMhzSpinner
@@ -251,6 +260,19 @@ classdef PlutoControl_exported < matlab.apps.AppBase
             app.GapEditField.Position = [193 97 45 22];
             app.GapEditField.Value = 5000;
 
+            % Create DevIdSpinnerLabel
+            app.DevIdSpinnerLabel = uilabel(app.PlutoControlUIFigure);
+            app.DevIdSpinnerLabel.HorizontalAlignment = 'right';
+            app.DevIdSpinnerLabel.Position = [35 348 37 22];
+            app.DevIdSpinnerLabel.Text = 'DevId';
+
+            % Create DevIdSpinner
+            app.DevIdSpinner = uispinner(app.PlutoControlUIFigure);
+            app.DevIdSpinner.Limits = [0 64];
+            app.DevIdSpinner.RoundFractionalValues = 'on';
+            app.DevIdSpinner.ValueChangedFcn = createCallbackFcn(app, @DevIdSpinnerValueChanged, true);
+            app.DevIdSpinner.Position = [87 348 100 22];
+
             % Create ContextMenu
             app.ContextMenu = uicontextmenu(app.PlutoControlUIFigure);
 
@@ -273,26 +295,14 @@ classdef PlutoControl_exported < matlab.apps.AppBase
         % Construct app
         function app = PlutoControl_exported
 
-            runningApp = getRunningApp(app);
+            % Create UIFigure and components
+            createComponents(app)
 
-            % Check for running singleton app
-            if isempty(runningApp)
+            % Register the app with App Designer
+            registerApp(app, app.PlutoControlUIFigure)
 
-                % Create UIFigure and components
-                createComponents(app)
-
-                % Register the app with App Designer
-                registerApp(app, app.PlutoControlUIFigure)
-
-                % Execute the startup function
-                runStartupFcn(app, @startupFcn)
-            else
-
-                % Focus the running singleton app
-                figure(runningApp.PlutoControlUIFigure)
-
-                app = runningApp;
-            end
+            % Execute the startup function
+            runStartupFcn(app, @startupFcn)
 
             if nargout == 0
                 clear app
