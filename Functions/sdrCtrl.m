@@ -1,5 +1,5 @@
-function tx = sdrCtrl(fc, fs, gain, txWaveform)
-tx = sdrtx('Pluto');
+function tx = sdrCtrl(fc, fs, gain, txWaveform, devId)
+tx = sdrtx('Pluto', 'RadioID', ['usb:' num2str(devId)]);
 tx.ShowAdvancedProperties = true;
 tx.CenterFrequency = fc;
 tx.BasebandSampleRate = fs;

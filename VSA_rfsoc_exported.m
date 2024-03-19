@@ -515,7 +515,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             if not(isempty(app.tx))
                 release(app.tx);
             end
-            app.tx = sdrCtrl(app.fcSig, app.fsSig, app.gainSig, app.txSig);
+            app.tx = sdrCtrl(app.fcSig, app.fsSig, app.gainSig, app.txSig, 0);
         end
 
         % Value changed function: gainSigSpinner
@@ -524,7 +524,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             if not(isempty(app.tx))
                 release(app.tx);
             end
-            app.tx = sdrCtrl(app.fcSig, app.fsSig, app.gainSig, app.txSig);
+            app.tx = sdrCtrl(app.fcSig, app.fsSig, app.gainSig, app.txSig, 0);
         end
 
         % Value changed function: SignalDropDown
@@ -557,7 +557,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             end
             load(path);
             app.txSig = Y;
-            app.tx = sdrCtrl(app.fcSig, app.fsSig, app.gainSig, app.txSig);
+            app.tx = sdrCtrl(app.fcSig, app.fsSig, app.gainSig, app.txSig, 0);
             app.reset_req = 1;
         end
 
