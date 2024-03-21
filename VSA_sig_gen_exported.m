@@ -27,7 +27,7 @@ classdef VSA_sig_gen_exported < matlab.apps.AppBase
         function updTab(app)             
             app.UITable.Data = table(app.tabData);
             app.UITable.ColumnEditable = true;
-            app.UITable.
+%             app.UITable.
         end
     end
     
