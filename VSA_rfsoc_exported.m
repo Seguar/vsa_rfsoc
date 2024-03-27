@@ -252,7 +252,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                 elseif app.part_reset_req                    
                     [p_manual_mean, yspec_mean, plot_handle] = partReset(app);
                 end
-%                     tic
+                    tic
 %                 if app.dataStream
                     try
                         [yspec, estimated_angle, bfSig, app.weights, rawData] = rfsocBf(app, app.vsa, app.ch, app.bf, app.off, app.gap, app.cutter, ...
@@ -314,7 +314,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                             count = count + 1;
                         end
                     end
-%             toc
+            toc
             end
 %             end
         end
@@ -322,16 +322,6 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         % Value changed function: VSACheckBox
         function VSACheckBoxValueChanged(app, event)
             app.vsa = app.VSACheckBox.Value;
-        end
-
-        % Callback function
-        function BeamformingButtonGroupSizeChanged(app, event)
-            app.position = app.BeamformingButtonGroup.Position;
-        end
-
-        % Callback function
-        function BeamformingCheckBoxValueChanged(app, event)
-            app.bf = app.BeamformingCheckBox.Value;
         end
 
         % Value changed function: ChannelselectListBox
@@ -515,111 +505,6 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         % Value changed function: patternCorrCheckBox
         function patternCorrCheckBoxValueChanged(app, event)
             app.patternCorr = app.patternCorrCheckBox.Value;            
-        end
-
-        % Callback function
-        function ButtonPushed(app, event)
-            app.MostPowerfullButton.Value = 1;
-            app.ang_num = 1;
-        end
-
-        % Callback function
-        function fcSigSpinnerValueChanged(app, event)
-            app.fcSig = app.fcSigSpinner.Value*1e6;
-            if not(isempty(app.tx))
-                release(app.tx);
-            end
-            app.tx = sdrCtrl(app.fcSig, app.fsSig, app.gainSig, app.txSig, 0);
-        end
-
-        % Callback function
-        function gainSigSpinnerValueChanged(app, event)
-            app.gainSig = app.gainSigSpinner.Value;
-            if not(isempty(app.tx))
-                release(app.tx);
-            end
-            app.tx = sdrCtrl(app.fcSig, app.fsSig, app.gainSig, app.txSig, 0);
-        end
-
-        % Callback function
-        function SignalDropDownValueChanged(app, event)
-            valueSig = app.SignalDropDown.Value;
-            if not(isempty(app.tx))
-                release(app.tx);
-            end
-            switch valueSig
-                case 'Off'
-                    if not(isempty(app.tx))
-                        release(app.tx)
-                    end
-                    return
-                case 'CW'
-                    path = [pwd app.sigPath 'cw.mat'];
-                    app.setupFile = [pwd app.settPath 'cw.setx'];
-                case 'OFDM'
-                    path = [pwd app.sigPath 'ofdm_60mhz.mat'];
-                    app.setupFile = [pwd app.settPath 'ofdm_iq_20_cal.setx'];
-                    app.bw = 20e6;
-                case 'OFDM 64'
-                    path = [pwd app.sigPath 'ofdm_qam64_60mhz_60mhz_new.mat'];
-                    app.setupFile = [pwd app.settPath 'ofdm_iq_60_64_new.setx'];
-                    app.bw = 60e6;
-                case 'WLAN'
-                    path = [pwd app.sigPath 'wlan_ofdm_60mhz.mat'];
-                    app.setupFile = [pwd app.settPath '1ch_fast_ddc_new.setx'];
-                    app.bw = 20e6;
-            end
-            load(path);
-            app.txSig = Y;
-            app.tx = sdrCtrl(app.fcSig, app.fsSig, app.gainSig, app.txSig, 0);
-            app.reset_req = 1;
-        end
-
-        % Callback function
-        function InterfererDropDownValueChanged(app, event)
-            valueInt = app.InterfererDropDown.Value;
-            switch valueInt
-                case 'Off'
-                    app.stateInt = 0;
-                    app.modInt = 0;                 
-                case 'CW'
-                    app.stateInt = 1;
-                    app.modInt = 0;                    
-                    path = [pwd app.sigPath 'cw.mat'];
-                case 'OFDM'
-                    app.stateInt = 1;
-                    app.modInt = 1;
-                    path = [pwd app.sigPath 'ofdm_60mhz.mat'];
-                case 'OFDM 64'
-                    app.stateInt = 1;
-                    app.modInt = 1;
-                    path = [pwd app.sigPath 'ofdm_qam64_60mhz_60mhz_new.mat'];
-                case 'WLAN'
-                    app.stateInt = 1;
-                    app.modInt = 1;
-                    path = [pwd app.sigPath 'wlan_ofdm_60mhz.mat'];
-            end
-%             try 
-%                 load(path);
-%             end
-%             app.txInt = Y;
-            app.PowerCheckBox.Value = app.stateInt;     
-            app.ModCheckBox.Value = app.modInt;
-            genCtrl(app.gen_ip, app.gen_port, app.stateInt, app.powInt, app.fcInt, app.modInt);
-        end
-
-        % Callback function
-        function fcIntSpinnerValueChanged(app, event)
-            app.fcInt = app.fcIntSpinner.Value*1e6;
-            app.fcGenSpinner.Value = app.fcIntSpinner.Value;
-            genCtrl(app.gen_ip, app.gen_port, app.stateInt, app.powInt, app.fcInt, app.modInt);
-        end
-
-        % Callback function
-        function gainIntSpinnerValueChanged(app, event)
-            app.powInt = app.gainIntSpinner.Value;
-            app.gainGenSpinner.Value = app.gainIntSpinner.Value;
-            genCtrl(app.gen_ip, app.gen_port, app.stateInt, app.powInt, app.fcInt, app.modInt);
         end
 
         % Value changed function: mis_angEditField
