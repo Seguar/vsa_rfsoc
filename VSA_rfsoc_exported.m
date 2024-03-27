@@ -170,17 +170,14 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
     methods (Access = private)
 
         
-        function [data_v, tcp_client, plot_handle, p_manual_mean, yspec_mean] = resetApp(app)
-            [p_manual_mean, yspec_mean, plot_handle] = partReset(app);
+        function [data_v, plot_handle, p_manual_mean, yspec_mean, tcp_client] = resetApp(app)
+            [p_manual_mean, yspec_mean, plot_handle, tcp_client] = partReset(app);
             app.ResetButton.Text = 'Reseting...';
             app.ResetButton.BackgroundColor = 'r';
             drawnow%!!!!
             data_v = vsaDdc(0, app.fsRfsoc, app.fsRfsoc, app.dataChan, 1);
             vsaSetup(app.setupFile)
-            disp(app.commands)
-            tcp_client = rfsocConnect(app.server_ip, app.server_port, app.commands);
-            app.commands = ['dataStream ' num2str(app.dataStream)];
-%             app.commands = ['test 1'];
+            disp(app.commands)            
             clf(app.UIAxes);
             app.reset_req = 0;
             app.part_reset_req = 0;
@@ -188,10 +185,12 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.ResetButton.BackgroundColor = 'g';
         end
 
-        function [p_manual_mean, yspec_mean, plot_handle] = partReset(app)
+        function [p_manual_mean, yspec_mean, plot_handle, tcp_client] = partReset(app)
             app.ResetButton.Text = 'Reseting...';
             app.ResetButton.BackgroundColor = 'y';
             drawnow%!!!!
+            tcp_client = rfsocConnect(app.server_ip, app.server_port, app.commands);
+            app.commands = ['dataStream ' num2str(app.dataStream)];
             app.ula = antPrep(app.num_elements, app.c, app.fc);
             app.scan_axis = -app.scan_bw/2:app.scan_res:app.scan_bw/2;
             plot_handle = plotPrep(app, app.scan_axis);
@@ -248,11 +247,11 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             warning('off','all')
             while true
                 if app.reset_req                    
-                    [data_v, tcp_client, plot_handle, p_manual_mean, yspec_mean] = resetApp(app);
+                    [data_v, plot_handle, p_manual_mean, yspec_mean, tcp_client] = resetApp(app);
                 elseif app.part_reset_req                    
-                    [p_manual_mean, yspec_mean, plot_handle] = partReset(app);
+                    [p_manual_mean, yspec_mean, plot_handle, tcp_client] = partReset(app);
                 end
-                    tic
+                    % tic
 %                 if app.dataStream
                     try
                         [yspec, estimated_angle, bfSig, app.weights, rawData] = rfsocBf(app, app.vsa, app.ch, app.bf, app.off, app.gap, app.cutter, ...
@@ -314,7 +313,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                             count = count + 1;
                         end
                     end
-            toc
+            % toc
             end
 %             end
         end
@@ -405,13 +404,13 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         function RFSoCFcSpinnerValueChanged(app, event)
             app.fc = app.RFSoCFcSpinner.Value*1e6;
             commandsHandler(app, ['fc ' num2str(app.fc/1e6) '/' num2str(app.nyquistZone)]);
-            app.reset_req = 1;
+            app.part_reset_req = 1;
         end
 
         % Value changed function: RFSoCFsSpinner
         function RFSoCFsSpinnerValueChanged(app, event)
             app.fsRfsoc = app.RFSoCFsSpinner.Value*1e6;
-            app.reset_req = 1;
+            app.part_reset_req = 1;
         end
 
         % Value changed function: MaxSignalsSpinner
@@ -540,20 +539,20 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         % Button pushed function: RecalibrateButton
         function RecalibrateButtonPushed(app, event)
             commandsHandler(app, ['cal ' num2str(8)]);
-            app.reset_req = 1;
+            app.part_reset_req = 1;
         end
 
         % Value changed function: dataStreamCheckBox
         function dataStreamCheckBoxValueChanged(app, event)
             app.dataStream = app.dataStreamCheckBox.Value;       
-            app.reset_req = 1;
+            app.part_reset_req = 1;
         end
 
         % Value changed function: HardwareConjCheckBox
         function HardwareConjCheckBoxValueChanged(app, event)
             app.nyquistZone = app.HardwareConjCheckBox.Value + 1;
             commandsHandler(app, ['fc ' num2str(app.fc/1e6) '/' num2str(app.nyquistZone)]);
-            app.reset_req = 1;
+            app.part_reset_req = 1;
         end
 
         % Changes arrangement of the app based on UIFigure width
@@ -1001,6 +1000,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.HardwareConjCheckBox.ValueChangedFcn = createCallbackFcn(app, @HardwareConjCheckBoxValueChanged, true);
             app.HardwareConjCheckBox.Text = 'HardwareConj';
             app.HardwareConjCheckBox.Position = [79 195 99 22];
+            app.HardwareConjCheckBox.Value = true;
 
             % Create AvgSpinnerLabel
             app.AvgSpinnerLabel = uilabel(app.LeftPanel);
@@ -1059,6 +1059,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             ylabel(app.UIAxes, 'Y')
             zlabel(app.UIAxes, 'Z')
             app.UIAxes.FontWeight = 'bold';
+            app.UIAxes.Colormap = [];
             app.UIAxes.LineWidth = 1;
             app.UIAxes.XGrid = 'on';
             app.UIAxes.XMinorGrid = 'on';
@@ -1074,6 +1075,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             ylabel(app.UIAxes2, 'Y')
             zlabel(app.UIAxes2, 'Z')
             app.UIAxes2.FontWeight = 'bold';
+            app.UIAxes2.Colormap = [];
             app.UIAxes2.XGrid = 'on';
             app.UIAxes2.XMinorGrid = 'on';
             app.UIAxes2.YGrid = 'on';
