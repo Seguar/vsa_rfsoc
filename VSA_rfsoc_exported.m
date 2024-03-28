@@ -256,7 +256,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                 elseif app.part_reset_req                    
                     partReset(app);
                 end
-                    % tic
+%                     tic
 %                 if app.dataStream
                     try
                         [yspec, estimated_angle, bfSig, app.weights, rawData] = rfsocBf(app, app.vsa, app.ch, app.bf, app.off, app.gap, app.cutter, ...
@@ -270,6 +270,8 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                         disp("Error in rfsocBf")
                         continue
                     end
+%                     disp('___')
+%                     toc
                     %% Pattern calc
                     app.weights = conj(app.weights);
                     p_manual = beamPatternCalc(app.weights, app.fc, app.scan_axis, length(app.weights));
@@ -294,7 +296,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                     if sum(~isnan(estimated_angle)) > 1
                         bs = guiXline(bs, app.UIAxes, sub, estimated_angle(2));
                         bs2 = guiXline(bs2, app.UIAxes2, sub, estimated_angle(2));
-                        null_diff = round(p_manual_mean_db(find(app.scan_axis == estimated_angle(1))) - p_manual_mean_db(find(app.scan_axis == estimated_angle(2))));
+                        null_diff = round(p_manual_mean_db((app.scan_axis == estimated_angle(1))) - p_manual_mean_db((app.scan_axis == estimated_angle(2))));
                         app.UIAxes2.Title.String = (['Beam Pattern' newline  'Gain Difference = ' ...
                             num2str(abs(null_diff)) ' dB']);
                         if sum(~isnan(estimated_angle)) > 2
@@ -302,7 +304,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                             cs2 = guiXline(cs2, app.UIAxes2, sub, estimated_angle(3));
                         end
                     else
-                        null_diff = round(p_manual_mean_db(find(app.scan_axis == estimated_angle(1))) - min(p_manual_mean_db));
+                        null_diff = round(p_manual_mean_db((app.scan_axis == estimated_angle(1))) - min(p_manual_mean_db));
                         app.UIAxes2.Title.String = (['Beam Pattern' newline  'Gain Difference = ' ...
                             num2str(abs(null_diff)) ' dB']);
                     end
@@ -318,7 +320,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                             count = count + 1;
                         end
                     end
-            % toc
+%             toc
             end
 %             end
         end
