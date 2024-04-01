@@ -94,8 +94,8 @@ switch bf
     case 'Steering'
         [rawDataAdj, weights] = steerBf(rawData, estimated_angle(1), ula, fc);
     case 'MVDR'
-        diag = mean(var(rawData))*diag;
         [rawDataAdj, weights] = mvdrBf(rawData, estimated_angle(1), diag, ula, fc, c);
+        weights = conj(weights);
     case 'DMR'
         [rawDataAdj, weights] = dmr_beamformer(rawData, npc, ula, estimated_angle(1));
     case 'PC'
@@ -110,9 +110,11 @@ switch bf
 %     case 'RAB PC'
 %         [rawDataAdj, weights] = rab_pc_beamformer(rawData, npc, ula, estimated_angle(1), diag);
 % %         weights = conj(weights);
-%     case 'DL MVDR'
+    case 'DL MVDR'
 %         [rawDataAdj, weights] = dl_mvdr_beamformer(rawData, ula, estimated_angle(1));
 % %         weights = conj(weights);
+        diag = mean(var(rawData))*diag;
+        [rawDataAdj, weights] = mvdrBf(rawData, estimated_angle(1), diag, ula, fc, c);
     case 'QCB'
         [rawDataAdj, weights] = qcb_beamformer_algo_2(rawData, ula, estimated_angle(1), mis_ang, gamma, alpha, iter, alg_scan_res, fc);
     otherwise
