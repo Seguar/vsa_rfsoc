@@ -107,14 +107,17 @@ switch bf
     case 'RVL'
         [rawDataAdj, weights] = rvl_beamformer(rawData, gamma, ula, estimated_angle(1));
         weights = conj(weights);
-%     case 'RAB PC'
-%         [rawDataAdj, weights] = rab_pc_beamformer(rawData, npc, ula, estimated_angle(1), diag);
-% %         weights = conj(weights);
+    case 'RAB PC'
+        [rawDataAdj, weights] = rab_pc_beamformer(rawData, npc, ula, estimated_angle(1), diag);
+%         weights = conj(weights);
     case 'DL MVDR'
 %         [rawDataAdj, weights] = dl_mvdr_beamformer(rawData, ula, estimated_angle(1));
 % %         weights = conj(weights);
         diag = mean(var(rawData))*diag;
         [rawDataAdj, weights] = mvdrBf(rawData, estimated_angle(1), diag, ula, fc, c);
+    case 'DL ITER MVDR'
+        [rawDataAdj, weights] = dl_mvdr_beamformer(rawData, ula, estimated_angle(1));
+%         weights = conj(weights);
     case 'QCB'
         [rawDataAdj, weights] = qcb_beamformer_algo_2(rawData, ula, estimated_angle(1), mis_ang, gamma, alpha, iter, alg_scan_res, fc);
     otherwise

@@ -6,4 +6,5 @@ try
 catch
     tcp_client = tcpclient('192.168.3.1', server_port, "ConnectTimeout", 1); % USB connection
 end
+flush(tcp_client,"output")
 writeline(tcp_client, commands);

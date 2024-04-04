@@ -25,6 +25,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         LessPowerfullButton            matlab.ui.control.RadioButton
         MostPowerfullButton            matlab.ui.control.RadioButton
         DebugTab                       matlab.ui.container.Tab
+        DebugCheckBox_2                matlab.ui.control.CheckBox
         CutterCheckBox                 matlab.ui.control.CheckBox
         iterEditField                  matlab.ui.control.NumericEditField
         iterEditFieldLabel             matlab.ui.control.Label
@@ -44,7 +45,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         DLFEditFieldLabel              matlab.ui.control.Label
         UpdRateEditField               matlab.ui.control.NumericEditField
         UpdRateEditFieldLabel          matlab.ui.control.Label
-        DebugCheckBox                  matlab.ui.control.CheckBox
+        MatlabPatternCheckBox          matlab.ui.control.CheckBox
         c2CheckBox                     matlab.ui.control.CheckBox
         c1CheckBox                     matlab.ui.control.CheckBox
         dataChanEditField              matlab.ui.control.NumericEditField
@@ -104,6 +105,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         dataChan = 2^14;
         scan_res = 1;
         debug = 0;
+        MatlabPattern = 0;
         avg_factor = 10;
         updrate = 10;
         c1 = 0;
@@ -256,9 +258,12 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                 elseif app.part_reset_req                    
                     partReset(app);
                 end
-%                     tic
+                if app.debug
+                    tic
+                end
 %                 if app.dataStream
                     try
+                        flush(app.tcp_client,"input")
                         [yspec, estimated_angle, bfSig, app.weights, rawData] = rfsocBf(app, app.vsa, app.ch, app.bf, app.off, app.gap, app.cutter, ...
                             app.ang_num, app.data_v, app.tcp_client, app.fc, app.dataChan, app.diag, app.bwOff, app.ula, app.scan_axis, ...
                             app.c1, app.c2, app.fsRfsoc, app.bw, app.c, app.estimator, app.alg_scan_res, app.mis_ang, app.alpha, app.gamma, app.iter);
@@ -309,7 +314,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                             num2str(abs(null_diff)) ' dB']);
                     end
     
-                    if app.debug
+                    if app.MatlabPattern
                         if count >= app.updrate
                             plotResponse(app.ula,app.fc,app.c,...
                                 'AzimuthAngles',app.scan_axis,...
@@ -320,7 +325,9 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                             count = count + 1;
                         end
                     end
-%             toc
+            if app.debug
+                toc
+            end
             end
 %             end
         end
@@ -373,9 +380,9 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.off = app.CutoffsetEditField.Value;
         end
 
-        % Value changed function: DebugCheckBox
-        function DebugCheckBoxValueChanged(app, event)
-            app.debug = app.DebugCheckBox.Value;
+        % Value changed function: MatlabPatternCheckBox
+        function MatlabPatternCheckBoxValueChanged(app, event)
+            app.MatlabPattern = app.MatlabPatternCheckBox.Value;
         end
 
         % Value changed function: GetPatternButton
@@ -562,6 +569,11 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.part_reset_req = 1;
         end
 
+        % Value changed function: DebugCheckBox_2
+        function DebugCheckBox_2ValueChanged(app, event)
+            app.debug = app.DebugCheckBox_2.Value;            
+        end
+
         % Changes arrangement of the app based on UIFigure width
         function updateAppLayout(app, event)
             currentFigureWidth = app.RFSoCBeamformerUIFigure.Position(3);
@@ -687,7 +699,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
 
             % Create BFtypeListBox
             app.BFtypeListBox = uilistbox(app.MainTab);
-            app.BFtypeListBox.Items = {'Without', 'Steering', 'MVDR', 'DMR', 'PC', 'LCMV', 'RVL', 'RAB PC', 'DL MVDR', 'QCB'};
+            app.BFtypeListBox.Items = {'Without', 'Steering', 'MVDR', 'DMR', 'PC', 'LCMV', 'RVL', 'RAB PC', 'DL MVDR', 'DL ITER MVDR', 'QCB'};
             app.BFtypeListBox.ValueChangedFcn = createCallbackFcn(app, @BFtypeListBoxValueChanged, true);
             app.BFtypeListBox.Position = [75 210 98 182];
             app.BFtypeListBox.Value = 'Steering';
@@ -753,11 +765,11 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.c2CheckBox.Text = 'c2';
             app.c2CheckBox.Position = [134 201 35 22];
 
-            % Create DebugCheckBox
-            app.DebugCheckBox = uicheckbox(app.DebugTab);
-            app.DebugCheckBox.ValueChangedFcn = createCallbackFcn(app, @DebugCheckBoxValueChanged, true);
-            app.DebugCheckBox.Text = 'Debug';
-            app.DebugCheckBox.Position = [112 255 57 22];
+            % Create MatlabPatternCheckBox
+            app.MatlabPatternCheckBox = uicheckbox(app.DebugTab);
+            app.MatlabPatternCheckBox.ValueChangedFcn = createCallbackFcn(app, @MatlabPatternCheckBoxValueChanged, true);
+            app.MatlabPatternCheckBox.Text = 'MatlabPattern';
+            app.MatlabPatternCheckBox.Position = [87 254 97 22];
 
             % Create UpdRateEditFieldLabel
             app.UpdRateEditFieldLabel = uilabel(app.DebugTab);
@@ -879,6 +891,12 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.CutterCheckBox.ValueChangedFcn = createCallbackFcn(app, @CutterCheckBoxValueChanged, true);
             app.CutterCheckBox.Text = 'Cutter';
             app.CutterCheckBox.Position = [94 74 55 22];
+
+            % Create DebugCheckBox_2
+            app.DebugCheckBox_2 = uicheckbox(app.DebugTab);
+            app.DebugCheckBox_2.ValueChangedFcn = createCallbackFcn(app, @DebugCheckBox_2ValueChanged, true);
+            app.DebugCheckBox_2.Text = 'Debug';
+            app.DebugCheckBox_2.Position = [97 32 57 22];
 
             % Create SystemTab
             app.SystemTab = uitab(app.TabGroup);

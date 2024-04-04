@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Agilent89601Setup version="28.1.268.1" schemaVersion="28.0.28.0" xmlns="http://schemas.agilent.com/89601/setup">
+<Agilent89601Setup version="28.41.294.1" schemaVersion="28.0.28.0" xmlns="http://schemas.agilent.com/89601/setup">
   <Application>
     <Measurements count="1">
       <Measurement name="Meas01" extensionType="Agilent.SA.Vsa.Wlan80211N.MeasurementExtension" wasRunning="True">
@@ -143,7 +143,7 @@
           <Boolean key="DemodOFDM11nMcFilterEnabled" value="true" />
           <Int32 key="DemodOFDM11nMeasInt" value="40" />
           <Int32 key="DemodOFDM11nMeasOffset" value="0" />
-          <Boolean key="DemodOFDM11nMirrorFreq" value="false" />
+          <Boolean key="DemodOFDM11nMirrorFreq" value="true" />
           <Boolean key="DemodOFDM11nNormalize" value="true" />
           <Int32 key="DemodOFDM11nNumOfStsCenterRuL" value="1" />
           <Int32 key="DemodOFDM11nNumOfStsCenterRuR" value="1" />
@@ -1255,8 +1255,8 @@
           <Int32 key="DemodOFDM11n_CMRU_U1_HEMCSIndex" value="8" />
           <Int32 key="DemodOFDM11n_CMRU_U1_HENumberOfSTS" value="1" />
           <Int32 key="DemodOFDM11n_Count" value="16" />
-          <Int32 key="DemodTrendBufLenEba" value="0" />
-          <Int32 key="DemodTrendDispLenEba" value="0" />
+          <Int32 key="DemodTrendBufLenEba" value="50000" />
+          <Int32 key="DemodTrendDispLenEba" value="1000" />
           <Int32 key="DetectorBuckets" value="1001" />
           <String key="DisplayLayout" value="6" />
           <Int32 key="EnabledDetectors" value="1" />
@@ -1269,7 +1269,7 @@
           <Boolean key="ExtMirror" value="false" />
           <Double key="GateDelay" value="0" />
           <Boolean key="GateEnable" value="false" />
-          <Double key="GateLength" value="5E-07" />
+          <Double key="GateLength" value="6.25E-07" />
           <Double key="GateTrigDelay" value="0" />
           <Boolean key="GateTrigEnabled" value="false" />
           <Double key="GateTrigExtLevel" value="1.2" />
@@ -1312,7 +1312,7 @@
           <Int32 key="InputRangeOptimization" value="0" />
           <Double key="InputRefImped" value="50" />
           <Boolean key="InputRefImpedanceIsConnector" value="true" />
-          <Double key="InputSpan" value="25000000" />
+          <Double key="InputSpan" value="20000000" />
           <Boolean key="InputSpanZoom" value="true" />
           <Boolean key="InputZoom" value="true" />
           <Boolean key="IntrnlAnalogCalOn" value="true" />
@@ -1348,7 +1348,7 @@
           <Boolean key="ObwVisible.Trace5" value="false" />
           <Boolean key="ObwVisible.Trace6" value="false" />
           <Double key="OverlapAverageMaxPercentage" value="0" />
-          <Double key="OverlapMaxPercentage" value="90" />
+          <Double key="OverlapMaxPercentage" value="0" />
           <Boolean key="PlayLoop" value="true" />
           <Boolean key="PlaybackOn" value="false" />
           <Boolean key="PlaybackUserCalConstsOn" value="false" />
@@ -1421,8 +1421,10 @@
           <Double key="SwitchAttenuation" value="1.7976931348623157E+308" />
           <Int32 key="SwitchPathsPerAcquisition" value="0" />
           <Int32 key="SwitchRepeatedPathsPerAcquisition" value="0" />
-          <Double key="TimeMainLength" value="2.215625E-05" />
+          <Double key="TimeMainLength" value="2.21875E-05" />
           <Boolean key="TimeResolutionAuto" value="false" />
+          <Int32 key="TimestampSource" value="0" />
+          <Int32 key="TimestampSourceActual" value="1" />
           <Boolean key="TrendEnableEba" value="false" />
           <Int32 key="TriggerChannel" value="1" />
           <Double key="TriggerDelay" value="0" />
@@ -1467,7 +1469,7 @@
           <Boolean key="UsingExtConv" value="false" />
           <String key="WindowType" value="GAUSSTOP" />
         </State>
-        <AnalyzerConfiguration type="Analyzer" version="28.1.268.1" schemaVersion="27.40.45.0">
+        <AnalyzerConfiguration type="Analyzer" version="28.41.294.1" schemaVersion="27.40.45.0">
           <Name>DirectDataSource</Name>
           <ExtRefFreq>10000000</ExtRefFreq>
           <EnableRefLock>false</EnableRefLock>
@@ -1578,9 +1580,23 @@
       <Boolean key="AcpVisible.Trace5" value="false" />
       <Boolean key="AcpVisible.Trace6" value="false" />
       <String key="DisplayLayoutString" value="" />
-      <String key="DisplayLayoutStringNew" value="&lt;DockSiteLayout xmlns:xsd=&quot;http://www.w3.org/2001/XMLSchema&quot; xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot; SerializationFormat=&quot;All&quot;&gt;&#xD;&#xA;&#x9;&lt;AutoHideHost&gt;&#xD;&#xA;&#x9;&#x9;&lt;AutoHideTabStrip Side=&quot;Bottom&quot;&gt;&#xD;&#xA;&#x9;&#x9;&#x9;&lt;ToolWindowContainer AutoHideSize=&quot;1908,280&quot; DockedSize=&quot;1908,280&quot; DocumentSize=&quot;1908,280&quot; FloatingSize=&quot;1908,280&quot; Size=&quot;1908,280&quot; SelectedWindowUniqueId=&quot;e13fe915-506e-4a8a-afa4-a5053c1007db&quot;&gt;&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&lt;UIElement xsi:type=&quot;ToolWindowRef&quot; UniqueId=&quot;e13fe915-506e-4a8a-afa4-a5053c1007db&quot; /&gt;&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&lt;UIElement xsi:type=&quot;ToolWindowRef&quot; UniqueId=&quot;8498a2ad-ae2f-443d-a876-dc190f01ee15&quot; /&gt;&#xD;&#xA;&#x9;&#x9;&#x9;&lt;/ToolWindowContainer&gt;&#xD;&#xA;&#x9;&#x9;&lt;/AutoHideTabStrip&gt;&#xD;&#xA;&#x9;&lt;/AutoHideHost&gt;&#xD;&#xA;&#x9;&lt;Content xsi:type=&quot;SplitContainer&quot; AutoHideSize=&quot;1908,891&quot; DockedSize=&quot;946,882&quot; DocumentSize=&quot;1908,891&quot; FloatingSize=&quot;1908,891&quot; Size=&quot;946,882&quot; Orientation=&quot;Vertical&quot;&gt;&#xD;&#xA;&#x9;&#x9;&lt;UIElement xsi:type=&quot;ToolWindowContainer&quot; AutoHideSize=&quot;1908,185&quot; DockedSize=&quot;946,185&quot; DocumentSize=&quot;1908,185&quot; FloatingSize=&quot;1908,185&quot; Size=&quot;946,185&quot;&gt;&#xD;&#xA;&#x9;&#x9;&#x9;&lt;UIElement xsi:type=&quot;Track&quot; UniqueId=&quot;ba3b9784-628c-4e14-bd19-150047befb86&quot; /&gt;&#xD;&#xA;&#x9;&#x9;&lt;/UIElement&gt;&#xD;&#xA;&#x9;&#x9;&lt;UIElement xsi:type=&quot;Workspace&quot; AutoHideSize=&quot;1908,891&quot; DockedSize=&quot;1908,891&quot; DocumentSize=&quot;946,882&quot; FloatingSize=&quot;1908,891&quot; Size=&quot;946,882&quot;&gt;&#xD;&#xA;&#x9;&#x9;&#x9;&lt;Content xsi:type=&quot;TabbedMdiHost&quot;&gt;&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&lt;Content xsi:type=&quot;SplitContainer&quot; AutoHideSize=&quot;1908,891&quot; DockedSize=&quot;1908,891&quot; DocumentSize=&quot;946,882&quot; FloatingSize=&quot;1908,891&quot; Size=&quot;946,882&quot; Orientation=&quot;Vertical&quot;&gt;&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&lt;UIElement xsi:type=&quot;SplitContainer&quot; AutoHideSize=&quot;1908,442.5&quot; DockedSize=&quot;1908,442.5&quot; DocumentSize=&quot;946,438&quot; FloatingSize=&quot;1908,442.5&quot; Size=&quot;946,438&quot; Orientation=&quot;Horizontal&quot;&gt;&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;&lt;UIElement xsi:type=&quot;TabbedMdiContainer&quot; AutoHideSize=&quot;429,442.5&quot; DockedSize=&quot;399.84078665561,438&quot; DocumentSize=&quot;399.84078665561,438&quot; FloatingSize=&quot;429,442.5&quot; Size=&quot;399.84078665561,438&quot; SelectedWindowUniqueId=&quot;1bdf42c0-ea71-4711-ae0d-0d23585fab24&quot;&gt;&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;&lt;UIElement xsi:type=&quot;DocumentWindowRef&quot; UniqueId=&quot;1bdf42c0-ea71-4711-ae0d-0d23585fab24&quot; /&gt;&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;&lt;/UIElement&gt;&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;&lt;UIElement xsi:type=&quot;TabbedMdiContainer&quot; AutoHideSize=&quot;1470,442.5&quot; DockedSize=&quot;540.15921334439,438&quot; DocumentSize=&quot;540.15921334439,438&quot; FloatingSize=&quot;1470,442.5&quot; Size=&quot;540.15921334439,438&quot; SelectedWindowUniqueId=&quot;f6364bc2-b3b0-4677-b430-8b55883322b7&quot;&gt;&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;&lt;UIElement xsi:type=&quot;DocumentWindowRef&quot; UniqueId=&quot;f6364bc2-b3b0-4677-b430-8b55883322b7&quot; /&gt;&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;&lt;UIElement xsi:type=&quot;Track&quot; UniqueId=&quot;fc0520f4-7fd8-46d1-8fdb-b82e93d2868e&quot; /&gt;&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;&lt;UIElement xsi:type=&quot;Track&quot; UniqueId=&quot;fe5ca15a-fd8e-46e3-ad8a-cd45d6ce8cec&quot; /&gt;&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;&lt;/UIElement&gt;&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&lt;/UIElement&gt;&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&lt;UIElement xsi:type=&quot;SplitContainer&quot; AutoHideSize=&quot;1908,442.5&quot; DockedSize=&quot;1908,442.5&quot; DocumentSize=&quot;946,438&quot; FloatingSize=&quot;1908,442.5&quot; Size=&quot;946,438&quot; Orientation=&quot;Horizontal&quot;&gt;&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;&lt;UIElement xsi:type=&quot;TabbedMdiContainer&quot; AutoHideSize=&quot;432,442.5&quot; DockedSize=&quot;399.217970973006,438&quot; DocumentSize=&quot;399.217970973006,438&quot; FloatingSize=&quot;432,442.5&quot; Size=&quot;399.217970973006,438&quot; SelectedWindowUniqueId=&quot;f0a916d0-bed2-462f-8504-70cf3a69dddb&quot;&gt;&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;&lt;UIElement xsi:type=&quot;DocumentWindowRef&quot; UniqueId=&quot;f0a916d0-bed2-462f-8504-70cf3a69dddb&quot; /&gt;&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;&lt;/UIElement&gt;&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;&lt;UIElement xsi:type=&quot;TabbedMdiContainer&quot; AutoHideSize=&quot;1908,442.5&quot; DockedSize=&quot;540.782029026994,438&quot; DocumentSize=&quot;540.782029026994,438&quot; FloatingSize=&quot;1908,442.5&quot; Size=&quot;540.782029026994,438&quot; SelectedWindowUniqueId=&quot;a1e980c1-7799-4059-aaaa-0dc6c8888459&quot;&gt;&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;&lt;UIElement xsi:type=&quot;DocumentWindowRef&quot; UniqueId=&quot;a1e980c1-7799-4059-aaaa-0dc6c8888459&quot; /&gt;&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;&lt;/UIElement&gt;&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&lt;/UIElement&gt;&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&lt;/Content&gt;&#xD;&#xA;&#x9;&#x9;&#x9;&lt;/Content&gt;&#xD;&#xA;&#x9;&#x9;&lt;/UIElement&gt;&#xD;&#xA;&#x9;&#x9;&lt;UIElement xsi:type=&quot;ToolWindowContainer&quot; AutoHideSize=&quot;1908,280&quot; DockedSize=&quot;946,280&quot; DocumentSize=&quot;1908,280&quot; FloatingSize=&quot;1908,280&quot; Size=&quot;946,280&quot;&gt;&#xD;&#xA;&#x9;&#x9;&#x9;&lt;UIElement xsi:type=&quot;Track&quot; UniqueId=&quot;e13fe915-506e-4a8a-afa4-a5053c1007db&quot; /&gt;&#xD;&#xA;&#x9;&#x9;&#x9;&lt;UIElement xsi:type=&quot;Track&quot; UniqueId=&quot;13c228a6-826a-4cb3-a3fe-e71a156fc881&quot; /&gt;&#xD;&#xA;&#x9;&#x9;&#x9;&lt;UIElement xsi:type=&quot;Track&quot; UniqueId=&quot;3b6f79bd-b66a-47c3-8206-c7a7302a8e2a&quot; /&gt;&#xD;&#xA;&#x9;&#x9;&#x9;&lt;UIElement xsi:type=&quot;Track&quot; UniqueId=&quot;c81f449b-6239-4cf5-a9e7-631c9c2e0785&quot; /&gt;&#xD;&#xA;&#x9;&#x9;&#x9;&lt;UIElement xsi:type=&quot;Track&quot; UniqueId=&quot;8498a2ad-ae2f-443d-a876-dc190f01ee15&quot; /&gt;&#xD;&#xA;&#x9;&#x9;&#x9;&lt;UIElement xsi:type=&quot;Track&quot; UniqueId=&quot;a7cf635d-315c-47b0-968e-a90baf62074f&quot; /&gt;&#xD;&#xA;&#x9;&#x9;&lt;/UIElement&gt;&#xD;&#xA;&#x9;&lt;/Content&gt;&#xD;&#xA;&#x9;&lt;DocumentWindows&gt;&#xD;&#xA;&#x9;&#x9;&lt;DocumentWindow UniqueId=&quot;1bdf42c0-ea71-4711-ae0d-0d23585fab24&quot; AutoHideSize=&quot;429,442.5&quot; DockedSize=&quot;429,442.5&quot; DocumentSize=&quot;399.84078665561,442.5&quot; FloatingSize=&quot;429,442.5&quot; Size=&quot;399.84078665561,442.5&quot; IsOpen=&quot;true&quot; LastCloseReason=&quot;Other&quot; LastState=&quot;Document&quot; Name=&quot;Trace_A&quot; StandardMdiBounds=&quot;0,0,300,200&quot; Type=&quot;Agilent.SA.VsaDisplay.TraceWindow, Agilent.SA.Vsa.Display&quot; State=&quot;Document&quot; /&gt;&#xD;&#xA;&#x9;&#x9;&lt;DocumentWindow UniqueId=&quot;a1e980c1-7799-4059-aaaa-0dc6c8888459&quot; AutoHideSize=&quot;1473,442.5&quot; DockedSize=&quot;1473,442.5&quot; DocumentSize=&quot;540.782029026994,442.5&quot; FloatingSize=&quot;1473,442.5&quot; Size=&quot;540.782029026994,442.5&quot; IsOpen=&quot;true&quot; LastCloseReason=&quot;Other&quot; LastState=&quot;Document&quot; Name=&quot;Trace_B&quot; StandardMdiBounds=&quot;0,0,300,200&quot; Type=&quot;Agilent.SA.VsaDisplay.TraceWindow, Agilent.SA.Vsa.Display&quot; State=&quot;Document&quot; /&gt;&#xD;&#xA;&#x9;&#x9;&lt;DocumentWindow UniqueId=&quot;f6364bc2-b3b0-4677-b430-8b55883322b7&quot; AutoHideSize=&quot;1470,442.5&quot; DockedSize=&quot;1470,442.5&quot; DocumentSize=&quot;540.15921334439,442.5&quot; FloatingSize=&quot;1470,442.5&quot; Size=&quot;540.15921334439,442.5&quot; IsOpen=&quot;true&quot; LastCloseReason=&quot;Other&quot; LastState=&quot;Document&quot; Name=&quot;Trace_C&quot; StandardMdiBounds=&quot;0,0,300,200&quot; Type=&quot;Agilent.SA.VsaDisplay.TraceWindow, Agilent.SA.Vsa.Display&quot; State=&quot;Document&quot; /&gt;&#xD;&#xA;&#x9;&#x9;&lt;DocumentWindow UniqueId=&quot;f0a916d0-bed2-462f-8504-70cf3a69dddb&quot; AutoHideSize=&quot;432,442.5&quot; DockedSize=&quot;432,442.5&quot; DocumentSize=&quot;399.217970973006,442.5&quot; FloatingSize=&quot;432,442.5&quot; Size=&quot;399.217970973006,442.5&quot; IsOpen=&quot;true&quot; LastCloseReason=&quot;Other&quot; LastState=&quot;Document&quot; Name=&quot;Trace_D&quot; StandardMdiBounds=&quot;0,0,300,200&quot; Type=&quot;Agilent.SA.VsaDisplay.TraceWindow, Agilent.SA.Vsa.Display&quot; State=&quot;Document&quot; /&gt;&#xD;&#xA;&#x9;&#x9;&lt;DocumentWindow UniqueId=&quot;fc0520f4-7fd8-46d1-8fdb-b82e93d2868e&quot; AutoHideSize=&quot;1908,442.5&quot; DockedSize=&quot;1908,442.5&quot; DocumentSize=&quot;1908,442.5&quot; FloatingSize=&quot;1908,442.5&quot; Size=&quot;1908,442.5&quot; IsOpen=&quot;false&quot; LastCloseReason=&quot;Other&quot; LastState=&quot;Document&quot; Name=&quot;Trace_E&quot; StandardMdiBounds=&quot;0,0,300,200&quot; Type=&quot;Agilent.SA.VsaDisplay.TraceWindow, Agilent.SA.Vsa.Display&quot; State=&quot;Document&quot; /&gt;&#xD;&#xA;&#x9;&#x9;&lt;DocumentWindow UniqueId=&quot;fe5ca15a-fd8e-46e3-ad8a-cd45d6ce8cec&quot; AutoHideSize=&quot;1908,442.5&quot; DockedSize=&quot;1908,442.5&quot; DocumentSize=&quot;1908,442.5&quot; FloatingSize=&quot;1908,442.5&quot; Size=&quot;1908,442.5&quot; IsOpen=&quot;false&quot; LastCloseReason=&quot;Other&quot; LastState=&quot;Document&quot; Name=&quot;Trace_F&quot; StandardMdiBounds=&quot;0,0,300,200&quot; Type=&quot;Agilent.SA.VsaDisplay.TraceWindow, Agilent.SA.Vsa.Display&quot; State=&quot;Document&quot; /&gt;&#xD;&#xA;&#x9;&lt;/DocumentWindows&gt;&#xD;&#xA;&#x9;&lt;ToolWindows&gt;&#xD;&#xA;&#x9;&#x9;&lt;ToolWindow UniqueId=&quot;52f60196-5718-40ff-9fe6-df95ac10a9dd&quot; AutoHideSize=&quot;115,115&quot; DockedSize=&quot;115,115&quot; DocumentSize=&quot;115,115&quot; FloatingSize=&quot;115,115&quot; Size=&quot;115,115&quot; IsOpen=&quot;false&quot; LastCloseReason=&quot;Other&quot; LastState=&quot;Docked&quot; Name=&quot;MacrosWindow&quot; StandardMdiBounds=&quot;0,0,300,200&quot; State=&quot;AutoHide&quot; /&gt;&#xD;&#xA;&#x9;&#x9;&lt;ToolWindow UniqueId=&quot;e0cf24d4-31e8-43b9-8e25-364a69a6ea5c&quot; AutoHideSize=&quot;380,115&quot; DockedSize=&quot;380,115&quot; DocumentSize=&quot;380,115&quot; FloatingSize=&quot;380,115&quot; Size=&quot;380,115&quot; IsOpen=&quot;false&quot; LastCloseReason=&quot;Other&quot; LastState=&quot;Docked&quot; Name=&quot;DynamicHelpWindow&quot; StandardMdiBounds=&quot;0,0,300,200&quot; State=&quot;AutoHide&quot; /&gt;&#xD;&#xA;&#x9;&#x9;&lt;ToolWindow UniqueId=&quot;ba3b9784-628c-4e14-bd19-150047befb86&quot; AutoHideSize=&quot;200,185&quot; DockedSize=&quot;200,185&quot; DocumentSize=&quot;200,185&quot; FloatingSize=&quot;200,185&quot; Size=&quot;200,185&quot; IsOpen=&quot;false&quot; LastCloseReason=&quot;Other&quot; LastState=&quot;Docked&quot; Name=&quot;BlockDiagramWindow&quot; StandardMdiBounds=&quot;0,0,300,200&quot; State=&quot;Docked&quot; /&gt;&#xD;&#xA;&#x9;&#x9;&lt;ToolWindow UniqueId=&quot;e13fe915-506e-4a8a-afa4-a5053c1007db&quot; AutoHideSize=&quot;200,280&quot; DockedSize=&quot;200,280&quot; DocumentSize=&quot;200,280&quot; FloatingSize=&quot;200,280&quot; Size=&quot;200,280&quot; IsOpen=&quot;true&quot; LastCloseReason=&quot;Other&quot; LastState=&quot;Docked&quot; Name=&quot;MarkersWindow&quot; StandardMdiBounds=&quot;0,0,300,200&quot; State=&quot;AutoHide&quot; /&gt;&#xD;&#xA;&#x9;&#x9;&lt;ToolWindow UniqueId=&quot;13c228a6-826a-4cb3-a3fe-e71a156fc881&quot; AutoHideSize=&quot;200,75&quot; DockedSize=&quot;200,75&quot; DocumentSize=&quot;200,75&quot; FloatingSize=&quot;200,75&quot; Size=&quot;200,75&quot; IsOpen=&quot;false&quot; LastCloseReason=&quot;Other&quot; LastState=&quot;Docked&quot; Name=&quot;OutputWindow&quot; StandardMdiBounds=&quot;0,0,300,200&quot; State=&quot;Docked&quot; /&gt;&#xD;&#xA;&#x9;&#x9;&lt;ToolWindow UniqueId=&quot;3b6f79bd-b66a-47c3-8206-c7a7302a8e2a&quot; AutoHideSize=&quot;200,75&quot; DockedSize=&quot;200,75&quot; DocumentSize=&quot;200,75&quot; FloatingSize=&quot;200,75&quot; Size=&quot;200,75&quot; IsOpen=&quot;false&quot; LastCloseReason=&quot;Other&quot; LastState=&quot;Docked&quot; Name=&quot;ResultsWindow&quot; StandardMdiBounds=&quot;0,0,300,200&quot; State=&quot;Docked&quot; /&gt;&#xD;&#xA;&#x9;&#x9;&lt;ToolWindow UniqueId=&quot;c81f449b-6239-4cf5-a9e7-631c9c2e0785&quot; AutoHideSize=&quot;200,75&quot; DockedSize=&quot;200,75&quot; DocumentSize=&quot;200,75&quot; FloatingSize=&quot;200,75&quot; Size=&quot;200,75&quot; IsOpen=&quot;false&quot; LastCloseReason=&quot;Other&quot; LastState=&quot;Docked&quot; Name=&quot;ScpiWindow&quot; StandardMdiBounds=&quot;0,0,300,200&quot; State=&quot;Docked&quot; /&gt;&#xD;&#xA;&#x9;&#x9;&lt;ToolWindow UniqueId=&quot;8498a2ad-ae2f-443d-a876-dc190f01ee15&quot; AutoHideSize=&quot;200,280&quot; DockedSize=&quot;200,280&quot; DocumentSize=&quot;200,280&quot; FloatingSize=&quot;200,280&quot; Size=&quot;200,280&quot; IsOpen=&quot;true&quot; LastCloseReason=&quot;Other&quot; LastState=&quot;Docked&quot; Name=&quot;EventLogWindow&quot; StandardMdiBounds=&quot;0,0,300,200&quot; State=&quot;AutoHide&quot; /&gt;&#xD;&#xA;&#x9;&#x9;&lt;ToolWindow UniqueId=&quot;a7cf635d-315c-47b0-968e-a90baf62074f&quot; AutoHideSize=&quot;200,75&quot; DockedSize=&quot;200,75&quot; DocumentSize=&quot;200,75&quot; FloatingSize=&quot;200,75&quot; Size=&quot;200,75&quot; IsOpen=&quot;false&quot; LastCloseReason=&quot;Other&quot; LastState=&quot;Docked&quot; Name=&quot;PlayerWindow&quot; StandardMdiBounds=&quot;0,0,300,200&quot; State=&quot;Docked&quot; /&gt;&#xD;&#xA;&#x9;&lt;/ToolWindows&gt;&#xD;&#xA;&lt;/DockSiteLayout&gt;" />
+      <String key="DisplayLayoutStringNew" value="&lt;DockSiteLayout xmlns:xsd=&quot;http://www.w3.org/2001/XMLSchema&quot; xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot; SerializationFormat=&quot;All&quot;&gt;&#xD;&#xA;&#x9;&lt;AutoHideHost&gt;&#xD;&#xA;&#x9;&#x9;&lt;AutoHideTabStrip Side=&quot;Bottom&quot;&gt;&#xD;&#xA;&#x9;&#x9;&#x9;&lt;ToolWindowContainer AutoHideSize=&quot;1908,280&quot; DockedSize=&quot;1908,280&quot; DocumentSize=&quot;1908,280&quot; FloatingSize=&quot;1908,280&quot; Size=&quot;1908,280&quot; SelectedWindowUniqueId=&quot;e13fe915-506e-4a8a-afa4-a5053c1007db&quot;&gt;&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&lt;UIElement xsi:type=&quot;ToolWindowRef&quot; UniqueId=&quot;e13fe915-506e-4a8a-afa4-a5053c1007db&quot; /&gt;&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&lt;UIElement xsi:type=&quot;ToolWindowRef&quot; UniqueId=&quot;8498a2ad-ae2f-443d-a876-dc190f01ee15&quot; /&gt;&#xD;&#xA;&#x9;&#x9;&#x9;&lt;/ToolWindowContainer&gt;&#xD;&#xA;&#x9;&#x9;&lt;/AutoHideTabStrip&gt;&#xD;&#xA;&#x9;&lt;/AutoHideHost&gt;&#xD;&#xA;&#x9;&lt;Content xsi:type=&quot;SplitContainer&quot; AutoHideSize=&quot;1908,891&quot; DockedSize=&quot;945.714285714286,878.142857142857&quot; DocumentSize=&quot;1908,891&quot; FloatingSize=&quot;1908,891&quot; Size=&quot;945.714285714286,878.142857142857&quot; Orientation=&quot;Vertical&quot;&gt;&#xD;&#xA;&#x9;&#x9;&lt;UIElement xsi:type=&quot;ToolWindowContainer&quot; AutoHideSize=&quot;1908,185&quot; DockedSize=&quot;945.714285714286,185&quot; DocumentSize=&quot;1908,185&quot; FloatingSize=&quot;1908,185&quot; Size=&quot;945.714285714286,185&quot;&gt;&#xD;&#xA;&#x9;&#x9;&#x9;&lt;UIElement xsi:type=&quot;Track&quot; UniqueId=&quot;ba3b9784-628c-4e14-bd19-150047befb86&quot; /&gt;&#xD;&#xA;&#x9;&#x9;&lt;/UIElement&gt;&#xD;&#xA;&#x9;&#x9;&lt;UIElement xsi:type=&quot;Workspace&quot; AutoHideSize=&quot;1908,891&quot; DockedSize=&quot;1908,891&quot; DocumentSize=&quot;945.714285714286,878.142857142857&quot; FloatingSize=&quot;1908,891&quot; Size=&quot;945.714285714286,878.142857142857&quot;&gt;&#xD;&#xA;&#x9;&#x9;&#x9;&lt;Content xsi:type=&quot;TabbedMdiHost&quot;&gt;&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&lt;Content xsi:type=&quot;SplitContainer&quot; AutoHideSize=&quot;1908,891&quot; DockedSize=&quot;1908,891&quot; DocumentSize=&quot;945.714285714286,878.142857142857&quot; FloatingSize=&quot;1908,891&quot; Size=&quot;945.714285714286,878.142857142857&quot; Orientation=&quot;Vertical&quot;&gt;&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&lt;UIElement xsi:type=&quot;SplitContainer&quot; AutoHideSize=&quot;1908,442.5&quot; DockedSize=&quot;1908,442.5&quot; DocumentSize=&quot;945.714285714286,436.071428571428&quot; FloatingSize=&quot;1908,442.5&quot; Size=&quot;945.714285714286,436.071428571428&quot; Orientation=&quot;Horizontal&quot;&gt;&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;&lt;UIElement xsi:type=&quot;TabbedMdiContainer&quot; AutoHideSize=&quot;429,442.5&quot; DockedSize=&quot;399.719254501612,436.071428571428&quot; DocumentSize=&quot;399.719254501612,436.071428571428&quot; FloatingSize=&quot;429,442.5&quot; Size=&quot;399.719254501612,436.071428571428&quot; SelectedWindowUniqueId=&quot;1bdf42c0-ea71-4711-ae0d-0d23585fab24&quot;&gt;&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;&lt;UIElement xsi:type=&quot;DocumentWindowRef&quot; UniqueId=&quot;1bdf42c0-ea71-4711-ae0d-0d23585fab24&quot; /&gt;&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;&lt;/UIElement&gt;&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;&lt;UIElement xsi:type=&quot;TabbedMdiContainer&quot; AutoHideSize=&quot;1470,442.5&quot; DockedSize=&quot;539.995031212674,436.071428571428&quot; DocumentSize=&quot;539.995031212674,436.071428571428&quot; FloatingSize=&quot;1470,442.5&quot; Size=&quot;539.995031212674,436.071428571428&quot; SelectedWindowUniqueId=&quot;f6364bc2-b3b0-4677-b430-8b55883322b7&quot;&gt;&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;&lt;UIElement xsi:type=&quot;DocumentWindowRef&quot; UniqueId=&quot;f6364bc2-b3b0-4677-b430-8b55883322b7&quot; /&gt;&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;&lt;UIElement xsi:type=&quot;Track&quot; UniqueId=&quot;fc0520f4-7fd8-46d1-8fdb-b82e93d2868e&quot; /&gt;&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;&lt;UIElement xsi:type=&quot;Track&quot; UniqueId=&quot;fe5ca15a-fd8e-46e3-ad8a-cd45d6ce8cec&quot; /&gt;&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;&lt;/UIElement&gt;&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&lt;/UIElement&gt;&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&lt;UIElement xsi:type=&quot;SplitContainer&quot; AutoHideSize=&quot;1908,442.5&quot; DockedSize=&quot;1908,442.5&quot; DocumentSize=&quot;945.714285714286,436.071428571428&quot; FloatingSize=&quot;1908,442.5&quot; Size=&quot;945.714285714286,436.071428571428&quot; Orientation=&quot;Horizontal&quot;&gt;&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;&lt;UIElement xsi:type=&quot;TabbedMdiContainer&quot; AutoHideSize=&quot;432,442.5&quot; DockedSize=&quot;399.096628124687,436.071428571428&quot; DocumentSize=&quot;399.096628124687,436.071428571428&quot; FloatingSize=&quot;432,442.5&quot; Size=&quot;399.096628124687,436.071428571428&quot; SelectedWindowUniqueId=&quot;f0a916d0-bed2-462f-8504-70cf3a69dddb&quot;&gt;&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;&lt;UIElement xsi:type=&quot;DocumentWindowRef&quot; UniqueId=&quot;f0a916d0-bed2-462f-8504-70cf3a69dddb&quot; /&gt;&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;&lt;/UIElement&gt;&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;&lt;UIElement xsi:type=&quot;TabbedMdiContainer&quot; AutoHideSize=&quot;1908,442.5&quot; DockedSize=&quot;540.617657589599,436.071428571428&quot; DocumentSize=&quot;540.617657589599,436.071428571428&quot; FloatingSize=&quot;1908,442.5&quot; Size=&quot;540.617657589599,436.071428571428&quot; SelectedWindowUniqueId=&quot;a1e980c1-7799-4059-aaaa-0dc6c8888459&quot;&gt;&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;&lt;UIElement xsi:type=&quot;DocumentWindowRef&quot; UniqueId=&quot;a1e980c1-7799-4059-aaaa-0dc6c8888459&quot; /&gt;&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&#x9;&lt;/UIElement&gt;&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;&lt;/UIElement&gt;&#xD;&#xA;&#x9;&#x9;&#x9;&#x9;&lt;/Content&gt;&#xD;&#xA;&#x9;&#x9;&#x9;&lt;/Content&gt;&#xD;&#xA;&#x9;&#x9;&lt;/UIElement&gt;&#xD;&#xA;&#x9;&#x9;&lt;UIElement xsi:type=&quot;ToolWindowContainer&quot; AutoHideSize=&quot;1908,280&quot; DockedSize=&quot;945.714285714286,280&quot; DocumentSize=&quot;1908,280&quot; FloatingSize=&quot;1908,280&quot; Size=&quot;945.714285714286,280&quot;&gt;&#xD;&#xA;&#x9;&#x9;&#x9;&lt;UIElement xsi:type=&quot;Track&quot; UniqueId=&quot;e13fe915-506e-4a8a-afa4-a5053c1007db&quot; /&gt;&#xD;&#xA;&#x9;&#x9;&#x9;&lt;UIElement xsi:type=&quot;Track&quot; UniqueId=&quot;13c228a6-826a-4cb3-a3fe-e71a156fc881&quot; /&gt;&#xD;&#xA;&#x9;&#x9;&#x9;&lt;UIElement xsi:type=&quot;Track&quot; UniqueId=&quot;3b6f79bd-b66a-47c3-8206-c7a7302a8e2a&quot; /&gt;&#xD;&#xA;&#x9;&#x9;&#x9;&lt;UIElement xsi:type=&quot;Track&quot; UniqueId=&quot;c81f449b-6239-4cf5-a9e7-631c9c2e0785&quot; /&gt;&#xD;&#xA;&#x9;&#x9;&#x9;&lt;UIElement xsi:type=&quot;Track&quot; UniqueId=&quot;8498a2ad-ae2f-443d-a876-dc190f01ee15&quot; /&gt;&#xD;&#xA;&#x9;&#x9;&#x9;&lt;UIElement xsi:type=&quot;Track&quot; UniqueId=&quot;a7cf635d-315c-47b0-968e-a90baf62074f&quot; /&gt;&#xD;&#xA;&#x9;&#x9;&lt;/UIElement&gt;&#xD;&#xA;&#x9;&lt;/Content&gt;&#xD;&#xA;&#x9;&lt;DocumentWindows&gt;&#xD;&#xA;&#x9;&#x9;&lt;DocumentWindow UniqueId=&quot;1bdf42c0-ea71-4711-ae0d-0d23585fab24&quot; AutoHideSize=&quot;429,442.5&quot; DockedSize=&quot;429,442.5&quot; DocumentSize=&quot;399.719254501612,442.5&quot; FloatingSize=&quot;429,442.5&quot; Size=&quot;399.719254501612,442.5&quot; IsOpen=&quot;true&quot; LastCloseReason=&quot;Other&quot; LastState=&quot;Document&quot; Name=&quot;Trace_A&quot; StandardMdiBounds=&quot;0,0,300,200&quot; Type=&quot;Agilent.SA.VsaDisplay.TraceWindow, Agilent.SA.Vsa.Display&quot; State=&quot;Document&quot; /&gt;&#xD;&#xA;&#x9;&#x9;&lt;DocumentWindow UniqueId=&quot;a1e980c1-7799-4059-aaaa-0dc6c8888459&quot; AutoHideSize=&quot;1473,442.5&quot; DockedSize=&quot;1473,442.5&quot; DocumentSize=&quot;540.617657589599,442.5&quot; FloatingSize=&quot;1473,442.5&quot; Size=&quot;540.617657589599,442.5&quot; IsOpen=&quot;true&quot; LastCloseReason=&quot;Other&quot; LastState=&quot;Document&quot; Name=&quot;Trace_B&quot; StandardMdiBounds=&quot;0,0,300,200&quot; Type=&quot;Agilent.SA.VsaDisplay.TraceWindow, Agilent.SA.Vsa.Display&quot; State=&quot;Document&quot; /&gt;&#xD;&#xA;&#x9;&#x9;&lt;DocumentWindow UniqueId=&quot;f6364bc2-b3b0-4677-b430-8b55883322b7&quot; AutoHideSize=&quot;1470,442.5&quot; DockedSize=&quot;1470,442.5&quot; DocumentSize=&quot;539.995031212674,442.5&quot; FloatingSize=&quot;1470,442.5&quot; Size=&quot;539.995031212674,442.5&quot; IsOpen=&quot;true&quot; LastCloseReason=&quot;Other&quot; LastState=&quot;Document&quot; Name=&quot;Trace_C&quot; StandardMdiBounds=&quot;0,0,300,200&quot; Type=&quot;Agilent.SA.VsaDisplay.TraceWindow, Agilent.SA.Vsa.Display&quot; State=&quot;Document&quot; /&gt;&#xD;&#xA;&#x9;&#x9;&lt;DocumentWindow UniqueId=&quot;f0a916d0-bed2-462f-8504-70cf3a69dddb&quot; AutoHideSize=&quot;432,442.5&quot; DockedSize=&quot;432,442.5&quot; DocumentSize=&quot;399.096628124687,442.5&quot; FloatingSize=&quot;432,442.5&quot; Size=&quot;399.096628124687,442.5&quot; IsOpen=&quot;true&quot; LastCloseReason=&quot;Other&quot; LastState=&quot;Document&quot; Name=&quot;Trace_D&quot; StandardMdiBounds=&quot;0,0,300,200&quot; Type=&quot;Agilent.SA.VsaDisplay.TraceWindow, Agilent.SA.Vsa.Display&quot; State=&quot;Document&quot; /&gt;&#xD;&#xA;&#x9;&#x9;&lt;DocumentWindow UniqueId=&quot;fc0520f4-7fd8-46d1-8fdb-b82e93d2868e&quot; AutoHideSize=&quot;1908,442.5&quot; DockedSize=&quot;1908,442.5&quot; DocumentSize=&quot;1908,442.5&quot; FloatingSize=&quot;1908,442.5&quot; Size=&quot;1908,442.5&quot; IsOpen=&quot;false&quot; LastCloseReason=&quot;Other&quot; LastState=&quot;Document&quot; Name=&quot;Trace_E&quot; StandardMdiBounds=&quot;0,0,300,200&quot; Type=&quot;Agilent.SA.VsaDisplay.TraceWindow, Agilent.SA.Vsa.Display&quot; State=&quot;Document&quot; /&gt;&#xD;&#xA;&#x9;&#x9;&lt;DocumentWindow UniqueId=&quot;fe5ca15a-fd8e-46e3-ad8a-cd45d6ce8cec&quot; AutoHideSize=&quot;1908,442.5&quot; DockedSize=&quot;1908,442.5&quot; DocumentSize=&quot;1908,442.5&quot; FloatingSize=&quot;1908,442.5&quot; Size=&quot;1908,442.5&quot; IsOpen=&quot;false&quot; LastCloseReason=&quot;Other&quot; LastState=&quot;Document&quot; Name=&quot;Trace_F&quot; StandardMdiBounds=&quot;0,0,300,200&quot; Type=&quot;Agilent.SA.VsaDisplay.TraceWindow, Agilent.SA.Vsa.Display&quot; State=&quot;Document&quot; /&gt;&#xD;&#xA;&#x9;&lt;/DocumentWindows&gt;&#xD;&#xA;&#x9;&lt;ToolWindows&gt;&#xD;&#xA;&#x9;&#x9;&lt;ToolWindow UniqueId=&quot;52f60196-5718-40ff-9fe6-df95ac10a9dd&quot; AutoHideSize=&quot;115,115&quot; DockedSize=&quot;115,115&quot; DocumentSize=&quot;115,115&quot; FloatingSize=&quot;115,115&quot; Size=&quot;115,115&quot; IsOpen=&quot;false&quot; LastCloseReason=&quot;Other&quot; LastState=&quot;Docked&quot; Name=&quot;MacrosWindow&quot; StandardMdiBounds=&quot;0,0,300,200&quot; State=&quot;AutoHide&quot; /&gt;&#xD;&#xA;&#x9;&#x9;&lt;ToolWindow UniqueId=&quot;e0cf24d4-31e8-43b9-8e25-364a69a6ea5c&quot; AutoHideSize=&quot;380,115&quot; DockedSize=&quot;380,115&quot; DocumentSize=&quot;380,115&quot; FloatingSize=&quot;380,115&quot; Size=&quot;380,115&quot; IsOpen=&quot;false&quot; LastCloseReason=&quot;Other&quot; LastState=&quot;Docked&quot; Name=&quot;DynamicHelpWindow&quot; StandardMdiBounds=&quot;0,0,300,200&quot; State=&quot;AutoHide&quot; /&gt;&#xD;&#xA;&#x9;&#x9;&lt;ToolWindow UniqueId=&quot;ba3b9784-628c-4e14-bd19-150047befb86&quot; AutoHideSize=&quot;200,185&quot; DockedSize=&quot;200,185&quot; DocumentSize=&quot;200,185&quot; FloatingSize=&quot;200,185&quot; Size=&quot;200,185&quot; IsOpen=&quot;false&quot; LastCloseReason=&quot;Other&quot; LastState=&quot;Docked&quot; Name=&quot;BlockDiagramWindow&quot; StandardMdiBounds=&quot;0,0,300,200&quot; State=&quot;Docked&quot; /&gt;&#xD;&#xA;&#x9;&#x9;&lt;ToolWindow UniqueId=&quot;e13fe915-506e-4a8a-afa4-a5053c1007db&quot; AutoHideSize=&quot;200,280&quot; DockedSize=&quot;200,280&quot; DocumentSize=&quot;200,280&quot; FloatingSize=&quot;200,280&quot; Size=&quot;200,280&quot; IsOpen=&quot;true&quot; LastCloseReason=&quot;Other&quot; LastState=&quot;Docked&quot; Name=&quot;MarkersWindow&quot; StandardMdiBounds=&quot;0,0,300,200&quot; State=&quot;AutoHide&quot; /&gt;&#xD;&#xA;&#x9;&#x9;&lt;ToolWindow UniqueId=&quot;13c228a6-826a-4cb3-a3fe-e71a156fc881&quot; AutoHideSize=&quot;200,75&quot; DockedSize=&quot;200,75&quot; DocumentSize=&quot;200,75&quot; FloatingSize=&quot;200,75&quot; Size=&quot;200,75&quot; IsOpen=&quot;false&quot; LastCloseReason=&quot;Other&quot; LastState=&quot;Docked&quot; Name=&quot;OutputWindow&quot; StandardMdiBounds=&quot;0,0,300,200&quot; State=&quot;Docked&quot; /&gt;&#xD;&#xA;&#x9;&#x9;&lt;ToolWindow UniqueId=&quot;3b6f79bd-b66a-47c3-8206-c7a7302a8e2a&quot; AutoHideSize=&quot;200,75&quot; DockedSize=&quot;200,75&quot; DocumentSize=&quot;200,75&quot; FloatingSize=&quot;200,75&quot; Size=&quot;200,75&quot; IsOpen=&quot;false&quot; LastCloseReason=&quot;Other&quot; LastState=&quot;Docked&quot; Name=&quot;ResultsWindow&quot; StandardMdiBounds=&quot;0,0,300,200&quot; State=&quot;Docked&quot; /&gt;&#xD;&#xA;&#x9;&#x9;&lt;ToolWindow UniqueId=&quot;c81f449b-6239-4cf5-a9e7-631c9c2e0785&quot; AutoHideSize=&quot;200,75&quot; DockedSize=&quot;200,75&quot; DocumentSize=&quot;200,75&quot; FloatingSize=&quot;200,75&quot; Size=&quot;200,75&quot; IsOpen=&quot;false&quot; LastCloseReason=&quot;Other&quot; LastState=&quot;Docked&quot; Name=&quot;ScpiWindow&quot; StandardMdiBounds=&quot;0,0,300,200&quot; State=&quot;Docked&quot; /&gt;&#xD;&#xA;&#x9;&#x9;&lt;ToolWindow UniqueId=&quot;8498a2ad-ae2f-443d-a876-dc190f01ee15&quot; AutoHideSize=&quot;200,280&quot; DockedSize=&quot;200,280&quot; DocumentSize=&quot;200,280&quot; FloatingSize=&quot;200,280&quot; Size=&quot;200,280&quot; IsOpen=&quot;true&quot; LastCloseReason=&quot;Other&quot; LastState=&quot;Docked&quot; Name=&quot;EventLogWindow&quot; StandardMdiBounds=&quot;0,0,300,200&quot; State=&quot;AutoHide&quot; /&gt;&#xD;&#xA;&#x9;&#x9;&lt;ToolWindow UniqueId=&quot;a7cf635d-315c-47b0-968e-a90baf62074f&quot; AutoHideSize=&quot;200,75&quot; DockedSize=&quot;200,75&quot; DocumentSize=&quot;200,75&quot; FloatingSize=&quot;200,75&quot; Size=&quot;200,75&quot; IsOpen=&quot;false&quot; LastCloseReason=&quot;Other&quot; LastState=&quot;Docked&quot; Name=&quot;PlayerWindow&quot; StandardMdiBounds=&quot;0,0,300,200&quot; State=&quot;Docked&quot; /&gt;&#xD;&#xA;&#x9;&lt;/ToolWindows&gt;&#xD;&#xA;&lt;/DockSiteLayout&gt;" />
+      <Int32 key="EvtBasedAct_DemodTrendBufLenEba" value="50000" />
+      <Int32 key="EvtBasedAct_DemodTrendDispLenEba" value="1000" />
       <Boolean key="EvtBasedAct_Enabled" value="false" />
-      <Int32 key="EvtBasedAct_Rule_Count" value="0" />
+      <Boolean key="EvtBasedAct_Rule0_Enabled" value="true" />
+      <Boolean key="EvtBasedAct_Rule0_EvtAction0_Enabled" value="true" />
+      <String key="EvtBasedAct_Rule0_EvtAction0_ExtensionTypeFullName" value="Keysight.SA.Vsa.TrendEventActionExtension" />
+      <String key="EvtBasedAct_Rule0_EvtAction0_Name" value="Action1" />
+      <Int32 key="EvtBasedAct_Rule0_EvtAction_Count" value="1" />
+      <Int32 key="EvtBasedAct_Rule0_EvtDataSource_Count" value="0" />
+      <String key="EvtBasedAct_Rule0_ExtensionTypeFullName" value="Keysight.SA.Vsa.AlwaysEventCondition" />
+      <String key="EvtBasedAct_Rule0_Name" value="InternalTrendStatsRule" />
+      <Int32 key="EvtBasedAct_Rule_Count" value="1" />
+      <Boolean key="EvtBasedAct_TrendRemove2OrderEba" value="false" />
+      <Boolean key="EvtBasedAct_TrendRemoveMeanEba" value="false" />
+      <Boolean key="EvtBasedAct_TrendRemoveSlopeEba" value="false" />
+      <Int32 key="EvtBasedAct_TrendXAxisUnitEba" value="0" />
       <Boolean key="EvtBasedAct__Enabled" value="false" />
       <Boolean key="GrDefDataNames" value="true" />
       <Boolean key="GrDefDataNames.Trace2" value="true" />
@@ -1648,18 +1664,18 @@
       <Int32 key="GrPolyOrder.Trace4" value="5" />
       <Int32 key="GrPolyOrder.Trace5" value="5" />
       <Int32 key="GrPolyOrder.Trace6" value="5" />
-      <String key="GrRespDataName" value="" />
-      <String key="GrRespDataName.Trace2" value="" />
-      <String key="GrRespDataName.Trace3" value="" />
-      <String key="GrRespDataName.Trace4" value="" />
-      <String key="GrRespDataName.Trace5" value="" />
-      <String key="GrRespDataName.Trace6" value="" />
-      <String key="GrStimDataName" value="" />
-      <String key="GrStimDataName.Trace2" value="" />
-      <String key="GrStimDataName.Trace3" value="" />
-      <String key="GrStimDataName.Trace4" value="" />
-      <String key="GrStimDataName.Trace5" value="" />
-      <String key="GrStimDataName.Trace6" value="" />
+      <String key="GrRespDataName" value="Time1" />
+      <String key="GrRespDataName.Trace2" value="Time1" />
+      <String key="GrRespDataName.Trace3" value="Time1" />
+      <String key="GrRespDataName.Trace4" value="Time1" />
+      <String key="GrRespDataName.Trace5" value="Time1" />
+      <String key="GrRespDataName.Trace6" value="Time1" />
+      <String key="GrStimDataName" value="No Data" />
+      <String key="GrStimDataName.Trace2" value="No Data" />
+      <String key="GrStimDataName.Trace3" value="No Data" />
+      <String key="GrStimDataName.Trace4" value="No Data" />
+      <String key="GrStimDataName.Trace5" value="No Data" />
+      <String key="GrStimDataName.Trace6" value="No Data" />
       <Double key="GrTimeAlignPct" value="0.5" />
       <Double key="GrTimeAlignPct.Trace2" value="0.5" />
       <Double key="GrTimeAlignPct.Trace3" value="0.5" />
@@ -1697,7 +1713,7 @@
       <Boolean key="ObwVisible.Trace4" value="false" />
       <Boolean key="ObwVisible.Trace5" value="false" />
       <Boolean key="ObwVisible.Trace6" value="false" />
-      <Int32 key="SelectedTrace" value="3" />
+      <Int32 key="SelectedTrace" value="0" />
       <Int32 key="SequencedMeasPlaybackMode" value="0" />
       <Double key="Trace1.Aperture" value="0.5" />
       <Boolean key="Trace1.AutoCoupled" value="true" />
@@ -1759,9 +1775,9 @@
       <Boolean key="Trace1.Visible" value="true" />
       <Int32 key="Trace1.XAxisCoordinate" value="2" />
       <Boolean key="Trace1.XAxisCoupled" value="false" />
-      <Double key="Trace1.XAxisLeft" value="-1.4036312849162011" />
+      <Double key="Trace1.XAxisLeft" value="-1.4064" />
       <Double key="Trace1.XAxisRefPos" value="50" />
-      <Double key="Trace1.XAxisRight" value="1.4036312849162011" />
+      <Double key="Trace1.XAxisRight" value="1.4064" />
       <Double key="Trace1.XEyeLength" value="2" />
       <Double key="Trace1.XLeft" value="-28" />
       <Boolean key="Trace1.XLog" value="false" />
@@ -1811,7 +1827,7 @@
       <Int32 key="Trace2.Mkr1.Position" value="0" />
       <Int32 key="Trace2.Mkr1.Reference" value="0" />
       <Int32 key="Trace2.Mkr1.ReferenceTrace" value="-1" />
-      <Double key="Trace2.Mkr1.Value" value="-12500000" />
+      <Double key="Trace2.Mkr1.Value" value="-9999999.9999999981" />
       <Boolean key="Trace2.Mkr1.Visible" value="false" />
       <Double key="Trace2.Mkr1.Y" value="0" />
       <Double key="Trace2.Mkr1.Z" value="0" />
@@ -1837,13 +1853,13 @@
       <Boolean key="Trace2.Visible" value="true" />
       <Int32 key="Trace2.XAxisCoordinate" value="2" />
       <Boolean key="Trace2.XAxisCoupled" value="false" />
-      <Double key="Trace2.XAxisLeft" value="-12500000" />
+      <Double key="Trace2.XAxisLeft" value="-9999999.9999999981" />
       <Double key="Trace2.XAxisRefPos" value="50" />
-      <Double key="Trace2.XAxisRight" value="12500000" />
+      <Double key="Trace2.XAxisRight" value="10000000" />
       <Double key="Trace2.XEyeLength" value="2" />
-      <Double key="Trace2.XLeft" value="-12500000" />
+      <Double key="Trace2.XLeft" value="-9999999.9999999981" />
       <Boolean key="Trace2.XLog" value="false" />
-      <Double key="Trace2.XRight" value="12500000" />
+      <Double key="Trace2.XRight" value="10000000" />
       <Boolean key="Trace2.XScaleAuto" value="true" />
       <Int32 key="Trace2.XUnit" value="0" />
       <Int32 key="Trace2.YAxisCoordinate" value="2" />
@@ -1889,10 +1905,24 @@
       <Int32 key="Trace3.Mkr1.Position" value="0" />
       <Int32 key="Trace3.Mkr1.Reference" value="0" />
       <Int32 key="Trace3.Mkr1.ReferenceTrace" value="-1" />
-      <Double key="Trace3.Mkr1.Value" value="-0.00018278125" />
+      <Double key="Trace3.Mkr1.Value" value="-0.00019914062500000002" />
       <Boolean key="Trace3.Mkr1.Visible" value="true" />
-      <Double key="Trace3.Mkr1.Y" value="25.105799653314541" />
+      <Double key="Trace3.Mkr1.Y" value="46.216512700149522" />
       <Double key="Trace3.Mkr1.Z" value="0" />
+      <Boolean key="Trace3.Mkr2.BandPower" value="false" />
+      <Int32 key="Trace3.Mkr2.BandPowerCalc" value="0" />
+      <Double key="Trace3.Mkr2.BandPowerSpan" value="0" />
+      <Int32 key="Trace3.Mkr2.BandPowerType" value="0" />
+      <Boolean key="Trace3.Mkr2.Couple" value="false" />
+      <Boolean key="Trace3.Mkr2.FreqCount" value="false" />
+      <Boolean key="Trace3.Mkr2.PeakTrack" value="false" />
+      <Int32 key="Trace3.Mkr2.Position" value="0" />
+      <Int32 key="Trace3.Mkr2.Reference" value="0" />
+      <Int32 key="Trace3.Mkr2.ReferenceTrace" value="-1" />
+      <Double key="Trace3.Mkr2.Value" value="5.08203125E-05" />
+      <Boolean key="Trace3.Mkr2.Visible" value="false" />
+      <Double key="Trace3.Mkr2.Y" value="0" />
+      <Double key="Trace3.Mkr2.Z" value="0" />
       <Boolean key="Trace3.Overlay" value="false" />
       <Double key="Trace3.PhsOffset" value="0" />
       <Int32 key="Trace3.PointDrawMode" value="0" />
@@ -1915,13 +1945,13 @@
       <Boolean key="Trace3.Visible" value="true" />
       <Int32 key="Trace3.XAxisCoordinate" value="2" />
       <Boolean key="Trace3.XAxisCoupled" value="false" />
-      <Double key="Trace3.XAxisLeft" value="-0.00018278125" />
+      <Double key="Trace3.XAxisLeft" value="-0.00019914062500000002" />
       <Double key="Trace3.XAxisRefPos" value="50" />
-      <Double key="Trace3.XAxisRight" value="6.71875000000129E-05" />
+      <Double key="Trace3.XAxisRight" value="5.0820312500017845E-05" />
       <Double key="Trace3.XEyeLength" value="2" />
-      <Double key="Trace3.XLeft" value="-0.00018278125" />
+      <Double key="Trace3.XLeft" value="-0.00019914062500000002" />
       <Boolean key="Trace3.XLog" value="false" />
-      <Double key="Trace3.XRight" value="6.71875000000129E-05" />
+      <Double key="Trace3.XRight" value="5.0820312500017845E-05" />
       <Boolean key="Trace3.XScaleAuto" value="true" />
       <Int32 key="Trace3.XUnit" value="0" />
       <Int32 key="Trace3.YAxisCoordinate" value="2" />
@@ -2045,7 +2075,7 @@
       <Int32 key="Trace5.Mkr1.Position" value="0" />
       <Int32 key="Trace5.Mkr1.Reference" value="0" />
       <Int32 key="Trace5.Mkr1.ReferenceTrace" value="-1" />
-      <Double key="Trace5.Mkr1.Value" value="-0.00018278125" />
+      <Double key="Trace5.Mkr1.Value" value="-0.00019914062500000002" />
       <Boolean key="Trace5.Mkr1.Visible" value="false" />
       <Double key="Trace5.Mkr1.Y" value="0" />
       <Double key="Trace5.Mkr1.Z" value="0" />
@@ -2071,13 +2101,13 @@
       <Boolean key="Trace5.Visible" value="false" />
       <Int32 key="Trace5.XAxisCoordinate" value="2" />
       <Boolean key="Trace5.XAxisCoupled" value="false" />
-      <Double key="Trace5.XAxisLeft" value="-0.00018278125" />
+      <Double key="Trace5.XAxisLeft" value="-0.00019914062500000002" />
       <Double key="Trace5.XAxisRefPos" value="50" />
-      <Double key="Trace5.XAxisRight" value="6.71875000000129E-05" />
+      <Double key="Trace5.XAxisRight" value="5.0820312500017845E-05" />
       <Double key="Trace5.XEyeLength" value="2" />
-      <Double key="Trace5.XLeft" value="-0.00018278125" />
+      <Double key="Trace5.XLeft" value="-0.00019914062500000002" />
       <Boolean key="Trace5.XLog" value="false" />
-      <Double key="Trace5.XRight" value="6.71875000000129E-05" />
+      <Double key="Trace5.XRight" value="5.0820312500017845E-05" />
       <Boolean key="Trace5.XScaleAuto" value="true" />
       <Int32 key="Trace5.XUnit" value="0" />
       <Int32 key="Trace5.YAxisCoordinate" value="2" />
