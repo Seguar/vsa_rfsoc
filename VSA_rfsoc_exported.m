@@ -5,6 +5,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         RFSoCBeamformerUIFigure        matlab.ui.Figure
         GridLayout                     matlab.ui.container.GridLayout
         LeftPanel                      matlab.ui.container.Panel
+        PlotCheckBox                   matlab.ui.control.CheckBox
         dataStreamCheckBox             matlab.ui.control.CheckBox
         CustomCommandTextArea          matlab.ui.control.TextArea
         CustomCommandTextAreaLabel     matlab.ui.control.Label
@@ -105,6 +106,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         dataChan = 2^14;
         scan_res = 1;
         debug = 0;
+        plotUpd = 1;
         MatlabPattern = 0;
         avg_factor = 10;
         updrate = 10;
@@ -144,6 +146,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
 
         %% Reset vars
         data_v  
+        setup_v
         %% Part reset vars
         p_manual_mean, yspec_mean, plot_handle, tcp_client
     end
@@ -182,7 +185,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.ResetButton.Text = 'Reseting...';
             app.ResetButton.BackgroundColor = 'r';
             drawnow%!!!!
-            app.data_v = vsaDdc(0, app.fsRfsoc, app.fsRfsoc, app.dataChan, 1);
+            [app.data_v, app.setup_v] = vsaDdc(0, app.fsRfsoc, app.fsRfsoc, app.dataChan, 1);
             vsaSetup(app.setupFile)
             disp(app.commands)            
             clf(app.UIAxes);
@@ -266,7 +269,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                         flush(app.tcp_client,"input")
                         [yspec, estimated_angle, bfSig, app.weights, rawData] = rfsocBf(app, app.vsa, app.ch, app.bf, app.off, app.gap, app.cutter, ...
                             app.ang_num, app.data_v, app.tcp_client, app.fc, app.dataChan, app.diag, app.bwOff, app.ula, app.scan_axis, ...
-                            app.c1, app.c2, app.fsRfsoc, app.bw, app.c, app.estimator, app.alg_scan_res, app.mis_ang, app.alpha, app.gamma, app.iter);
+                            app.c1, app.c2, app.fsRfsoc, app.bw, app.c, app.estimator, app.alg_scan_res, app.mis_ang, app.alpha, app.gamma, app.iter, app.setup_v);
                         if isnan(app.weights)
                             disp("No signal")
                             continue
@@ -278,51 +281,53 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
 %                     disp('___')
 %                     toc
                     %% Pattern calc
-                    app.weights = conj(app.weights);
-                    p_manual = beamPatternCalc(app.weights, app.fc, app.scan_axis, length(app.weights));
-                    
-                    %% Avg
-                    [p_manual_mean_vec, app.p_manual_mean]  = avgData(p_manual, app.p_manual_mean);
-                    p_manual_mean_db = 20*log10(p_manual_mean_vec) - max(20*log10(p_manual_mean_vec));    
-                    [yspec_mean_vec, app.yspec_mean]  = avgData(yspec, app.yspec_mean);
-                    if app.patternCorr
-                        yspec_mean_vec = yspec_mean_vec.*(1./app.koef);
-                    end
-                    %% Plot
-                    app.UIAxes.Title.String = (['Direction of Arrival' newline  'Estimated Angles = ' num2str(estimated_angle)]);
-                    
-                    set(app.plot_handle, 'YData', (yspec_mean_vec/max(yspec_mean_vec)), 'LineWidth', 1.5);
-                    plot(app.UIAxes2, app.scan_axis,p_manual_mean_db, 'LineWidth', 1.5);
-                    % Xlines
-                    estimated_angle = [estimated_angle NaN NaN]; % To prevent errors in xlines indexing
-                    am = guiXline(am, app.UIAxes, main, estimated_angle(1));
-                    am2 = guiXline(am2, app.UIAxes2, main, estimated_angle(1));
-    
-                    if sum(~isnan(estimated_angle)) > 1
-                        bs = guiXline(bs, app.UIAxes, sub, estimated_angle(2));
-                        bs2 = guiXline(bs2, app.UIAxes2, sub, estimated_angle(2));
-                        null_diff = round(p_manual_mean_db((app.scan_axis == estimated_angle(1))) - p_manual_mean_db((app.scan_axis == estimated_angle(2))));
-                        app.UIAxes2.Title.String = (['Beam Pattern' newline  'Gain Difference = ' ...
-                            num2str(abs(null_diff)) ' dB']);
-                        if sum(~isnan(estimated_angle)) > 2
-                            cs = guiXline(cs, app.UIAxes, sub, estimated_angle(3));
-                            cs2 = guiXline(cs2, app.UIAxes2, sub, estimated_angle(3));
+                    if app.plotUpd
+                        app.weights = conj(app.weights);
+                        p_manual = beamPatternCalc(app.weights, app.fc, app.scan_axis, length(app.weights));
+                        
+                        %% Avg
+                        [p_manual_mean_vec, app.p_manual_mean]  = avgData(p_manual, app.p_manual_mean);
+                        p_manual_mean_db = 20*log10(p_manual_mean_vec) - max(20*log10(p_manual_mean_vec));    
+                        [yspec_mean_vec, app.yspec_mean]  = avgData(yspec, app.yspec_mean);
+                        if app.patternCorr
+                            yspec_mean_vec = yspec_mean_vec.*(1./app.koef);
                         end
-                    else
-                        null_diff = round(p_manual_mean_db((app.scan_axis == estimated_angle(1))) - min(p_manual_mean_db));
-                        app.UIAxes2.Title.String = (['Beam Pattern' newline  'Gain Difference = ' ...
-                            num2str(abs(null_diff)) ' dB']);
-                    end
-    
-                    if app.MatlabPattern
-                        if count >= app.updrate
-                            plotResponse(app.ula,app.fc,app.c,...
-                                'AzimuthAngles',app.scan_axis,...
-                                'Unit','db',...
-                                'Weights',app.weights.');
-                            count = 1;
+                        %% Plot
+                        app.UIAxes.Title.String = (['Direction of Arrival' newline  'Estimated Angles = ' num2str(estimated_angle)]);
+                        
+                        set(app.plot_handle, 'YData', (yspec_mean_vec/max(yspec_mean_vec)), 'LineWidth', 1.5);
+                        plot(app.UIAxes2, app.scan_axis,p_manual_mean_db, 'LineWidth', 1.5);
+                        % Xlines
+                        estimated_angle = [estimated_angle NaN NaN]; % To prevent errors in xlines indexing
+                        am = guiXline(am, app.UIAxes, main, estimated_angle(1));
+                        am2 = guiXline(am2, app.UIAxes2, main, estimated_angle(1));
+        
+                        if sum(~isnan(estimated_angle)) > 1
+                            bs = guiXline(bs, app.UIAxes, sub, estimated_angle(2));
+                            bs2 = guiXline(bs2, app.UIAxes2, sub, estimated_angle(2));
+                            null_diff = round(p_manual_mean_db((app.scan_axis == estimated_angle(1))) - p_manual_mean_db((app.scan_axis == estimated_angle(2))));
+                            app.UIAxes2.Title.String = (['Beam Pattern' newline  'Gain Difference = ' ...
+                                num2str(abs(null_diff)) ' dB']);
+                            if sum(~isnan(estimated_angle)) > 2
+                                cs = guiXline(cs, app.UIAxes, sub, estimated_angle(3));
+                                cs2 = guiXline(cs2, app.UIAxes2, sub, estimated_angle(3));
+                            end
                         else
-                            count = count + 1;
+                            null_diff = round(p_manual_mean_db((app.scan_axis == estimated_angle(1))) - min(p_manual_mean_db));
+                            app.UIAxes2.Title.String = (['Beam Pattern' newline  'Gain Difference = ' ...
+                                num2str(abs(null_diff)) ' dB']);
+                        end
+        
+                        if app.MatlabPattern
+                            if count >= app.updrate
+                                plotResponse(app.ula,app.fc,app.c,...
+                                    'AzimuthAngles',app.scan_axis,...
+                                    'Unit','db',...
+                                    'Weights',app.weights.');
+                                count = 1;
+                            else
+                                count = count + 1;
+                            end
                         end
                     end
             if app.debug
@@ -574,6 +579,11 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.debug = app.DebugCheckBox_2.Value;            
         end
 
+        % Value changed function: PlotCheckBox
+        function PlotCheckBoxValueChanged(app, event)
+            app.plotUpd = app.PlotCheckBox.Value;            
+        end
+
         % Changes arrangement of the app based on UIFigure width
         function updateAppLayout(app, event)
             currentFigureWidth = app.RFSoCBeamformerUIFigure.Position(3);
@@ -748,7 +758,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
 
             % Create dataChanEditField
             app.dataChanEditField = uieditfield(app.DebugTab, 'numeric');
-            app.dataChanEditField.Limits = [5000 Inf];
+            app.dataChanEditField.Limits = [1024 Inf];
             app.dataChanEditField.ValueChangedFcn = createCallbackFcn(app, @dataChanEditFieldValueChanged, true);
             app.dataChanEditField.Position = [95 174 74 22];
             app.dataChanEditField.Value = 16384;
@@ -1064,6 +1074,13 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.dataStreamCheckBox.Text = 'dataStream';
             app.dataStreamCheckBox.Position = [84 103 84 22];
             app.dataStreamCheckBox.Value = true;
+
+            % Create PlotCheckBox
+            app.PlotCheckBox = uicheckbox(app.LeftPanel);
+            app.PlotCheckBox.ValueChangedFcn = createCallbackFcn(app, @PlotCheckBoxValueChanged, true);
+            app.PlotCheckBox.Text = 'Plot';
+            app.PlotCheckBox.Position = [85 82 43 22];
+            app.PlotCheckBox.Value = true;
 
             % Create RightPanel
             app.RightPanel = uipanel(app.GridLayout);

@@ -1,4 +1,4 @@
-function data_v = vsaDdc(fc_v, sr_v, bw_v, dataLen, channelCount)
+function [data_v, setup_v] = vsaDdc(fc_v, sr_v, bw_v, dataLen, channelCount)
 %% 1. Connect to VSA
 vsa_path = dir('C:\Program Files\Keysight\89600 Software 202*')
 try
@@ -58,6 +58,7 @@ else
 end
 
 data_v = userInput.Data;
+setup_v = userInput.Setup;
 configName = vsaApp.Measurements.SelectedItem.SelectedAnalyzer.Groups.Item(0).Name;
 
 
