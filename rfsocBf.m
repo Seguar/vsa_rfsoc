@@ -1,5 +1,5 @@
 function [yspec, estimated_angle, bfSig, weights, rawData] = rfsocBf(app, vsa, ch, bf, off, gap, cutter, ang_num, data_v, tcp_client, fc, dataChan, diag, bwOff, ula, scan_axis, ...
-    c1, c2, fsRfsoc, bw, c, estimator, alg_scan_res, mis_ang, alpha, gamma, iter)
+    c1, c2, fsRfsoc, bw, c, estimator, alg_scan_res, mis_ang, alpha, gamma, iter, setup_v)
     % Inputs:
 %   - app: Application object
 %   - vsa: Flag indicating whether to perform VSA (Vector Signal Analyzer) operation
@@ -72,6 +72,7 @@ if ch>4
     ch = 1:4;
 end
 %% Signal choice
+estimated_angle = estimated_angle(not(isnan(estimated_angle)));
 npc = sum(~isnan(estimated_angle));
 if npc > 2
     estimated_angle = estimated_angle(1:2);
@@ -162,8 +163,8 @@ if (cutter)
         if cut_e > dataChan
             cut_e = dataChan;
         end
-        cutInds = cut_b:cut_e;
-        %         cutInds = fb_lines(1):fe_lines(end);
+        % cutInds = cut_b:cut_e;
+        cutInds = fb_lines(1):fe_lines(end);
     end
 else cutInds = 1:dataChan;
 end
