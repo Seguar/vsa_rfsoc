@@ -26,6 +26,9 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         LessPowerfullButton            matlab.ui.control.RadioButton
         MostPowerfullButton            matlab.ui.control.RadioButton
         DebugTab                       matlab.ui.container.Tab
+        SaveButton                     matlab.ui.control.Button
+        NumberofsavedfilesEditField    matlab.ui.control.NumericEditField
+        NumberofsavedfilesLabel        matlab.ui.control.Label
         DebugCheckBox_2                matlab.ui.control.CheckBox
         CutterCheckBox                 matlab.ui.control.CheckBox
         iterEditField                  matlab.ui.control.NumericEditField
@@ -113,6 +116,9 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         c1 = 0;
         c2 = 0;
         patternCorr = 0;
+        numFiles = 1;
+        saveFlg = 0;
+        saveName;
         %%
         ula
         weights
@@ -133,7 +139,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         server_ip = 'pynq'; % Use the appropriate IP address or hostname http://192.168.3.1/lab
         server_port = 4000; % Use the same port number used in the Python server
 
-        gen_ip = '132.68.138.229';
+        gen_ip = '132.68.138.204';
         gen_port = 5025;
         %% Flags
         reset_req = 1;
@@ -246,12 +252,14 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             sub.line = '--c';
             sub.txt = 'Sub';
             count = 1;
+            fileCnt = 1;
             am = [];
             bs = [];
             cs = [];
             am2 = [];
             bs2 = [];
             cs2 = [];
+            saveFile = [];
             app.commands = ['fc ' num2str(app.fc/1e6) '/' num2str(app.nyquistZone) ...
             '# dataChan ' num2str(app.dataChan*8) '# dataStream ' num2str(app.dataStream)];
             warning('off','all')
@@ -327,6 +335,18 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                                 count = 1;
                             else
                                 count = count + 1;
+                            end
+                        end
+
+                        if app.saveFlg
+                            if fileCnt >= app.numFiles
+                                fileCnt = 1;
+                                app.saveFlg = 0;
+                                save(app.saveName, 'saveFile')
+                                saveFile = [];
+                            else
+                                saveFile(fileCnt).raw = rawData;
+                                fileCnt = fileCnt + 1;                                
                             end
                         end
                     end
@@ -584,6 +604,19 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.plotUpd = app.PlotCheckBox.Value;            
         end
 
+        % Value changed function: NumberofsavedfilesEditField
+        function NumberofsavedfilesEditFieldValueChanged(app, event)
+            app.numFiles = app.NumberofsavedfilesEditField.Value + 1;            
+        end
+
+        % Button pushed function: SaveButton
+        function SaveButtonPushed(app, event)
+            app.saveFlg = 1;
+%             app.part_reset_req = 1;
+            [baseFileName, folder] = uiputfile([pwd ['.\Signals\'  num2str(app.numFiles - 1) '_RawSavesFromRfsoc.mat']]);
+            app.saveName = fullfile(folder, baseFileName);
+        end
+
         % Changes arrangement of the app based on UIFigure width
         function updateAppLayout(app, event)
             currentFigureWidth = app.RFSoCBeamformerUIFigure.Position(3);
@@ -758,7 +791,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
 
             % Create dataChanEditField
             app.dataChanEditField = uieditfield(app.DebugTab, 'numeric');
-            app.dataChanEditField.Limits = [1024 Inf];
+            app.dataChanEditField.Limits = [1024 131072];
             app.dataChanEditField.ValueChangedFcn = createCallbackFcn(app, @dataChanEditFieldValueChanged, true);
             app.dataChanEditField.Position = [95 174 74 22];
             app.dataChanEditField.Value = 16384;
@@ -900,13 +933,31 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.CutterCheckBox = uicheckbox(app.DebugTab);
             app.CutterCheckBox.ValueChangedFcn = createCallbackFcn(app, @CutterCheckBoxValueChanged, true);
             app.CutterCheckBox.Text = 'Cutter';
-            app.CutterCheckBox.Position = [94 74 55 22];
+            app.CutterCheckBox.Position = [89 99 55 22];
 
             % Create DebugCheckBox_2
             app.DebugCheckBox_2 = uicheckbox(app.DebugTab);
             app.DebugCheckBox_2.ValueChangedFcn = createCallbackFcn(app, @DebugCheckBox_2ValueChanged, true);
             app.DebugCheckBox_2.Text = 'Debug';
-            app.DebugCheckBox_2.Position = [97 32 57 22];
+            app.DebugCheckBox_2.Position = [91 74 57 22];
+
+            % Create NumberofsavedfilesLabel
+            app.NumberofsavedfilesLabel = uilabel(app.DebugTab);
+            app.NumberofsavedfilesLabel.HorizontalAlignment = 'right';
+            app.NumberofsavedfilesLabel.Position = [18 36 62 27];
+            app.NumberofsavedfilesLabel.Text = {'Number of'; 'saved files'};
+
+            % Create NumberofsavedfilesEditField
+            app.NumberofsavedfilesEditField = uieditfield(app.DebugTab, 'numeric');
+            app.NumberofsavedfilesEditField.Limits = [0 10000];
+            app.NumberofsavedfilesEditField.ValueChangedFcn = createCallbackFcn(app, @NumberofsavedfilesEditFieldValueChanged, true);
+            app.NumberofsavedfilesEditField.Position = [95 41 100 22];
+
+            % Create SaveButton
+            app.SaveButton = uibutton(app.DebugTab, 'push');
+            app.SaveButton.ButtonPushedFcn = createCallbackFcn(app, @SaveButtonPushed, true);
+            app.SaveButton.Position = [82 11 100 22];
+            app.SaveButton.Text = 'Save';
 
             % Create SystemTab
             app.SystemTab = uitab(app.TabGroup);

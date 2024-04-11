@@ -3,6 +3,8 @@ classdef WLAN_gen_exported < matlab.apps.AppBase
     % Properties that correspond to app components
     properties (Access = public)
         WLANVHTgenUIFigure   matlab.ui.Figure
+        zerosEditField       matlab.ui.control.NumericEditField
+        zerosEditFieldLabel  matlab.ui.control.Label
         VHTWLANGENLabel      matlab.ui.control.Label
         SavesignalButton     matlab.ui.control.Button
         RandDataCheckBox     matlab.ui.control.CheckBox
@@ -23,6 +25,7 @@ classdef WLAN_gen_exported < matlab.apps.AppBase
         bw = 20;
         isDataRand = 1;
         mcs = 4;
+        zer = 0;
     end
     
 
@@ -36,7 +39,7 @@ classdef WLAN_gen_exported < matlab.apps.AppBase
 
         % Value changed function: fsEditField
         function fsEditFieldValueChanged(app, event)
-            app.fs = app.fsEditField.Value/1e6;            
+            app.fs = app.fsEditField.Value;            
         end
 
         % Value changed function: FrameEditField
@@ -56,18 +59,25 @@ classdef WLAN_gen_exported < matlab.apps.AppBase
 
         % Value changed function: MCSSlider
         function MCSSliderValueChanged(app, event)
-            app.mcs = app.MCSSlider.Value;            
+            app.mcs = floor(app.MCSSlider.Value);
         end
 
         % Button pushed function: SavesignalButton
         function SavesignalButtonPushed(app, event)
             Y = wlanGen(app.fs, app.frame, app.bw, app.mcs, app.isDataRand);
-            XDelta = 1/app.fs;
+            XDelta = 1/(app.fs*1e6);
             InputZoom = 1;
             XStart = 0;
-            [baseFileName, folder] = uiputfile([pwd '.\Signals\wlan_ofdm_FSmhz_BWmhz.mat']);
+            Y = [Y.' zeros(1, app.zer)].';
+            [baseFileName, folder] = uiputfile([pwd ['.\Signals\wlan_ofdm_FS' num2str(app.fs) 'mhz_BW_' num2str(app.bw) 'mhz' num2str(app.mcs) 'MCS.mat']]);
             fullFileName = fullfile(folder, baseFileName);
             save(fullFileName, "Y", "XDelta", "InputZoom", "XStart")
+        end
+
+        % Value changed function: zerosEditField
+        function zerosEditFieldValueChanged(app, event)
+            app.zer = app.zerosEditField.Value;
+            
         end
     end
 
@@ -120,7 +130,7 @@ classdef WLAN_gen_exported < matlab.apps.AppBase
             app.MCSSlider.MajorTicks = [0 1 2 3 4 5 6 7 8 9];
             app.MCSSlider.Orientation = 'vertical';
             app.MCSSlider.ValueChangedFcn = createCallbackFcn(app, @MCSSliderValueChanged, true);
-            app.MCSSlider.MinorTicks = [];
+            app.MCSSlider.MinorTicks = [0 1 2 3 4 5 6 7 8 9];
             app.MCSSlider.Position = [157 70 3 150];
             app.MCSSlider.Value = 4;
 
@@ -155,6 +165,18 @@ classdef WLAN_gen_exported < matlab.apps.AppBase
             app.VHTWLANGENLabel.FontWeight = 'bold';
             app.VHTWLANGENLabel.Position = [53 265 98 22];
             app.VHTWLANGENLabel.Text = 'VHT WLAN GEN';
+
+            % Create zerosEditFieldLabel
+            app.zerosEditFieldLabel = uilabel(app.WLANVHTgenUIFigure);
+            app.zerosEditFieldLabel.HorizontalAlignment = 'right';
+            app.zerosEditFieldLabel.Position = [34 29 35 22];
+            app.zerosEditFieldLabel.Text = 'zeros';
+
+            % Create zerosEditField
+            app.zerosEditField = uieditfield(app.WLANVHTgenUIFigure, 'numeric');
+            app.zerosEditField.Limits = [0 Inf];
+            app.zerosEditField.ValueChangedFcn = createCallbackFcn(app, @zerosEditFieldValueChanged, true);
+            app.zerosEditField.Position = [84 29 100 22];
 
             % Show the figure after all components are created
             app.WLANVHTgenUIFigure.Visible = 'on';
