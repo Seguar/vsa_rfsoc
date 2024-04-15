@@ -6,7 +6,6 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         GridLayout                     matlab.ui.container.GridLayout
         LeftPanel                      matlab.ui.container.Panel
         PlotCheckBox                   matlab.ui.control.CheckBox
-        dataStreamCheckBox             matlab.ui.control.CheckBox
         CustomCommandTextArea          matlab.ui.control.TextArea
         CustomCommandTextAreaLabel     matlab.ui.control.Label
         VSACheckBox                    matlab.ui.control.CheckBox
@@ -58,8 +57,26 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         CutoffsetEditFieldLabel        matlab.ui.control.Label
         GetPatternButton               matlab.ui.control.StateButton
         SystemTab                      matlab.ui.container.Tab
-        HardwareConjCheckBox           matlab.ui.control.CheckBox
-        RecalibrateButton              matlab.ui.control.Button
+        SYNCDropDown                   matlab.ui.control.DropDown
+        SYNCDropDownLabel              matlab.ui.control.Label
+        PhaseSpinner_2                 matlab.ui.control.Spinner
+        PhaseSpinner_2Label            matlab.ui.control.Label
+        RFSoCFcSpinner_3               matlab.ui.control.Spinner
+        RFSoCFcSpinner_3Label          matlab.ui.control.Label
+        ndNyquistZoneCheckBox_3        matlab.ui.control.CheckBox
+        LoadSignalButton_2             matlab.ui.control.Button
+        DAC1Label                      matlab.ui.control.Label
+        ndNyquistZoneCheckBox_2        matlab.ui.control.CheckBox
+        PhaseSpinner                   matlab.ui.control.Spinner
+        PhaseSpinnerLabel              matlab.ui.control.Label
+        LoadSignalButton               matlab.ui.control.Button
+        dataStreamCheckBox             matlab.ui.control.CheckBox
+        RFSoCFcSpinner_2               matlab.ui.control.Spinner
+        RFSoCFcSpinner_2Label          matlab.ui.control.Label
+        DAC0Label                      matlab.ui.control.Label
+        ADCsLabel                      matlab.ui.control.Label
+        ndNyquistZoneCheckBox          matlab.ui.control.CheckBox
+        RecalibrateADCsButton          matlab.ui.control.Button
         fcGenSpinner                   matlab.ui.control.Spinner
         fcGenSpinnerLabel              matlab.ui.control.Label
         gainGenSpinner                 matlab.ui.control.Spinner
@@ -137,6 +154,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         setupFile = [fileparts(mfilename('fullpath')) '\Settings\ofdm_iq_20_cal.setx'];
         
         server_ip = 'pynq'; % Use the appropriate IP address or hostname http://192.168.3.1/lab
+%         server_ip = '132.68.138.226'; % Use the appropriate IP address or hostname http://192.168.3.1/lab
         server_port = 4000; % Use the same port number used in the Python server
 
         gen_ip = '132.68.138.204';
@@ -149,6 +167,12 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         commands = [];
         dataStream = 1;
         nyquistZone = 2;
+        nyquistZone_d0 = 2;
+        nyquistZone_d1 = 2;
+        fc_d0 = 5.7e9;
+        fc_d1 = 5.7e9;
+        dphase = [0,0,0,0];
+        da = 2;
 
         %% Reset vars
         data_v  
@@ -167,7 +191,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         powInt = 0;
         modInt = 0;
 
-        fcSig = 5700e6;
+        fcSig = 5.7e9;
         fsSig = 60e6;
         gainSig = 0;
         txSig = complex(zeros(1000, 1));
@@ -205,6 +229,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.ResetButton.Text = 'Reseting...';
             app.ResetButton.BackgroundColor = 'y';
             drawnow%!!!!
+            commandsHandler(app, ['da ' num2str(app.da)]);
             app.tcp_client = rfsocConnect(app.server_ip, app.server_port, app.commands);
             app.commands = ['dataStream ' num2str(app.dataStream)];
             app.ula = antPrep(app.num_elements, app.c, app.fc);
@@ -260,8 +285,11 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             bs2 = [];
             cs2 = [];
             saveFile = [];
-            app.commands = ['fc ' num2str(app.fc/1e6) '/' num2str(app.nyquistZone) ...
-            '# dataChan ' num2str(app.dataChan*8) '# dataStream ' num2str(app.dataStream)];
+            app.commands = ['fc ' num2str(app.fc/1e6) '/' num2str(app.nyquistZone) '/' ...
+                num2str(app.fc_d0/1e6) '/' num2str(app.nyquistZone_d0) '/' ...
+                num2str(app.fc_d1/1e6) '/' num2str(app.nyquistZone_d1) ...
+                '# dataChan ' num2str(app.dataChan*8) '# dataStream ' num2str(app.dataStream) ...
+                '# da ' num2str(app.da)];
             warning('off','all')
             while true
                 if app.reset_req                    
@@ -442,7 +470,9 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         % Value changed function: RFSoCFcSpinner
         function RFSoCFcSpinnerValueChanged(app, event)
             app.fc = app.RFSoCFcSpinner.Value*1e6;
-            commandsHandler(app, ['fc ' num2str(app.fc/1e6) '/' num2str(app.nyquistZone)]);
+            commandsHandler(app, ['fc ' num2str(app.fc/1e6) '/' num2str(app.nyquistZone) '/' ...
+                num2str(app.fc_d0/1e6) '/' num2str(app.nyquistZone_d0) '/' ...
+                num2str(app.fc_d1/1e6) '/' num2str(app.nyquistZone_d1)]);
             app.part_reset_req = 1;
         end
 
@@ -575,8 +605,8 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             commandsHandler(app, string(app.CustomCommandTextArea.Value));
         end
 
-        % Button pushed function: RecalibrateButton
-        function RecalibrateButtonPushed(app, event)
+        % Button pushed function: RecalibrateADCsButton
+        function RecalibrateADCsButtonPushed(app, event)
             commandsHandler(app, ['cal ' num2str(8)]);
             app.part_reset_req = 1;
         end
@@ -587,10 +617,12 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.part_reset_req = 1;
         end
 
-        % Value changed function: HardwareConjCheckBox
-        function HardwareConjCheckBoxValueChanged(app, event)
-            app.nyquistZone = app.HardwareConjCheckBox.Value + 1;
-            commandsHandler(app, ['fc ' num2str(app.fc/1e6) '/' num2str(app.nyquistZone)]);
+        % Value changed function: ndNyquistZoneCheckBox
+        function ndNyquistZoneCheckBoxValueChanged(app, event)
+            app.nyquistZone = app.ndNyquistZoneCheckBox.Value + 1;
+            commandsHandler(app, ['fc ' num2str(app.fc/1e6) '/' num2str(app.nyquistZone) '/' ...
+                num2str(app.fc_d0/1e6) '/' num2str(app.nyquistZone_d0) '/' ...
+                num2str(app.fc_d1/1e6) '/' num2str(app.nyquistZone_d1)]);
             app.part_reset_req = 1;
         end
 
@@ -615,6 +647,80 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
 %             app.part_reset_req = 1;
             [baseFileName, folder] = uiputfile([pwd ['.\Signals\'  num2str(app.numFiles - 1) '_RawSavesFromRfsoc.mat']]);
             app.saveName = fullfile(folder, baseFileName);
+        end
+
+        % Value changed function: SYNCDropDown
+        function SYNCDropDownValueChanged(app, event)
+            app.da = app.SYNCDropDown.Value;
+            app.part_reset_req = 1;
+        end
+
+        % Value changed function: RFSoCFcSpinner_2
+        function RFSoCFcSpinner_2ValueChanged(app, event)
+            app.fc_d0 = app.RFSoCFcSpinner_2.Value*1e6;
+            commandsHandler(app, ['fc ' num2str(app.fc/1e6) '/' num2str(app.nyquistZone) '/' ...
+                num2str(app.fc_d0/1e6) '/' num2str(app.nyquistZone_d0) '/' ...
+                num2str(app.fc_d1/1e6) '/' num2str(app.nyquistZone_d1)]);
+            app.part_reset_req = 1;
+        end
+
+        % Value changed function: RFSoCFcSpinner_3
+        function RFSoCFcSpinner_3ValueChanged(app, event)
+            app.fc_d1 = app.RFSoCFcSpinner_3.Value*1e6;
+            commandsHandler(app, ['fc ' num2str(app.fc/1e6) '/' num2str(app.nyquistZone) '/' ...
+                num2str(app.fc_d0/1e6) '/' num2str(app.nyquistZone_d0) '/' ...
+                num2str(app.fc_d1/1e6) '/' num2str(app.nyquistZone_d1)]);
+            app.part_reset_req = 1;
+        end
+
+        % Value changed function: PhaseSpinner
+        function PhaseSpinnerValueChanged(app, event)
+            app.dphase(1) = app.PhaseSpinner.Value;
+            commandsHandler(app, ['dphase ' strjoin(arrayfun(@num2str, app.dphase, 'UniformOutput', false), '/');]);
+            app.part_reset_req = 1;
+        end
+
+        % Value changed function: ndNyquistZoneCheckBox_2
+        function ndNyquistZoneCheckBox_2ValueChanged(app, event)
+            app.nyquistZone_d0 = app.ndNyquistZoneCheckBox_2.Value + 1;
+            commandsHandler(app, ['fc ' num2str(app.fc/1e6) '/' num2str(app.nyquistZone) '/' ...
+                num2str(app.fc_d0/1e6) '/' num2str(app.nyquistZone_d0) '/' ...
+                num2str(app.fc_d1/1e6) '/' num2str(app.nyquistZone_d1)]);
+            app.part_reset_req = 1;            
+        end
+
+        % Value changed function: ndNyquistZoneCheckBox_3
+        function ndNyquistZoneCheckBox_3ValueChanged(app, event)
+            app.nyquistZone_d1 = app.ndNyquistZoneCheckBox_3.Value + 1;
+            commandsHandler(app, ['fc ' num2str(app.fc/1e6) '/' num2str(app.nyquistZone) '/' ...
+                num2str(app.fc_d0/1e6) '/' num2str(app.nyquistZone_d0) '/' ...
+                num2str(app.fc_d1/1e6) '/' num2str(app.nyquistZone_d1)]);
+            app.part_reset_req = 1;  
+        end
+
+        % Value changed function: PhaseSpinner_2
+        function PhaseSpinner_2ValueChanged(app, event)
+            app.dphase(3) = app.PhaseSpinner_2.Value;
+            commandsHandler(app, ['dphase ' strjoin(arrayfun(@num2str, app.dphase, 'UniformOutput', false), '/');]);
+            app.part_reset_req = 1;
+        end
+
+        % Button pushed function: LoadSignalButton
+        function LoadSignalButtonPushed(app, event)
+            [file, path] = uigetfile([pwd '.\Signals\*.mat']);
+            filename = [path file];
+            load(filename)
+            commandsHandler(app, ['dac0 ' strjoin(arrayfun(@num2str, Y, 'UniformOutput', false), '/');]);
+            app.part_reset_req = 1;
+        end
+
+        % Button pushed function: LoadSignalButton_2
+        function LoadSignalButton_2Pushed(app, event)
+            [file, path] = uigetfile([pwd '.\Signals\*.mat']);
+            filename = [path file];
+            load(filename)
+            commandsHandler(app, ['dac1 ' strjoin(arrayfun(@num2str, Y, 'UniformOutput', false), '/');]);
+            app.part_reset_req = 1;
         end
 
         % Changes arrangement of the app based on UIFigure width
@@ -966,20 +1072,20 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             % Create RFSoCFcSpinnerLabel
             app.RFSoCFcSpinnerLabel = uilabel(app.SystemTab);
             app.RFSoCFcSpinnerLabel.HorizontalAlignment = 'right';
-            app.RFSoCFcSpinnerLabel.Position = [38 516 44 27];
+            app.RFSoCFcSpinnerLabel.Position = [39 484 44 27];
             app.RFSoCFcSpinnerLabel.Text = {'RFSoC'; 'Fc'};
 
             % Create RFSoCFcSpinner
             app.RFSoCFcSpinner = uispinner(app.SystemTab);
             app.RFSoCFcSpinner.Limits = [500 6000];
             app.RFSoCFcSpinner.ValueChangedFcn = createCallbackFcn(app, @RFSoCFcSpinnerValueChanged, true);
-            app.RFSoCFcSpinner.Position = [97 521 77 22];
+            app.RFSoCFcSpinner.Position = [98 489 77 22];
             app.RFSoCFcSpinner.Value = 5700;
 
             % Create RFSoCFsSpinnerLabel
             app.RFSoCFsSpinnerLabel = uilabel(app.SystemTab);
             app.RFSoCFsSpinnerLabel.HorizontalAlignment = 'right';
-            app.RFSoCFsSpinnerLabel.Position = [38 483 44 27];
+            app.RFSoCFsSpinnerLabel.Position = [39 451 44 27];
             app.RFSoCFsSpinnerLabel.Text = {'RFSoC'; 'Fs'};
 
             % Create RFSoCFsSpinner
@@ -987,13 +1093,13 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.RFSoCFsSpinner.Limits = [1 125];
             app.RFSoCFsSpinner.ValueDisplayFormat = '%.0f';
             app.RFSoCFsSpinner.ValueChangedFcn = createCallbackFcn(app, @RFSoCFsSpinnerValueChanged, true);
-            app.RFSoCFsSpinner.Position = [97 488 77 22];
+            app.RFSoCFsSpinner.Position = [98 456 77 22];
             app.RFSoCFsSpinner.Value = 125;
 
             % Create MaxSignalsSpinnerLabel
             app.MaxSignalsSpinnerLabel = uilabel(app.SystemTab);
             app.MaxSignalsSpinnerLabel.HorizontalAlignment = 'right';
-            app.MaxSignalsSpinnerLabel.Position = [43 422 71 22];
+            app.MaxSignalsSpinnerLabel.Position = [49 126 71 22];
             app.MaxSignalsSpinnerLabel.Text = 'Max Signals';
 
             % Create MaxSignalsSpinner
@@ -1001,13 +1107,13 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.MaxSignalsSpinner.Limits = [1 5];
             app.MaxSignalsSpinner.ValueDisplayFormat = '%.0f';
             app.MaxSignalsSpinner.ValueChangedFcn = createCallbackFcn(app, @MaxSignalsSpinnerValueChanged, true);
-            app.MaxSignalsSpinner.Position = [129 422 45 22];
+            app.MaxSignalsSpinner.Position = [135 126 45 22];
             app.MaxSignalsSpinner.Value = 2;
 
             % Create SigBWSpinnerLabel
             app.SigBWSpinnerLabel = uilabel(app.SystemTab);
             app.SigBWSpinnerLabel.HorizontalAlignment = 'right';
-            app.SigBWSpinnerLabel.Position = [57 449 25 28];
+            app.SigBWSpinnerLabel.Position = [58 418 25 28];
             app.SigBWSpinnerLabel.Text = {'Sig'; 'BW'};
 
             % Create SigBWSpinner
@@ -1015,19 +1121,19 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.SigBWSpinner.Limits = [1 125];
             app.SigBWSpinner.ValueDisplayFormat = '%.0f';
             app.SigBWSpinner.ValueChangedFcn = createCallbackFcn(app, @SigBWSpinnerValueChanged, true);
-            app.SigBWSpinner.Position = [97 455 77 22];
+            app.SigBWSpinner.Position = [98 424 77 22];
             app.SigBWSpinner.Value = 20;
 
             % Create LoadVSAsetupButton
             app.LoadVSAsetupButton = uibutton(app.SystemTab, 'push');
             app.LoadVSAsetupButton.ButtonPushedFcn = createCallbackFcn(app, @LoadVSAsetupButtonPushed, true);
-            app.LoadVSAsetupButton.Position = [72 395 102 22];
+            app.LoadVSAsetupButton.Position = [114 101 102 22];
             app.LoadVSAsetupButton.Text = 'Load VSA setup';
 
             % Create ScanBWEditFieldLabel
             app.ScanBWEditFieldLabel = uilabel(app.SystemTab);
             app.ScanBWEditFieldLabel.HorizontalAlignment = 'right';
-            app.ScanBWEditFieldLabel.Position = [82 362 33 28];
+            app.ScanBWEditFieldLabel.Position = [3 74 33 28];
             app.ScanBWEditFieldLabel.Text = {'Scan'; 'BW'};
 
             % Create ScanBWEditField
@@ -1035,77 +1141,192 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.ScanBWEditField.Limits = [2 360];
             app.ScanBWEditField.RoundFractionalValues = 'on';
             app.ScanBWEditField.ValueChangedFcn = createCallbackFcn(app, @ScanBWEditFieldValueChanged, true);
-            app.ScanBWEditField.Position = [130 368 44 22];
+            app.ScanBWEditField.Position = [51 80 44 22];
             app.ScanBWEditField.Value = 180;
 
             % Create ModCheckBox
             app.ModCheckBox = uicheckbox(app.SystemTab);
             app.ModCheckBox.ValueChangedFcn = createCallbackFcn(app, @ModCheckBoxValueChanged, true);
             app.ModCheckBox.Text = 'Mod';
-            app.ModCheckBox.Position = [129 254 45 22];
+            app.ModCheckBox.Position = [173 11 45 22];
 
             % Create PowerCheckBox
             app.PowerCheckBox = uicheckbox(app.SystemTab);
             app.PowerCheckBox.ValueChangedFcn = createCallbackFcn(app, @PowerCheckBoxValueChanged, true);
             app.PowerCheckBox.Text = 'Power';
-            app.PowerCheckBox.Position = [118 281 56 22];
+            app.PowerCheckBox.Position = [112 11 56 22];
 
             % Create gainGenSpinnerLabel
             app.gainGenSpinnerLabel = uilabel(app.SystemTab);
             app.gainGenSpinnerLabel.HorizontalAlignment = 'right';
-            app.gainGenSpinnerLabel.Position = [44 308 51 22];
+            app.gainGenSpinnerLabel.Position = [87 53 51 22];
             app.gainGenSpinnerLabel.Text = 'gainGen';
 
             % Create gainGenSpinner
             app.gainGenSpinner = uispinner(app.SystemTab);
             app.gainGenSpinner.Limits = [-144 18];
             app.gainGenSpinner.ValueChangedFcn = createCallbackFcn(app, @gainGenSpinnerValueChanged, true);
-            app.gainGenSpinner.Position = [110 308 64 22];
+            app.gainGenSpinner.Position = [153 53 64 22];
 
             % Create fcGenSpinnerLabel
             app.fcGenSpinnerLabel = uilabel(app.SystemTab);
             app.fcGenSpinnerLabel.HorizontalAlignment = 'right';
-            app.fcGenSpinnerLabel.Position = [59 335 38 22];
+            app.fcGenSpinnerLabel.Position = [101 78 38 22];
             app.fcGenSpinnerLabel.Text = 'fcGen';
 
             % Create fcGenSpinner
             app.fcGenSpinner = uispinner(app.SystemTab);
             app.fcGenSpinner.Limits = [1 6000];
             app.fcGenSpinner.ValueChangedFcn = createCallbackFcn(app, @fcGenSpinnerValueChanged, true);
-            app.fcGenSpinner.Position = [105 335 69 22];
+            app.fcGenSpinner.Position = [147 78 69 22];
             app.fcGenSpinner.Value = 5700;
 
-            % Create RecalibrateButton
-            app.RecalibrateButton = uibutton(app.SystemTab, 'push');
-            app.RecalibrateButton.ButtonPushedFcn = createCallbackFcn(app, @RecalibrateButtonPushed, true);
-            app.RecalibrateButton.Position = [67 222 100 22];
-            app.RecalibrateButton.Text = 'Recalibrate';
+            % Create RecalibrateADCsButton
+            app.RecalibrateADCsButton = uibutton(app.SystemTab, 'push');
+            app.RecalibrateADCsButton.ButtonPushedFcn = createCallbackFcn(app, @RecalibrateADCsButtonPushed, true);
+            app.RecalibrateADCsButton.Position = [8 5 100 35];
+            app.RecalibrateADCsButton.Text = {'Recalibrate'; 'ADCs'};
 
-            % Create HardwareConjCheckBox
-            app.HardwareConjCheckBox = uicheckbox(app.SystemTab);
-            app.HardwareConjCheckBox.ValueChangedFcn = createCallbackFcn(app, @HardwareConjCheckBoxValueChanged, true);
-            app.HardwareConjCheckBox.Text = 'HardwareConj';
-            app.HardwareConjCheckBox.Position = [79 195 99 22];
-            app.HardwareConjCheckBox.Value = true;
+            % Create ndNyquistZoneCheckBox
+            app.ndNyquistZoneCheckBox = uicheckbox(app.SystemTab);
+            app.ndNyquistZoneCheckBox.ValueChangedFcn = createCallbackFcn(app, @ndNyquistZoneCheckBoxValueChanged, true);
+            app.ndNyquistZoneCheckBox.Text = '2nd Nyquist Zone';
+            app.ndNyquistZoneCheckBox.Position = [64 391 116 22];
+            app.ndNyquistZoneCheckBox.Value = true;
+
+            % Create ADCsLabel
+            app.ADCsLabel = uilabel(app.SystemTab);
+            app.ADCsLabel.FontWeight = 'bold';
+            app.ADCsLabel.Position = [93 509 38 22];
+            app.ADCsLabel.Text = 'ADCs';
+
+            % Create DAC0Label
+            app.DAC0Label = uilabel(app.SystemTab);
+            app.DAC0Label.FontWeight = 'bold';
+            app.DAC0Label.Position = [95 364 38 22];
+            app.DAC0Label.Text = 'DAC0';
+
+            % Create RFSoCFcSpinner_2Label
+            app.RFSoCFcSpinner_2Label = uilabel(app.SystemTab);
+            app.RFSoCFcSpinner_2Label.HorizontalAlignment = 'right';
+            app.RFSoCFcSpinner_2Label.Position = [44 336 44 27];
+            app.RFSoCFcSpinner_2Label.Text = {'RFSoC'; 'Fc'};
+
+            % Create RFSoCFcSpinner_2
+            app.RFSoCFcSpinner_2 = uispinner(app.SystemTab);
+            app.RFSoCFcSpinner_2.Limits = [500 6000];
+            app.RFSoCFcSpinner_2.ValueChangedFcn = createCallbackFcn(app, @RFSoCFcSpinner_2ValueChanged, true);
+            app.RFSoCFcSpinner_2.Position = [103 341 77 22];
+            app.RFSoCFcSpinner_2.Value = 5700;
+
+            % Create dataStreamCheckBox
+            app.dataStreamCheckBox = uicheckbox(app.SystemTab);
+            app.dataStreamCheckBox.ValueChangedFcn = createCallbackFcn(app, @dataStreamCheckBoxValueChanged, true);
+            app.dataStreamCheckBox.Text = 'dataStream';
+            app.dataStreamCheckBox.Position = [8 36 84 22];
+            app.dataStreamCheckBox.Value = true;
+
+            % Create LoadSignalButton
+            app.LoadSignalButton = uibutton(app.SystemTab, 'push');
+            app.LoadSignalButton.ButtonPushedFcn = createCallbackFcn(app, @LoadSignalButtonPushed, true);
+            app.LoadSignalButton.Position = [66 271 100 22];
+            app.LoadSignalButton.Text = 'Load Signal';
+
+            % Create PhaseSpinnerLabel
+            app.PhaseSpinnerLabel = uilabel(app.SystemTab);
+            app.PhaseSpinnerLabel.HorizontalAlignment = 'right';
+            app.PhaseSpinnerLabel.Position = [49 315 39 22];
+            app.PhaseSpinnerLabel.Text = 'Phase';
+
+            % Create PhaseSpinner
+            app.PhaseSpinner = uispinner(app.SystemTab);
+            app.PhaseSpinner.Limits = [-179 179];
+            app.PhaseSpinner.ValueChangedFcn = createCallbackFcn(app, @PhaseSpinnerValueChanged, true);
+            app.PhaseSpinner.Position = [103 315 77 22];
+
+            % Create ndNyquistZoneCheckBox_2
+            app.ndNyquistZoneCheckBox_2 = uicheckbox(app.SystemTab);
+            app.ndNyquistZoneCheckBox_2.ValueChangedFcn = createCallbackFcn(app, @ndNyquistZoneCheckBox_2ValueChanged, true);
+            app.ndNyquistZoneCheckBox_2.Text = '2nd Nyquist Zone';
+            app.ndNyquistZoneCheckBox_2.Position = [59 294 116 22];
+            app.ndNyquistZoneCheckBox_2.Value = true;
+
+            % Create DAC1Label
+            app.DAC1Label = uilabel(app.SystemTab);
+            app.DAC1Label.FontWeight = 'bold';
+            app.DAC1Label.Position = [95 246 38 22];
+            app.DAC1Label.Text = 'DAC1';
+
+            % Create LoadSignalButton_2
+            app.LoadSignalButton_2 = uibutton(app.SystemTab, 'push');
+            app.LoadSignalButton_2.ButtonPushedFcn = createCallbackFcn(app, @LoadSignalButton_2Pushed, true);
+            app.LoadSignalButton_2.Position = [66 153 100 22];
+            app.LoadSignalButton_2.Text = 'Load Signal';
+
+            % Create ndNyquistZoneCheckBox_3
+            app.ndNyquistZoneCheckBox_3 = uicheckbox(app.SystemTab);
+            app.ndNyquistZoneCheckBox_3.ValueChangedFcn = createCallbackFcn(app, @ndNyquistZoneCheckBox_3ValueChanged, true);
+            app.ndNyquistZoneCheckBox_3.Text = '2nd Nyquist Zone';
+            app.ndNyquistZoneCheckBox_3.Position = [59 176 116 22];
+            app.ndNyquistZoneCheckBox_3.Value = true;
+
+            % Create RFSoCFcSpinner_3Label
+            app.RFSoCFcSpinner_3Label = uilabel(app.SystemTab);
+            app.RFSoCFcSpinner_3Label.HorizontalAlignment = 'right';
+            app.RFSoCFcSpinner_3Label.Position = [44 218 44 27];
+            app.RFSoCFcSpinner_3Label.Text = {'RFSoC'; 'Fc'};
+
+            % Create RFSoCFcSpinner_3
+            app.RFSoCFcSpinner_3 = uispinner(app.SystemTab);
+            app.RFSoCFcSpinner_3.Limits = [500 6000];
+            app.RFSoCFcSpinner_3.ValueChangedFcn = createCallbackFcn(app, @RFSoCFcSpinner_3ValueChanged, true);
+            app.RFSoCFcSpinner_3.Position = [103 223 77 22];
+            app.RFSoCFcSpinner_3.Value = 5700;
+
+            % Create PhaseSpinner_2Label
+            app.PhaseSpinner_2Label = uilabel(app.SystemTab);
+            app.PhaseSpinner_2Label.HorizontalAlignment = 'right';
+            app.PhaseSpinner_2Label.Position = [49 197 39 22];
+            app.PhaseSpinner_2Label.Text = 'Phase';
+
+            % Create PhaseSpinner_2
+            app.PhaseSpinner_2 = uispinner(app.SystemTab);
+            app.PhaseSpinner_2.Limits = [-179 179];
+            app.PhaseSpinner_2.ValueChangedFcn = createCallbackFcn(app, @PhaseSpinner_2ValueChanged, true);
+            app.PhaseSpinner_2.Position = [103 197 77 22];
+
+            % Create SYNCDropDownLabel
+            app.SYNCDropDownLabel = uilabel(app.SystemTab);
+            app.SYNCDropDownLabel.HorizontalAlignment = 'right';
+            app.SYNCDropDownLabel.Position = [43 537 39 22];
+            app.SYNCDropDownLabel.Text = 'SYNC';
+
+            % Create SYNCDropDown
+            app.SYNCDropDown = uidropdown(app.SystemTab);
+            app.SYNCDropDown.Items = {'all', 'dac', 'none'};
+            app.SYNCDropDown.ItemsData = [2 1 0];
+            app.SYNCDropDown.ValueChangedFcn = createCallbackFcn(app, @SYNCDropDownValueChanged, true);
+            app.SYNCDropDown.Position = [97 537 100 22];
+            app.SYNCDropDown.Value = 2;
 
             % Create AvgSpinnerLabel
             app.AvgSpinnerLabel = uilabel(app.LeftPanel);
             app.AvgSpinnerLabel.HorizontalAlignment = 'right';
-            app.AvgSpinnerLabel.Position = [40 190 26 22];
+            app.AvgSpinnerLabel.Position = [53 190 26 22];
             app.AvgSpinnerLabel.Text = 'Avg';
 
             % Create AvgSpinner
             app.AvgSpinner = uispinner(app.LeftPanel);
             app.AvgSpinner.Limits = [1 Inf];
             app.AvgSpinner.ValueChangedFcn = createCallbackFcn(app, @AvgSpinnerValueChanged, true);
-            app.AvgSpinner.Position = [80 190 56 22];
+            app.AvgSpinner.Position = [93 190 56 22];
             app.AvgSpinner.Value = 10;
 
             % Create VSACheckBox
             app.VSACheckBox = uicheckbox(app.LeftPanel);
             app.VSACheckBox.ValueChangedFcn = createCallbackFcn(app, @VSACheckBoxValueChanged, true);
             app.VSACheckBox.Text = 'VSA';
-            app.VSACheckBox.Position = [166 190 46 22];
+            app.VSACheckBox.Position = [179 190 46 22];
             app.VSACheckBox.Value = true;
 
             % Create CustomCommandTextAreaLabel
@@ -1119,18 +1340,11 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.CustomCommandTextArea.ValueChangedFcn = createCallbackFcn(app, @CustomCommandTextAreaValueChanged, true);
             app.CustomCommandTextArea.Position = [76 53 146 24];
 
-            % Create dataStreamCheckBox
-            app.dataStreamCheckBox = uicheckbox(app.LeftPanel);
-            app.dataStreamCheckBox.ValueChangedFcn = createCallbackFcn(app, @dataStreamCheckBoxValueChanged, true);
-            app.dataStreamCheckBox.Text = 'dataStream';
-            app.dataStreamCheckBox.Position = [84 103 84 22];
-            app.dataStreamCheckBox.Value = true;
-
             % Create PlotCheckBox
             app.PlotCheckBox = uicheckbox(app.LeftPanel);
             app.PlotCheckBox.ValueChangedFcn = createCallbackFcn(app, @PlotCheckBoxValueChanged, true);
             app.PlotCheckBox.Text = 'Plot';
-            app.PlotCheckBox.Position = [85 82 43 22];
+            app.PlotCheckBox.Position = [182 157 43 22];
             app.PlotCheckBox.Value = true;
 
             % Create RightPanel
