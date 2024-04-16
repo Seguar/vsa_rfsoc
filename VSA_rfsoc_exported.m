@@ -182,7 +182,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         fc_d1 = 5.7e9;
         dphase = [0,0,0,0];
         dacPow = [1,0,1,0];
-        da = 2;
+        da = 1;
         bwDac = 499e6;
         fsOrig = 60e6;
         dacFilt = 0;
@@ -1365,7 +1365,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.SYNCDropDown.ItemsData = [2 1 0];
             app.SYNCDropDown.ValueChangedFcn = createCallbackFcn(app, @SYNCDropDownValueChanged, true);
             app.SYNCDropDown.Position = [97 643 100 22];
-            app.SYNCDropDown.Value = 2;
+            app.SYNCDropDown.Value = 1;
 
             % Create PowerCheckBox_2
             app.PowerCheckBox_2 = uicheckbox(app.SystemTab);
