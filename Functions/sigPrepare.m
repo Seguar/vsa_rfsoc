@@ -11,8 +11,7 @@ try
 catch
     Y = filtSig(Y.', fs_new, bw).';
 end
-Y = int16(Y*2^14);
 sigInt16 = zeros(1, length(Y)*2);
-sigInt16(1:2:end) = real(Y);
-sigInt16(2:2:end) = imag(Y);
+sigInt16(1:2:end) = real(Y)*(2^14 - 1);
+sigInt16(2:2:end) = imag(Y)*(2^14 - 1);
 sigInt16 = int16(sigInt16);

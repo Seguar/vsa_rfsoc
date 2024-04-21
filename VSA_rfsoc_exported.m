@@ -157,16 +157,16 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         fc = 5.7e9;
         fsRfsoc = 125e6;
         fsDAC = 500e6;
-        bw = 20e6;
+        bw = 100e6;
         num = 2;
         scan_bw = 180;
-        setupFile = [fileparts(mfilename('fullpath')) '\Settings\ofdm_iq_20_cal.setx'];
-        
+        setupFile = [fileparts(mfilename('fullpath')) '\Settings\ofdm_iq_100_cal.setx'];
+
         server_ip = 'pynq'; % Use the appropriate IP address or hostname http://192.168.3.1/lab
-%         server_ip = '132.68.138.226'; % Use the appropriate IP address or hostname http://192.168.3.1/lab
+        %         server_ip = '132.68.138.226'; % Use the appropriate IP address or hostname http://192.168.3.1/lab
         server_port = 4000; % Use the same port number used in the Python server
 
-        gen_ip = '132.68.138.204';
+        gen_ip = '132.68.138.197';
         gen_port = 5025;
         %% Flags
         reset_req = 1;
@@ -189,7 +189,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         resmp = 0;
 
         %% Reset vars
-        data_v  
+        data_v
         setup_v
         %% Part reset vars
         p_manual_mean, yspec_mean, plot_handle, tcp_client
@@ -223,7 +223,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
 
     methods (Access = private)
 
-        
+
         function resetApp(app)
             partReset(app);
             app.ResetButton.Text = 'Reseting...';
@@ -231,7 +231,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             drawnow%!!!!
             [app.data_v, app.setup_v] = vsaDdc(0, app.fsRfsoc, app.fsRfsoc, app.dataChan, 1);
             vsaSetup(app.setupFile)
-            disp(app.commands)            
+            disp(app.commands)
             clf(app.UIAxes);
             app.reset_req = 0;
             app.part_reset_req = 0;
@@ -244,15 +244,16 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.ResetButton.BackgroundColor = 'y';
             drawnow%!!!!
             commandsHandler(app, ['da ' num2str(app.da)]);
+            commandsHandler(app, ['dataStream ' num2str(app.dataStream)]);
             app.tcp_client = rfsocConnect(app.server_ip, app.server_port, app.commands);
-            app.commands = ['dataStream ' num2str(app.dataStream)];
+            app.commands = [];
             app.ula = antPrep(app.num_elements, app.c, app.fc);
             app.scan_axis = -app.scan_bw/2:app.scan_res:app.scan_bw/2;
             app.plot_handle = plotPrep(app, app.scan_axis);
             app.p_manual_mean = zeros(length(app.scan_axis), app.avg_factor);
             app.yspec_mean = zeros(length(app.scan_axis), app.avg_factor);
             app.estimator = doaEst(app.doa, app.ula, app.scan_axis, app.num, app.fc); %% Need to fix scan_axis
-%             app.koef = antSinglePattern(app.fc, app.scan_axis)';
+            %             app.koef = antSinglePattern(app.fc, app.scan_axis)';
             load koef
             app.koef = koef;
             app.koef = interp1(linspace(1,length(app.koef),length(app.koef))', app.koef, linspace(1,length(app.koef),length(app.scan_axis))', 'linear', 'extrap');
@@ -260,12 +261,12 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.ResetButton.Text = 'Reset';
             app.ResetButton.BackgroundColor = 'g';
         end
-        
+
         function commandsHandler(app, command)
             if isempty(app.commands)
                 app.commands = command;
-            else 
-                app.commands = append(app.commands, '#', command);  
+            else
+                app.commands = append(app.commands, '#', command);
             end
         end
     end
@@ -281,8 +282,8 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             addpath(genpath([pwd '\Packet-Creator-VHT']))
             addpath(genpath([pwd '\Functions']))
             pwd
-%             load koef
-%             app.koef = koef;
+            %             load koef
+            %             app.koef = koef;
             app.RFSoCBeamformerUIFigure.Visible = 'off';
             movegui(app.RFSoCBeamformerUIFigure,"east")
             app.RFSoCBeamformerUIFigure.Visible = 'on';
@@ -302,13 +303,12 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.commands = ['fc ' num2str(app.fc/1e6) '/' num2str(app.nyquistZone) '/' ...
                 num2str(app.fc_d0/1e6) '/' num2str(app.nyquistZone_d0) '/' ...
                 num2str(app.fc_d1/1e6) '/' num2str(app.nyquistZone_d1) ...
-                '# dataChan ' num2str(app.dataChan*8) '# dataStream ' num2str(app.dataStream) ...
-                '# da ' num2str(app.da)];
+                '# dataChan ' num2str(app.dataChan*8)];
             warning('off','all')
             while true
-                if app.reset_req                    
+                if app.reset_req
                     resetApp(app);
-                elseif app.part_reset_req                    
+                elseif app.part_reset_req
                     partReset(app);
                 end
                 if app.debug
@@ -328,30 +328,30 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                         disp("Error in rfsocBf")
                         continue
                     end
-%                     disp('___')
-%                     toc
+                    %                     disp('___')
+                    %                     toc
                     %% Pattern calc
                     if app.plotUpd
                         app.weights = conj(app.weights);
                         p_manual = beamPatternCalc(app.weights, app.fc, app.scan_axis, length(app.weights));
-                        
+
                         %% Avg
                         [p_manual_mean_vec, app.p_manual_mean]  = avgData(p_manual, app.p_manual_mean);
-                        p_manual_mean_db = 20*log10(p_manual_mean_vec) - max(20*log10(p_manual_mean_vec));    
+                        p_manual_mean_db = 20*log10(p_manual_mean_vec) - max(20*log10(p_manual_mean_vec));
                         [yspec_mean_vec, app.yspec_mean]  = avgData(yspec, app.yspec_mean);
                         if app.patternCorr
                             yspec_mean_vec = yspec_mean_vec.*(1./app.koef);
                         end
                         %% Plot
                         app.UIAxes.Title.String = (['Direction of Arrival' newline  'Estimated Angles = ' num2str(estimated_angle)]);
-                        
+
                         set(app.plot_handle, 'YData', (yspec_mean_vec/max(yspec_mean_vec)), 'LineWidth', 1.5);
                         plot(app.UIAxes2, app.scan_axis,p_manual_mean_db, 'LineWidth', 1.5);
                         % Xlines
                         estimated_angle = [estimated_angle NaN NaN]; % To prevent errors in xlines indexing
                         am = guiXline(am, app.UIAxes, main, estimated_angle(1));
                         am2 = guiXline(am2, app.UIAxes2, main, estimated_angle(1));
-        
+
                         if sum(~isnan(estimated_angle)) > 1
                             bs = guiXline(bs, app.UIAxes, sub, estimated_angle(2));
                             bs2 = guiXline(bs2, app.UIAxes2, sub, estimated_angle(2));
@@ -367,7 +367,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                             app.UIAxes2.Title.String = (['Beam Pattern' newline  'Gain Difference = ' ...
                                 num2str(abs(null_diff)) ' dB']);
                         end
-        
+
                         if app.MatlabPattern
                             if count >= app.updrate
                                 plotResponse(app.ula,app.fc,app.c,...
@@ -388,15 +388,15 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                                 saveFile = [];
                             else
                                 saveFile(fileCnt).raw = rawData;
-                                fileCnt = fileCnt + 1;                                
+                                fileCnt = fileCnt + 1;
                             end
                         end
                     end
-            if app.debug
-                toc
+                    if app.debug
+                        toc
+                    end
+%                 end
             end
-            end
-%             end
         end
 
         % Value changed function: VSACheckBox
@@ -487,6 +487,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             commandsHandler(app, ['fc ' num2str(app.fc/1e6) '/' num2str(app.nyquistZone) '/' ...
                 num2str(app.fc_d0/1e6) '/' num2str(app.nyquistZone_d0) '/' ...
                 num2str(app.fc_d1/1e6) '/' num2str(app.nyquistZone_d1)]);
+            app.fc = abs(app.fc);
             app.part_reset_req = 1;
         end
 
@@ -532,12 +533,12 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         % Value changed function: GetSpectrumButton
         function GetSpectrumButtonValueChanged(app, event)
             plotSpectrum(app.estimator)
-            uistack(gcf,'top')            
+            uistack(gcf,'top')
         end
 
         % Value changed function: SigBWSpinner
         function SigBWSpinnerValueChanged(app, event)
-            app.bw = app.SigBWSpinner.Value*1e6;            
+            app.bw = app.SigBWSpinner.Value*1e6;
         end
 
         % Button pushed function: LoadVSAsetupButton
@@ -555,20 +556,20 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
 
         % Value changed function: BWEditField
         function BWEditFieldValueChanged(app, event)
-            app.bwOff = app.BWEditField.Value;            
+            app.bwOff = app.BWEditField.Value;
         end
 
         % Value changed function: fcGenSpinner
         function fcGenSpinnerValueChanged(app, event)
             app.fcInt = app.fcGenSpinner.Value*1e6;
-%             app.fcIntSpinner.Value = app.fcGenSpinner.Value;
+            %             app.fcIntSpinner.Value = app.fcGenSpinner.Value;
             genCtrl(app.gen_ip, app.gen_port, app.stateInt, app.powInt, app.fcInt, app.modInt);
         end
 
         % Value changed function: gainGenSpinner
         function gainGenSpinnerValueChanged(app, event)
             app.powInt = app.gainGenSpinner.Value;
-%             app.gainIntSpinner.Value = app.gainGenSpinner.Value;
+            %             app.gainIntSpinner.Value = app.gainGenSpinner.Value;
             genCtrl(app.gen_ip, app.gen_port, app.stateInt, app.powInt, app.fcInt, app.modInt);
         end
 
@@ -586,32 +587,32 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
 
         % Value changed function: patternCorrCheckBox
         function patternCorrCheckBoxValueChanged(app, event)
-            app.patternCorr = app.patternCorrCheckBox.Value;            
+            app.patternCorr = app.patternCorrCheckBox.Value;
         end
 
         % Value changed function: mis_angEditField
         function mis_angEditFieldValueChanged(app, event)
-            app.mis_ang = app.mis_angEditField.Value;            
+            app.mis_ang = app.mis_angEditField.Value;
         end
 
         % Value changed function: alg_scan_resEditField
         function alg_scan_resEditFieldValueChanged(app, event)
-            app.alg_scan_res = app.alg_scan_resEditField.Value;            
+            app.alg_scan_res = app.alg_scan_resEditField.Value;
         end
 
         % Value changed function: gammaEditField
         function gammaEditFieldValueChanged(app, event)
-            app.gamma = app.gammaEditField.Value;            
+            app.gamma = app.gammaEditField.Value;
         end
 
         % Value changed function: alphaEditField
         function alphaEditFieldValueChanged(app, event)
-            app.alpha = app.alphaEditField.Value;            
+            app.alpha = app.alphaEditField.Value;
         end
 
         % Value changed function: iterEditField
         function iterEditFieldValueChanged(app, event)
-            app.iter = app.iterEditField.Value;            
+            app.iter = app.iterEditField.Value;
         end
 
         % Value changed function: CustomCommandTextArea
@@ -627,7 +628,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
 
         % Value changed function: dataStreamCheckBox
         function dataStreamCheckBoxValueChanged(app, event)
-            app.dataStream = app.dataStreamCheckBox.Value;       
+            app.dataStream = app.dataStreamCheckBox.Value;
             app.part_reset_req = 1;
         end
 
@@ -642,23 +643,23 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
 
         % Value changed function: DebugCheckBox_2
         function DebugCheckBox_2ValueChanged(app, event)
-            app.debug = app.DebugCheckBox_2.Value;            
+            app.debug = app.DebugCheckBox_2.Value;
         end
 
         % Value changed function: PlotCheckBox
         function PlotCheckBoxValueChanged(app, event)
-            app.plotUpd = app.PlotCheckBox.Value;            
+            app.plotUpd = app.PlotCheckBox.Value;
         end
 
         % Value changed function: NumberofsavedfilesEditField
         function NumberofsavedfilesEditFieldValueChanged(app, event)
-            app.numFiles = app.NumberofsavedfilesEditField.Value + 1;            
+            app.numFiles = app.NumberofsavedfilesEditField.Value + 1;
         end
 
         % Button pushed function: SaveButton
         function SaveButtonPushed(app, event)
             app.saveFlg = 1;
-%             app.part_reset_req = 1;
+            %             app.part_reset_req = 1;
             [baseFileName, folder] = uiputfile([pwd ['.\Signals\'  num2str(app.numFiles - 1) '_RawSavesFromRfsoc.mat']]);
             app.saveName = fullfile(folder, baseFileName);
         end
@@ -700,7 +701,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             commandsHandler(app, ['fc ' num2str(app.fc/1e6) '/' num2str(app.nyquistZone) '/' ...
                 num2str(app.fc_d0/1e6) '/' num2str(app.nyquistZone_d0) '/' ...
                 num2str(app.fc_d1/1e6) '/' num2str(app.nyquistZone_d1)]);
-            app.part_reset_req = 1;            
+            app.part_reset_req = 1;
         end
 
         % Value changed function: ndNyquistZoneCheckBox_3
@@ -709,7 +710,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             commandsHandler(app, ['fc ' num2str(app.fc/1e6) '/' num2str(app.nyquistZone) '/' ...
                 num2str(app.fc_d0/1e6) '/' num2str(app.nyquistZone_d0) '/' ...
                 num2str(app.fc_d1/1e6) '/' num2str(app.nyquistZone_d1)]);
-            app.part_reset_req = 1;  
+            app.part_reset_req = 1;
         end
 
         % Value changed function: PhaseSpinner_2
@@ -753,7 +754,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
 
         % Value changed function: ResampleCheckBox
         function ResampleCheckBoxValueChanged(app, event)
-            app.resmp = app.ResampleCheckBox.Value;          
+            app.resmp = app.ResampleCheckBox.Value;
             if app.resmp
                 app.fsOrig = app.fsOrig;
             else
@@ -773,12 +774,12 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
 
         % Value changed function: FiltBWEditField
         function FiltBWEditFieldValueChanged(app, event)
-            app.bwDac = app.FiltBWEditField.Value*1e6;            
+            app.bwDac = app.FiltBWEditField.Value*1e6;
         end
 
         % Value changed function: OrigFSEditField
         function OrigFSEditFieldValueChanged(app, event)
-            app.fsOrig = app.OrigFSEditField.Value*1e6;            
+            app.fsOrig = app.OrigFSEditField.Value*1e6;
         end
 
         % Changes arrangement of the app based on UIFigure width
@@ -1135,7 +1136,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
 
             % Create RFSoCFcSpinner
             app.RFSoCFcSpinner = uispinner(app.SystemTab);
-            app.RFSoCFcSpinner.Limits = [500 6000];
+            app.RFSoCFcSpinner.Limits = [-10000 10000];
             app.RFSoCFcSpinner.ValueChangedFcn = createCallbackFcn(app, @RFSoCFcSpinnerValueChanged, true);
             app.RFSoCFcSpinner.Position = [98 595 77 22];
             app.RFSoCFcSpinner.Value = 5700;
@@ -1180,7 +1181,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.SigBWSpinner.ValueDisplayFormat = '%.0f';
             app.SigBWSpinner.ValueChangedFcn = createCallbackFcn(app, @SigBWSpinnerValueChanged, true);
             app.SigBWSpinner.Position = [98 530 77 22];
-            app.SigBWSpinner.Value = 20;
+            app.SigBWSpinner.Value = 100;
 
             % Create LoadVSAsetupButton
             app.LoadVSAsetupButton = uibutton(app.SystemTab, 'push');
@@ -1272,10 +1273,10 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
 
             % Create RFSoCFcSpinner_2
             app.RFSoCFcSpinner_2 = uispinner(app.SystemTab);
-            app.RFSoCFcSpinner_2.Limits = [500 6000];
+            app.RFSoCFcSpinner_2.Limits = [-10000 10000];
             app.RFSoCFcSpinner_2.ValueChangedFcn = createCallbackFcn(app, @RFSoCFcSpinner_2ValueChanged, true);
             app.RFSoCFcSpinner_2.Position = [101 393 77 22];
-            app.RFSoCFcSpinner_2.Value = 5700;
+            app.RFSoCFcSpinner_2.Value = 5200;
 
             % Create dataStreamCheckBox
             app.dataStreamCheckBox = uicheckbox(app.SystemTab);
@@ -1336,10 +1337,10 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
 
             % Create RFSoCFcSpinner_3
             app.RFSoCFcSpinner_3 = uispinner(app.SystemTab);
-            app.RFSoCFcSpinner_3.Limits = [500 6000];
+            app.RFSoCFcSpinner_3.Limits = [-10000 10000];
             app.RFSoCFcSpinner_3.ValueChangedFcn = createCallbackFcn(app, @RFSoCFcSpinner_3ValueChanged, true);
             app.RFSoCFcSpinner_3.Position = [101 275 77 22];
-            app.RFSoCFcSpinner_3.Value = 5700;
+            app.RFSoCFcSpinner_3.Value = 5200;
 
             % Create PhaseSpinner_2Label
             app.PhaseSpinner_2Label = uilabel(app.SystemTab);
