@@ -1,4 +1,4 @@
-classdef PlutoControl_exported < matlab.apps.AppBase 
+classdef PlutoControl_exported < matlab.apps.AppBase
 
     % Properties that correspond to app components
     properties (Access = public)
