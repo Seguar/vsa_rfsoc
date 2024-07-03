@@ -61,11 +61,29 @@ rawData = tcpDataRec(tcp_client, data_size, channels);
 %% Matlab MVDR DOA FUNC
 rawData = filtSig(rawData, fsRfsoc, bw);
 %% DOA
-try
-    [yspec, estimated_angle] = estimator(rawData'*rawData);
-catch
-    estimated_angle = estimator(rawData'*rawData);
-    yspec = zeros(size(scan_axis));
+if isa(estimator, 'double')
+    num_elements = 4;
+    A = zeros(num_elements,1); 
+    Rx = rawData'*rawData;    %Data covarivance matrix 
+    Rx_Inv = Rx^(-1);           %Inverse of covariance matrix
+    lambda = c/fc;
+    d = lambda/2;
+    for t=1:length(scan_axis) 
+        A = exp(-1j*2*pi*d*(0:num_elements-1)'*sind(scan_axis(t))/lambda);
+        A_fixed = A.*estimator(t,:)';
+        B_fixed = A_fixed'*Rx_Inv*A_fixed;
+%         yspec(t) = 10*log10(abs(1/B_fixed)); 
+        yspec(t) = abs(1/B_fixed); 
+    end
+    [~,ind] = max(yspec);
+    estimated_angle = scan_axis(ind);
+else
+    try
+        [yspec, estimated_angle] = estimator(rawData'*rawData);
+    catch
+        estimated_angle = estimator(rawData'*rawData);
+        yspec = zeros(size(scan_axis));
+    end
 end
 %% Angles
 if ch>4
@@ -101,7 +119,10 @@ switch bf
         [rawDataAdj, weights] = dmr_beamformer(rawData, npc, ula, estimated_angle(1));
     case 'PC'
         [rawDataAdj, weights] = pc_beamformer(rawData, npc, ula, estimated_angle(1));
-        weights = conj(weights) ;
+        weights = conj(weights);
+    case 'PC_corr'
+        [rawDataAdj, weights] = pc_beamformer(rawData, npc, ula, estimated_angle(1), estimator);
+        weights = conj(weights) ;        
     case 'LCMV'
         [rawDataAdj, weights] = lcmv_beamformer(rawData, estimated_angle(1), estimated_angle(2), ula, bwOff, fc);
         weights = conj(weights);
