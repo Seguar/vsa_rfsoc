@@ -4,6 +4,13 @@ switch doa
         estimator = phased.MVDREstimator('SensorArray',ula,...
             'OperatingFrequency',fc,'ScanAngles',scan_axis,...
             'DOAOutputPort',true,'NumSignals', num);
+    case 'MVDRman' 
+        load("steering_correction.mat");
+        steering_correction(:) = 1;
+        estimator = steering_correction; 
+    case 'MVDRman_corr' 
+        load("steering_correction.mat");
+        estimator = steering_correction; 
     case 'MUSIC'
         estimator = phased.MUSICEstimator('SensorArray',ula,...
             'OperatingFrequency',fc,'ScanAngles',scan_axis,...

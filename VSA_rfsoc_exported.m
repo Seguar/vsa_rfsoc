@@ -102,6 +102,14 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         RFSoCFsSpinnerLabel            matlab.ui.control.Label
         RFSoCFcSpinner                 matlab.ui.control.Spinner
         RFSoCFcSpinnerLabel            matlab.ui.control.Label
+        DownconverterTab               matlab.ui.container.Tab
+        StepangEditField               matlab.ui.control.NumericEditField
+        StepangEditFieldLabel          matlab.ui.control.Label
+        StarrangEditField              matlab.ui.control.NumericEditField
+        StarrangEditFieldLabel         matlab.ui.control.Label
+        ArduinoprogramButton           matlab.ui.control.Button
+        StartphasecalibrationsButton   matlab.ui.control.Button
+        Gauge                          matlab.ui.control.SemicircularGauge
         ResetButton                    matlab.ui.control.StateButton
         PlutoButton                    matlab.ui.control.Button
         IQtoolsButton                  matlab.ui.control.Button
@@ -154,12 +162,12 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         gamma = 1;
         iter = 1;
         %% System
-        fc = 5.7e9;
+        fc = 1.03e9;
         fsRfsoc = 125e6;
         fsDAC = 500e6;
         bw = 100e6;
         num = 2;
-        scan_bw = 180;
+        scan_bw = 120;
         setupFile = [fileparts(mfilename('fullpath')) '\Settings\ofdm_iq_100_cal.setx'];
 
         server_ip = 'pynq'; % Use the appropriate IP address or hostname http://192.168.3.1/lab
@@ -168,6 +176,16 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
 
         gen_ip = '132.68.138.197';
         gen_port = 5025;
+
+        %% Upconverter
+        phase_cal = 0;
+        arduino;
+        phase_gauge;
+        start_ang = -60;
+        step_ang = 10;
+        cur_ang = 0;
+        phase_cal_butt = 0;
+
         %% Flags
         reset_req = 1;
         part_reset_req = 1;
@@ -351,7 +369,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                         estimated_angle = [estimated_angle NaN NaN]; % To prevent errors in xlines indexing
                         am = guiXline(am, app.UIAxes, main, estimated_angle(1));
                         am2 = guiXline(am2, app.UIAxes2, main, estimated_angle(1));
-
+%%
                         if sum(~isnan(estimated_angle)) > 1
                             bs = guiXline(bs, app.UIAxes, sub, estimated_angle(2));
                             bs2 = guiXline(bs2, app.UIAxes2, sub, estimated_angle(2));
@@ -367,7 +385,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                             app.UIAxes2.Title.String = (['Beam Pattern' newline  'Gain Difference = ' ...
                                 num2str(abs(null_diff)) ' dB']);
                         end
-
+%%
                         if app.MatlabPattern
                             if count >= app.updrate
                                 plotResponse(app.ula,app.fc,app.c,...
@@ -379,7 +397,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                                 count = count + 1;
                             end
                         end
-
+%%
                         if app.saveFlg
                             if fileCnt >= app.numFiles
                                 fileCnt = 1;
@@ -390,6 +408,32 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                                 saveFile(fileCnt).raw = rawData;
                                 fileCnt = fileCnt + 1;
                             end
+                        end
+%%
+                        if app.phase_cal                            
+                            app.StartphasecalibrationsButton.Text = ['Set ' num2str(app.cur_ang) ' deg and press'];
+                            app.Gauge.Value = app.cur_ang;
+                            app.phase_cal_butt = 0;
+                            uiwait
+%                             app.StartphasecalibrationsButton.BackgroundColor = 'g';
+                            save([pwd '\phase_cal\' num2str(app.cur_ang) '.mat'], 'rawData')
+
+                            if app.cur_ang == -(app.start_ang)
+                                phase_scan_axis = -abs(app.start_ang):app.step_ang:abs(app.start_ang);
+                                list = dir([pwd '\phase_cal\*.mat']);
+                                for k=1:length(phase_scan_axis)
+                                    sig_temp = load([pwd '\phase_cal\' num2str(phase_scan_axis(1)), '.mat']);                                
+                                    sig = sig_temp.rawData;  
+                                    meas_mat(:,:,k) = sig;
+                                end
+                                app.StartphasecalibrationsButton.Text = 'Press to start calibrations';
+                                [steering_correction, ~, ~] = phase_pattern_generator(meas_mat,phase_scan_axis,app.scan_res,app.num_elements,app.fc, app.c);
+                                save('steering_correction.mat', 'steering_correction');
+                                app.phase_cal = 0;
+                                app.cur_ang = 0;
+                            else
+                                app.cur_ang = app.cur_ang + app.step_ang;
+                            end                            
                         end
                     end
                     if app.debug
@@ -782,6 +826,40 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.fsOrig = app.OrigFSEditField.Value*1e6;
         end
 
+        % Button pushed function: StartphasecalibrationsButton
+        function StartphasecalibrationsButtonPushed(app, event)
+            if app.phase_cal
+                app.phase_cal = 1;
+            else
+                if exist('phase_cal', 'dir')
+                    rmdir('phase_cal', 's')
+                end
+                mkdir('phase_cal')                
+                app.cur_ang = app.start_ang;
+                [baseFileName, folder] = uiputfile([pwd 'steering_correction_' num2str(app.start_ang) '_' num2str(app.step_ang) 'deg_res.mat']);
+                app.saveName = fullfile(folder, baseFileName);
+                app.phase_cal = 1;
+            end
+            uiresume
+            app.phase_cal_butt = 1;
+
+        end
+
+        % Value changed function: StepangEditField
+        function StepangEditFieldValueChanged(app, event)
+            app.step_ang = app.StepangEditField.Value;            
+        end
+
+        % Value changed function: StarrangEditField
+        function StarrangEditFieldValueChanged(app, event)
+            app.start_ang = app.StarrangEditField.Value;            
+        end
+
+        % Button pushed function: ArduinoprogramButton
+        function ArduinoprogramButtonPushed(app, event)
+            arduino_prog();
+        end
+
         % Changes arrangement of the app based on UIFigure width
         function updateAppLayout(app, event)
             currentFigureWidth = app.RFSoCBeamformerUIFigure.Position(3);
@@ -860,7 +938,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.SignalpriorityButtonGroup.AutoResizeChildren = 'off';
             app.SignalpriorityButtonGroup.SelectionChangedFcn = createCallbackFcn(app, @SignalpriorityButtonGroupSelectionChanged, true);
             app.SignalpriorityButtonGroup.Title = 'Signal priority';
-            app.SignalpriorityButtonGroup.Position = [60 228 113 83];
+            app.SignalpriorityButtonGroup.Position = [60 124 113 83];
 
             % Create MostPowerfullButton
             app.MostPowerfullButton = uiradiobutton(app.SignalpriorityButtonGroup);
@@ -894,28 +972,28 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
 
             % Create DOAtypeListBox
             app.DOAtypeListBox = uilistbox(app.MainTab);
-            app.DOAtypeListBox.Items = {'MVDR', 'MUSIC', 'Beamscan', 'MUSICR', 'ESPRITE', 'ESPRITEBS', 'WSFR'};
+            app.DOAtypeListBox.Items = {'MVDR', 'MVDRman', 'MVDRman_corr', 'MUSIC', 'Beamscan', 'MUSICR', 'ESPRITE', 'ESPRITEBS', 'WSFR'};
             app.DOAtypeListBox.ValueChangedFcn = createCallbackFcn(app, @DOAtypeListBoxValueChanged, true);
-            app.DOAtypeListBox.Position = [75 503 98 134];
+            app.DOAtypeListBox.Position = [75 463 98 174];
             app.DOAtypeListBox.Value = 'MVDR';
 
             % Create BFtypeListBoxLabel
             app.BFtypeListBoxLabel = uilabel(app.MainTab);
             app.BFtypeListBoxLabel.HorizontalAlignment = 'right';
-            app.BFtypeListBoxLabel.Position = [-8 453 79 43];
+            app.BFtypeListBoxLabel.Position = [-8 416 79 43];
             app.BFtypeListBoxLabel.Text = {'BF'; 'type'};
 
             % Create BFtypeListBox
             app.BFtypeListBox = uilistbox(app.MainTab);
-            app.BFtypeListBox.Items = {'Without', 'Steering', 'MVDR', 'DMR', 'PC', 'LCMV', 'RVL', 'RAB PC', 'DL MVDR', 'DL ITER MVDR', 'QCB'};
+            app.BFtypeListBox.Items = {'Without', 'Steering', 'MVDR', 'DMR', 'PC', 'PC_corr', 'LCMV', 'RVL', 'RAB PC', 'DL MVDR', 'DL ITER MVDR', 'QCB'};
             app.BFtypeListBox.ValueChangedFcn = createCallbackFcn(app, @BFtypeListBoxValueChanged, true);
-            app.BFtypeListBox.Position = [75 316 98 182];
+            app.BFtypeListBox.Position = [75 228 98 233];
             app.BFtypeListBox.Value = 'Steering';
 
             % Create ChannelselectListBoxLabel
             app.ChannelselectListBoxLabel = uilabel(app.MainTab);
             app.ChannelselectListBoxLabel.HorizontalAlignment = 'right';
-            app.ChannelselectListBoxLabel.Position = [67 159 50 43];
+            app.ChannelselectListBoxLabel.Position = [67 55 50 43];
             app.ChannelselectListBoxLabel.Text = {'Channel'; 'select'};
 
             % Create ChannelselectListBox
@@ -923,7 +1001,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.ChannelselectListBox.Items = {'Ch1', 'Ch2', 'Ch3', 'Ch4', 'All'};
             app.ChannelselectListBox.ItemsData = {'1', '2', '3', '4', '5', ''};
             app.ChannelselectListBox.ValueChangedFcn = createCallbackFcn(app, @ChannelselectListBoxValueChanged, true);
-            app.ChannelselectListBox.Position = [121 125 52 98];
+            app.ChannelselectListBox.Position = [121 21 52 98];
             app.ChannelselectListBox.Value = '5';
 
             % Create DebugTab
@@ -1139,7 +1217,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.RFSoCFcSpinner.Limits = [-10000 10000];
             app.RFSoCFcSpinner.ValueChangedFcn = createCallbackFcn(app, @RFSoCFcSpinnerValueChanged, true);
             app.RFSoCFcSpinner.Position = [98 595 77 22];
-            app.RFSoCFcSpinner.Value = 5700;
+            app.RFSoCFcSpinner.Value = 1030;
 
             % Create RFSoCFsSpinnerLabel
             app.RFSoCFsSpinnerLabel = uilabel(app.SystemTab);
@@ -1418,6 +1496,54 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             app.FiltBWEditField.Position = [151 144 47 22];
             app.FiltBWEditField.Value = 100;
 
+            % Create DownconverterTab
+            app.DownconverterTab = uitab(app.TabGroup);
+            app.DownconverterTab.Title = 'Downconverter';
+
+            % Create Gauge
+            app.Gauge = uigauge(app.DownconverterTab, 'semicircular');
+            app.Gauge.Limits = [-90 90];
+            app.Gauge.Position = [14 368 189 102];
+
+            % Create StartphasecalibrationsButton
+            app.StartphasecalibrationsButton = uibutton(app.DownconverterTab, 'push');
+            app.StartphasecalibrationsButton.ButtonPushedFcn = createCallbackFcn(app, @StartphasecalibrationsButtonPushed, true);
+            app.StartphasecalibrationsButton.Position = [41 277 140 58];
+            app.StartphasecalibrationsButton.Text = 'Start phase calibrations';
+
+            % Create ArduinoprogramButton
+            app.ArduinoprogramButton = uibutton(app.DownconverterTab, 'push');
+            app.ArduinoprogramButton.ButtonPushedFcn = createCallbackFcn(app, @ArduinoprogramButtonPushed, true);
+            app.ArduinoprogramButton.Position = [57 612 104 23];
+            app.ArduinoprogramButton.Text = 'Arduino program';
+
+            % Create StarrangEditFieldLabel
+            app.StarrangEditFieldLabel = uilabel(app.DownconverterTab);
+            app.StarrangEditFieldLabel.HorizontalAlignment = 'right';
+            app.StarrangEditFieldLabel.Position = [17 341 54 22];
+            app.StarrangEditFieldLabel.Text = 'Starr ang';
+
+            % Create StarrangEditField
+            app.StarrangEditField = uieditfield(app.DownconverterTab, 'numeric');
+            app.StarrangEditField.Limits = [-90 90];
+            app.StarrangEditField.RoundFractionalValues = 'on';
+            app.StarrangEditField.ValueChangedFcn = createCallbackFcn(app, @StarrangEditFieldValueChanged, true);
+            app.StarrangEditField.Position = [79 341 29 22];
+            app.StarrangEditField.Value = -60;
+
+            % Create StepangEditFieldLabel
+            app.StepangEditFieldLabel = uilabel(app.DownconverterTab);
+            app.StepangEditFieldLabel.HorizontalAlignment = 'right';
+            app.StepangEditFieldLabel.Position = [114 341 53 22];
+            app.StepangEditFieldLabel.Text = 'Step ang';
+
+            % Create StepangEditField
+            app.StepangEditField = uieditfield(app.DownconverterTab, 'numeric');
+            app.StepangEditField.Limits = [0.01 50];
+            app.StepangEditField.ValueChangedFcn = createCallbackFcn(app, @StepangEditFieldValueChanged, true);
+            app.StepangEditField.Position = [175 341 24 22];
+            app.StepangEditField.Value = 10;
+
             % Create AvgSpinnerLabel
             app.AvgSpinnerLabel = uilabel(app.LeftPanel);
             app.AvgSpinnerLabel.HorizontalAlignment = 'right';
@@ -1475,7 +1601,6 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             ylabel(app.UIAxes, 'Y')
             zlabel(app.UIAxes, 'Z')
             app.UIAxes.FontWeight = 'bold';
-            app.UIAxes.Colormap = [];
             app.UIAxes.LineWidth = 1;
             app.UIAxes.XGrid = 'on';
             app.UIAxes.XMinorGrid = 'on';
@@ -1491,7 +1616,6 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
             ylabel(app.UIAxes2, 'Y')
             zlabel(app.UIAxes2, 'Z')
             app.UIAxes2.FontWeight = 'bold';
-            app.UIAxes2.Colormap = [];
             app.UIAxes2.XGrid = 'on';
             app.UIAxes2.XMinorGrid = 'on';
             app.UIAxes2.YGrid = 'on';
