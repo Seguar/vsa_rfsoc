@@ -422,7 +422,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                                 phase_scan_axis = -abs(app.start_ang):app.step_ang:abs(app.start_ang);
                                 list = dir([pwd '\phase_cal\*.mat']);
                                 for k=1:length(phase_scan_axis)
-                                    sig_temp = load([pwd '\phase_cal\' num2str(phase_scan_axis(1)), '.mat']);                                
+                                    sig_temp = load([pwd '\phase_cal\' num2str(phase_scan_axis(k)), '.mat']);                                
                                     sig = sig_temp.rawData;  
                                     meas_mat(:,:,k) = sig;
                                 end
