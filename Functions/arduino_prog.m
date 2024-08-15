@@ -1,7 +1,7 @@
 function arduino_prog()
 Arduino = [];
 if (isempty(Arduino))
-    Arduino = serialport("COM4",115200); %Change the COM number according to the available ports
+    Arduino = serialport("COM13",115200); %Change the COM number according to the available ports
 end
     pause(0.8)
 try 
@@ -77,34 +77,40 @@ disp(["DATA3=" reverse(data3)])
 
 
 %% Load Data to Arduino
-
+pause(1)
 writeline(Arduino,"2")
 while (Arduino.NumBytesAvailable > 0)
     disp(readline(Arduino)) 
 end
 writeline(Arduino,reverse(data1))
-pause(0.5)
+pause(1)
+writeline(Arduino,"2")
 while (Arduino.NumBytesAvailable > 0)
     disp(readline(Arduino)) 
 end
-pause(0.5)
+writeline(Arduino,reverse(data1))
+pause(1)
+while (Arduino.NumBytesAvailable > 0)
+    disp(readline(Arduino)) 
+end
+pause(1)
 
 writeline(Arduino,"3")
 while (Arduino.NumBytesAvailable > 0)
     disp(readline(Arduino)) 
 end
 writeline(Arduino,reverse(data2))
-pause(0.5)
+pause(1)
 while (Arduino.NumBytesAvailable > 0)
     disp(readline(Arduino)) 
 end
-pause(0.5)
+pause(1)
 writeline(Arduino,"4")
 while (Arduino.NumBytesAvailable > 0)
     disp(readline(Arduino)) 
 end
 writeline(Arduino,reverse(data3))
-pause(0.5)
+pause(1)
 while (Arduino.NumBytesAvailable > 0)
     disp(readline(Arduino)) 
 end
