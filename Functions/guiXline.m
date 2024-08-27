@@ -1,10 +1,12 @@
-function lineHandle = guiXline(lineHandle, handles, type, value)
+function lineHandle = guiXline(lineHandle, handles, type, value, position)
 
 if isempty(lineHandle) || ~isvalid(lineHandle)
     % Create line: 1st input is axis handle
     lineHandle = xline(handles, 0, type.line, {type.txt}); 
 end
 lineHandle.Value = 0;
+lineHandle.LabelVerticalAlignment = 'middle';
+lineHandle.LabelHorizontalAlignment = position;
 % Update line position
 if ~isnan(value)
     lineHandle.Value = value; 

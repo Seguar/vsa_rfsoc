@@ -5,11 +5,13 @@ switch doa
             'OperatingFrequency',fc,'ScanAngles',scan_axis,...
             'DOAOutputPort',true,'NumSignals', num);
     case 'MVDRman' 
-        load("steering_correction.mat");
-        steering_correction(:) = 1;
-        estimator = steering_correction; 
+        estimator = ones(size(scan_axis))';
     case 'MVDRman_corr' 
         load("steering_correction.mat");
+        if length(steering_correction) ~= length(scan_axis)
+            len = abs(length(steering_correction) - length(scan_axis));
+            steering_correction = wextend('ar','zpd',steering_correction,len/2);
+        end
         estimator = steering_correction; 
     case 'MUSIC'
         estimator = phased.MUSICEstimator('SensorArray',ula,...
