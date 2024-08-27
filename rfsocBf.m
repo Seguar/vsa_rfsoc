@@ -1,5 +1,5 @@
 function [yspec, estimated_angle, bfSig, weights, rawData] = rfsocBf(app, vsa, ch, bf, off, gap, cutter, ang_num, data_v, tcp_client, fc, dataChan, diag, bwOff, ula, scan_axis, ...
-    c1, c2, fsRfsoc, bw, c, estimator, alg_scan_res, mis_ang, alpha, gamma, iter, setup_v)
+    c1, c2, fsRfsoc, bw, c, estimator, alg_scan_res, mis_ang, alpha, gamma, iter, setup_v, debug)
     % Inputs:
 %   - app: Application object
 %   - vsa: Flag indicating whether to perform VSA (Vector Signal Analyzer) operation
@@ -58,6 +58,10 @@ test_z = zeros(1, gap);
 data_size = dataChan * 8;
 channels = 8;
 rawData = tcpDataRec(tcp_client, data_size, channels);
+if debug
+    rec_time = toc;
+    disp(['rec_time ' num2str(rec_time) ' s'])
+end
 %% Matlab MVDR DOA FUNC
 rawData = filtSig(rawData, fsRfsoc, bw);
 %% DOA
