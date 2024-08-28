@@ -453,7 +453,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                                 phase_scan_axis = -abs(app.start_ang):app.step_ang:abs(app.start_ang);
                                 list = dir([pwd '\phase_cal\*.mat']);
                                 for k=1:length(phase_scan_axis)
-                                    sig_temp = load([pwd '\phase_cal\' num2str(phase_scan_axis(1)), '.mat']);                                
+                                    sig_temp = load([pwd '\phase_cal\' num2str(phase_scan_axis(k)), '.mat']);                                
                                     sig = sig_temp.rawData;  
                                     meas_mat(:,:,k) = sig;
                                 end
@@ -479,11 +479,18 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                             app.dacTestArray = [app.dacTestArray(end) app.dacTestArray(1:end-1)];
                         case 'Tracking'
                             app.dacAngle = estimated_angle(1);   
+                        case 'Retracking'
+                            app.dacAngle = -estimated_angle(1);
+                        case 'Tr_s'
+                            app.dacAngle = round(estimated_angle(1)/10);   
+                        case 'Retr_s'
+                            app.dacAngle = round(-estimated_angle(1)/10); 
                         otherwise 
                             app.dacAngle = app.AngleSpinner.Value;
                     end
                     beamforming = phased.SteeringVector('SensorArray',app.ula);
                     weight = beamforming(app.fcAnt, app.dacAngle);
+%                     weight = weight/norm(weight)*2;
                     app.dphase = angle(weight).';
                     app.dphase = round(rad2deg(app.dphase), 2);
                     app.dphase = app.dphase*100;
@@ -588,11 +595,10 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
 
         % Value changed function: RFSoCFcSpinner
         function RFSoCFcSpinnerValueChanged(app, event)
-            app.fc = app.RFSoCFcSpinner.Value*1e6;
-            commandsHandler(app, ['fc ' num2str(app.fc/1e6*app.adcMirror) '/' num2str(app.nyquistZone) '/' ...
-                num2str(app.fc_d0/1e6*app.dacMirror) '/' num2str(app.nyquistZone_d0) '/' ...
-                num2str(app.fc_d1/1e6*app.dacMirror) '/' num2str(app.nyquistZone_d1)]);
-            app.fc = abs(app.fc);
+            app.fc = app.RFSoCFcSpinner.Value*1e6*app.adcMirror;
+            commandsHandler(app, ['fc ' num2str(app.fc/1e6) '/' num2str(app.nyquistZone) '/' ...
+                num2str(app.fc_d0/1e6) '/' num2str(app.nyquistZone_d0) '/' ...
+                num2str(app.fc_d1/1e6) '/' num2str(app.nyquistZone_d1)]);
             app.part_reset_req = 1;
         end
 
@@ -776,19 +782,19 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
 
         % Value changed function: RFSoCFcSpinner_2
         function RFSoCFcSpinner_2ValueChanged(app, event)
-            app.fc_d0 = app.RFSoCFcSpinner_2.Value*1e6;
+            app.fc_d0 = app.RFSoCFcSpinner_2.Value*1e6*app.dacMirror;
             commandsHandler(app, ['fc ' num2str(app.fc/1e6) '/' num2str(app.nyquistZone) '/' ...
                 num2str(app.fc_d0/1e6) '/' num2str(app.nyquistZone_d0) '/' ...
-                num2str(app.fc_d1/1e6) '/' num2str(app.nyquistZone_d1)]);
+                num2str(app.fc_d0/1e6) '/' num2str(app.nyquistZone_d0)]);
 
         end
 
         % Callback function
         function RFSoCFcSpinner_3ValueChanged(app, event)
-            app.fc_d1 = app.AntennaFcSpinner.Value*1e6;
-            commandsHandler(app, ['fc ' num2str(app.fc/1e6) '/' num2str(app.nyquistZone) '/' ...
-                num2str(app.fc_d0/1e6) '/' num2str(app.nyquistZone_d0) '/' ...
-                num2str(app.fc_d1/1e6) '/' num2str(app.nyquistZone_d1)]);
+%             app.fc_d1 = app.AntennaFcSpinner.Value*1e6;
+%             commandsHandler(app, ['fc ' num2str(app.fc/1e6) '/' num2str(app.nyquistZone) '/' ...
+%                 num2str(app.fc_d0/1e6) '/' num2str(app.nyquistZone_d0) '/' ...
+%                 num2str(app.fc_d1/1e6) '/' num2str(app.nyquistZone_d1)]);
 
         end
 
@@ -895,8 +901,8 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                 end
                 mkdir('phase_cal')                
                 app.cur_ang = app.start_ang;
-                [baseFileName, folder] = uiputfile([pwd 'steering_correction_' num2str(app.start_ang) '_' num2str(app.step_ang) 'deg_res.mat']);
-                app.saveName = fullfile(folder, baseFileName);
+%                 [baseFileName, folder] = uiputfile([pwd 'steering_correction_' num2str(app.start_ang) '_' num2str(app.step_ang) 'deg_res.mat']);
+%                 app.saveName = fullfile(folder, baseFileName);
                 app.phase_cal = 1;
             end
             uiresume
@@ -929,7 +935,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.fc = app.RFSoCFcSpinner.Value*1e6*app.adcMirror;
             commandsHandler(app, ['fc ' num2str(app.fc/1e6) '/' num2str(app.nyquistZone) '/' ...
                 num2str(app.fc_d0/1e6) '/' num2str(app.nyquistZone_d0) '/' ...
-                num2str(app.fc_d1/1e6) '/' num2str(app.nyquistZone_d1)]);
+                num2str(app.fc_d0/1e6) '/' num2str(app.nyquistZone_d0)]);
         end
 
         % Button pushed function: SyncButton
@@ -995,11 +1001,11 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             else
                 app.dacMirror = 1;
             end
-            app.fc_d0 = app.RFSoCFcSpinner.Value*1e6*app.dacMirror;
-            app.fc_d1 = app.RFSoCFcSpinner.Value*1e6*app.dacMirror;
+            app.fc_d0 = app.RFSoCFcSpinner_2.Value*1e6*app.dacMirror;
+            app.fc_d1 = app.RFSoCFcSpinner_2.Value*1e6*app.dacMirror;
             commandsHandler(app, ['fc ' num2str(app.fc/1e6) '/' num2str(app.nyquistZone) '/' ...
                 num2str(app.fc_d0/1e6) '/' num2str(app.nyquistZone_d0) '/' ...
-                num2str(app.fc_d1/1e6) '/' num2str(app.nyquistZone_d1)]);
+                num2str(app.fc_d0/1e6) '/' num2str(app.nyquistZone_d0)]);
 
         end
 
@@ -1123,14 +1129,14 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             % Create DACBFmodeListBoxLabel
             app.DACBFmodeListBoxLabel = uilabel(app.MainTab);
             app.DACBFmodeListBoxLabel.HorizontalAlignment = 'right';
-            app.DACBFmodeListBoxLabel.Position = [18 112 54 27];
+            app.DACBFmodeListBoxLabel.Position = [13 91 54 27];
             app.DACBFmodeListBoxLabel.Text = {'DAC'; 'BF mode'};
 
             % Create DACBFmodeListBox
             app.DACBFmodeListBox = uilistbox(app.MainTab);
-            app.DACBFmodeListBox.Items = {'GUI', 'Random', 'Scaning', 'Rescaning', 'Tracking'};
+            app.DACBFmodeListBox.Items = {'GUI', 'Random', 'Scaning', 'Rescaning', 'Tracking', 'Retracking', 'Tr_s', 'Retr_s'};
             app.DACBFmodeListBox.ValueChangedFcn = createCallbackFcn(app, @DACBFmodeListBoxValueChanged, true);
-            app.DACBFmodeListBox.Position = [88 46 100 93];
+            app.DACBFmodeListBox.Position = [83 7 86 111];
             app.DACBFmodeListBox.Value = 'GUI';
 
             % Create RXLabel
@@ -1306,20 +1312,20 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             % Create AntennaLabel
             app.AntennaLabel = uilabel(app.SystemTab);
             app.AntennaLabel.FontWeight = 'bold';
-            app.AntennaLabel.Position = [90 117 53 22];
+            app.AntennaLabel.Position = [80 226 53 22];
             app.AntennaLabel.Text = 'Antenna';
 
             % Create AntennaFcSpinnerLabel
             app.AntennaFcSpinnerLabel = uilabel(app.SystemTab);
             app.AntennaFcSpinnerLabel.HorizontalAlignment = 'right';
-            app.AntennaFcSpinnerLabel.Position = [33 89 50 27];
+            app.AntennaFcSpinnerLabel.Position = [23 198 50 27];
             app.AntennaFcSpinnerLabel.Text = {'Antenna'; 'Fc'};
 
             % Create AntennaFcSpinner
             app.AntennaFcSpinner = uispinner(app.SystemTab);
             app.AntennaFcSpinner.Limits = [1 40000];
             app.AntennaFcSpinner.ValueChangedFcn = createCallbackFcn(app, @AntennaFcSpinnerValueChanged, true);
-            app.AntennaFcSpinner.Position = [98 94 105 22];
+            app.AntennaFcSpinner.Position = [88 203 105 22];
             app.AntennaFcSpinner.Value = 4500;
 
             % Create DacSignalDropDownLabel
