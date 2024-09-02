@@ -73,8 +73,8 @@ if isa(estimator, 'double')
     lambda = c/fc;
     d = lambda/2;
     for t=1:length(scan_axis) 
-        A = exp(-1j*2*pi*d*(0:num_elements-1)'*sind(scan_axis(t))/lambda);
-        A_fixed = A.*estimator(t,:)';
+        A = exp(-1j*2*pi*d*(0:num_elements-1).'*sind(scan_axis(t))/lambda);
+        A_fixed = A.*estimator(t,:).';
         B_fixed = A_fixed'*Rx_Inv*A_fixed;
 %         yspec(t) = 10*log10(abs(1/B_fixed)); 
         yspec(t) = abs(1/B_fixed); 

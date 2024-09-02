@@ -31,6 +31,16 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         DOAresolutionEditField         matlab.ui.control.NumericEditField
         DOAresolutionEditField_3Label  matlab.ui.control.Label
         SystemTab                      matlab.ui.container.Tab
+        Ch4SpinnerLabel                matlab.ui.control.Label
+        Ch4Spinner                     matlab.ui.control.Spinner
+        Ch3SpinnerLabel                matlab.ui.control.Label
+        Ch3Spinner                     matlab.ui.control.Spinner
+        Ch2SpinnerLabel                matlab.ui.control.Label
+        Ch2Spinner                     matlab.ui.control.Spinner
+        Ch1Spinner                     matlab.ui.control.Spinner
+        Ch1SpinnerLabel                matlab.ui.control.Label
+        ChannelcontrolDropDown         matlab.ui.control.DropDown
+        ChannelcontrolDropDownLabel    matlab.ui.control.Label
         MirrorCheckBox_2               matlab.ui.control.CheckBox
         SREditField                    matlab.ui.control.NumericEditField
         SREditFieldLabel               matlab.ui.control.Label
@@ -198,7 +208,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         nyquistZone_d1 = 1;
         fc_d0 = 4.5e9;
         fc_d1 = 4.5e9;
-        dphase = [0,0,0,0];
+        
         dacPow = [1,1,1,1];
         da = 1;
         bwDac = 499e6;
@@ -218,6 +228,11 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         dacFe = 50;
         dacSR = 1;
         dacAmp = 2^14-1;
+        dacGain = [199, 199, 199, 199];
+        adcGain = [199, 199, 199, 199];
+        dphase = [0,0,0,0];
+        phase = [0,0,0,0];
+        manualControlState = "DAC phase";
         %% Reset vars
         data_v
         setup_v
@@ -267,6 +282,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             disp(app.commands)
             app.tcp_client = rfsocConnect(app.server_ip, app.server_port, app.commands);
             app.commands = [];
+            flush(app.tcp_client)
             clf(app.UIAxes);
             app.reset_req = 0;
             app.part_reset_req = 0;
@@ -309,7 +325,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         % Code that executes after component creation
         function startupFcn(app)
             cd(fileparts(mfilename('fullpath')))
-            addpath(genpath([pwd '\iqtools_2023_10_24']))
+%             addpath(genpath([pwd '\iqtools_2023_10_24']))
             addpath(genpath([pwd '\Packet-Creator-VHT']))
             addpath(genpath([pwd '\Functions']))
             pwd
@@ -363,8 +379,11 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                     catch
                         disp("Error in rfsocBf")
                         if not(isempty(app.commands))
+                            oldComs = app.commands;
                             writeline(app.tcp_client, app.commands);
-                            app.commands = [];
+                            if string(oldComs) == string(app.commands)
+                                app.commands = [];
+                            end
                         else
                             writeline(app.tcp_client, 'alive 1');           
                         end
@@ -398,8 +417,10 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                         estimated_angle = [estimated_angle NaN NaN]; % To prevent errors in xlines indexing
                         am = guiXline(am, app.UIAxes, main, estimated_angle(1), 'right');
                         am2 = guiXline(am2, app.UIAxes2, main, estimated_angle(1), 'right');
-                        adac = guiXline(adac, app.UIAxes, dacmain, app.dacAngle, 'left');
-                        adac2 = guiXline(adac2, app.UIAxes2, dacmain, app.dacAngle, 'left');
+                        if app.dacBFon
+                            adac = guiXline(adac, app.UIAxes, dacmain, app.dacAngle, 'left');
+                            adac2 = guiXline(adac2, app.UIAxes2, dacmain, app.dacAngle, 'left');
+                        end
 %%
                         if sum(~isnan(estimated_angle)) > 1
                             bs = guiXline(bs, app.UIAxes, sub, estimated_angle(2), 'center');
@@ -484,7 +505,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                         case 'Tr_s'
                             app.dacAngle = round(estimated_angle(1)/10);   
                         case 'Retr_s'
-                            app.dacAngle = round(-estimated_angle(1)/10); 
+                            app.dacAngle = round(-estimated_angle(1)/10);                            
                         otherwise 
                             app.dacAngle = app.AngleSpinner.Value;
                     end
@@ -497,8 +518,11 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                     commandsHandler(app, ['dphase ' strjoin(arrayfun(@num2str, app.dphase, 'UniformOutput', false), '/');]);
                 end
                 if not(isempty(app.commands))
+                    oldComs = app.commands;
                     writeline(app.tcp_client, app.commands);
-                    app.commands = [];
+                    if string(oldComs) == string(app.commands)
+                        app.commands = [];
+                    end
                 else
                     writeline(app.tcp_client, 'alive 1');           
                 end
@@ -730,6 +754,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         % Value changed function: CustomCommandTextArea
         function CustomCommandTextAreaValueChanged(app, event)
             commandsHandler(app, string(app.CustomCommandTextArea.Value));
+            disp(app.commands)
         end
 
         % Button pushed function: RecalibrateADCsButton
@@ -1011,7 +1036,122 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
 
         % Value changed function: DACBFmodeListBox
         function DACBFmodeListBoxValueChanged(app, event)
-            app.dacBF = app.DACBFmodeListBox.Value;            
+            app.dacBF = app.DACBFmodeListBox.Value;
+            if string(app.dacBF) == 'Off'
+                app.dacBFon = 0;
+            else 
+                app.dacBFon = 1;
+            end
+        end
+
+        % Callback function
+        function SendButtonPushed(app, event)
+            control
+            commandsHandler(app, ['source ' num2str(app.dacSignalType) '/' num2str(app.dacSR) '/' ...
+                num2str(app.dacFc) '/' num2str(app.dacFe) '/' num2str(app.dacAmp)]);
+        end
+
+        % Value changed function: ChannelcontrolDropDown
+        function ChannelcontrolDropDownValueChanged(app, event)
+            app.manualControlState = app.ChannelcontrolDropDown.Value;
+            switch app.manualControlState
+                case "DAC gain"
+                    app.dacGain
+                    app.Ch1Spinner.Value = app.dacGain(1);
+                    app.Ch2Spinner.Value = app.dacGain(2);
+                    app.Ch3Spinner.Value = app.dacGain(3);
+                    app.Ch4Spinner.Value = app.dacGain(4);
+                case "DAC phase"
+                    app.dphase
+                    app.Ch1Spinner.Value = app.dphase(1);
+                    app.Ch2Spinner.Value = app.dphase(2);
+                    app.Ch3Spinner.Value = app.dphase(3);
+                    app.Ch4Spinner.Value = app.dphase(4);
+                case "ADC gain"
+                    app.adcGain
+                    app.Ch1Spinner.Value = app.adcGain(1);
+                    app.Ch2Spinner.Value = app.adcGain(2);
+                    app.Ch3Spinner.Value = app.adcGain(3);
+                    app.Ch4Spinner.Value = app.adcGain(4);
+                case "ADC phase"
+                    app.phase
+                    app.Ch1Spinner.Value = app.phase(1);
+                    app.Ch2Spinner.Value = app.phase(2);
+                    app.Ch3Spinner.Value = app.phase(3);
+                    app.Ch4Spinner.Value = app.phase(4);
+            end
+        end
+
+        % Value changed function: Ch1Spinner
+        function Ch1SpinnerValueChanged(app, event)
+            switch app.manualControlState
+                case "DAC gain"
+                    app.dacGain(1) = app.Ch1Spinner.Value;
+                    commandsHandler(app, ['dgain ' strjoin(arrayfun(@num2str, app.dacGain, 'UniformOutput', false), '/');]);
+                case "DAC phase"
+                    app.dphase(1) = app.Ch1Spinner.Value;
+                    commandsHandler(app, ['dphase ' strjoin(arrayfun(@num2str, app.dphase*100, 'UniformOutput', false), '/');]);
+                case "ADC gain"
+                    app.adcGain(1) = app.Ch1Spinner.Value;
+                    commandsHandler(app, ['again ' strjoin(arrayfun(@num2str, app.adcGain, 'UniformOutput', false), '/');]);                
+                case "ADC phase"
+                    app.phase(1) = app.Ch1Spinner.Value;
+                    commandsHandler(app, ['phase ' strjoin(arrayfun(@num2str, app.phase*100, 'UniformOutput', false), '/');]);
+            end            
+        end
+
+        % Value changed function: Ch2Spinner
+        function Ch2SpinnerValueChanged(app, event)
+            switch app.manualControlState
+                case "DAC gain"
+                    app.dacGain(2) = app.Ch2Spinner.Value;
+                    commandsHandler(app, ['dgain ' strjoin(arrayfun(@num2str, app.dacGain, 'UniformOutput', false), '/');]);
+                case "DAC phase"
+                    app.dphase(2) = app.Ch2Spinner.Value;
+                    commandsHandler(app, ['dphase ' strjoin(arrayfun(@num2str, app.dphase*100, 'UniformOutput', false), '/');]);
+                case "ADC gain"
+                    app.adcGain(2) = app.Ch2Spinner.Value;
+                    commandsHandler(app, ['again ' strjoin(arrayfun(@num2str, app.adcGain, 'UniformOutput', false), '/');]);                
+                case "ADC phase"
+                    app.phase(2) = app.Ch2Spinner.Value;
+                    commandsHandler(app, ['phase ' strjoin(arrayfun(@num2str, app.phase*100, 'UniformOutput', false), '/');]);
+            end             
+        end
+
+        % Value changed function: Ch3Spinner
+        function Ch3SpinnerValueChanged(app, event)
+            switch app.manualControlState
+                case "DAC gain"
+                    app.dacGain(3) = app.Ch3Spinner.Value;
+                    commandsHandler(app, ['dgain ' strjoin(arrayfun(@num2str, app.dacGain, 'UniformOutput', false), '/');]);
+                case "DAC phase"
+                    app.dphase(3) = app.Ch3Spinner.Value;
+                    commandsHandler(app, ['dphase ' strjoin(arrayfun(@num2str, app.dphase*100, 'UniformOutput', false), '/');]);
+                case "ADC gain"
+                    app.adcGain(3) = app.Ch3Spinner.Value;
+                    commandsHandler(app, ['again ' strjoin(arrayfun(@num2str, app.adcGain, 'UniformOutput', false), '/');]);                
+                case "ADC phase"
+                    app.phase(3) = app.Ch3Spinner.Value;
+                    commandsHandler(app, ['phase ' strjoin(arrayfun(@num2str, app.phase*100, 'UniformOutput', false), '/');]);
+            end                
+        end
+
+        % Value changed function: Ch4Spinner
+        function Ch4SpinnerValueChanged(app, event)
+            switch app.manualControlState
+                case "DAC gain"
+                    app.dacGain(4) = app.Ch4Spinner.Value;
+                    commandsHandler(app, ['dgain ' strjoin(arrayfun(@num2str, app.dacGain, 'UniformOutput', false), '/');]);
+                case "DAC phase"
+                    app.dphase(4) = app.Ch4Spinner.Value;
+                    commandsHandler(app, ['dphase ' strjoin(arrayfun(@num2str, app.dphase*100, 'UniformOutput', false), '/');]);
+                case "ADC gain"
+                    app.adcGain(4) = app.Ch4Spinner.Value;
+                    commandsHandler(app, ['again ' strjoin(arrayfun(@num2str, app.adcGain, 'UniformOutput', false), '/');]);                
+                case "ADC phase"
+                    app.phase(4) = app.Ch4Spinner.Value;
+                    commandsHandler(app, ['phase ' strjoin(arrayfun(@num2str, app.phase*100, 'UniformOutput', false), '/');]);
+            end 
         end
 
         % Changes arrangement of the app based on UIFigure width
@@ -1069,7 +1209,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
 
             % Create TabGroup
             app.TabGroup = uitabgroup(app.LeftPanel);
-            app.TabGroup.Position = [9 224 219 705];
+            app.TabGroup.Position = [9 209 219 720];
 
             % Create MainTab
             app.MainTab = uitab(app.TabGroup);
@@ -1078,65 +1218,65 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             % Create DOAresolutionEditField_3Label
             app.DOAresolutionEditField_3Label = uilabel(app.MainTab);
             app.DOAresolutionEditField_3Label.HorizontalAlignment = 'right';
-            app.DOAresolutionEditField_3Label.Position = [23 642 58 28];
+            app.DOAresolutionEditField_3Label.Position = [23 657 58 28];
             app.DOAresolutionEditField_3Label.Text = {'DOA'; 'resolution'};
 
             % Create DOAresolutionEditField
             app.DOAresolutionEditField = uieditfield(app.MainTab, 'numeric');
             app.DOAresolutionEditField.Limits = [0.0001 Inf];
             app.DOAresolutionEditField.ValueChangedFcn = createCallbackFcn(app, @DOAresolutionEditFieldValueChanged, true);
-            app.DOAresolutionEditField.Position = [96 648 77 22];
+            app.DOAresolutionEditField.Position = [96 663 77 22];
             app.DOAresolutionEditField.Value = 1;
 
             % Create DOAtypeListBoxLabel
             app.DOAtypeListBoxLabel = uilabel(app.MainTab);
             app.DOAtypeListBoxLabel.HorizontalAlignment = 'right';
-            app.DOAtypeListBoxLabel.Position = [-9 572 79 43];
+            app.DOAtypeListBoxLabel.Position = [-9 587 79 43];
             app.DOAtypeListBoxLabel.Text = {'DOA'; 'type'};
 
             % Create DOAtypeListBox
             app.DOAtypeListBox = uilistbox(app.MainTab);
             app.DOAtypeListBox.Items = {'MVDR', 'MVDRman', 'MVDRman_corr', 'MUSIC', 'Beamscan', 'MUSICR', 'ESPRITE', 'ESPRITEBS', 'WSFR'};
             app.DOAtypeListBox.ValueChangedFcn = createCallbackFcn(app, @DOAtypeListBoxValueChanged, true);
-            app.DOAtypeListBox.Position = [74 443 98 174];
+            app.DOAtypeListBox.Position = [74 458 113 174];
             app.DOAtypeListBox.Value = 'MVDR';
 
             % Create BFtypeListBoxLabel
             app.BFtypeListBoxLabel = uilabel(app.MainTab);
             app.BFtypeListBoxLabel.HorizontalAlignment = 'right';
-            app.BFtypeListBoxLabel.Position = [-8 398 79 43];
+            app.BFtypeListBoxLabel.Position = [-8 413 79 43];
             app.BFtypeListBoxLabel.Text = {'BF'; 'type'};
 
             % Create BFtypeListBox
             app.BFtypeListBox = uilistbox(app.MainTab);
             app.BFtypeListBox.Items = {'Without', 'Steering', 'MVDR', 'DMR', 'PC', 'PC_corr', 'LCMV', 'RVL', 'RAB PC', 'DL MVDR', 'DL ITER MVDR', 'QCB'};
             app.BFtypeListBox.ValueChangedFcn = createCallbackFcn(app, @BFtypeListBoxValueChanged, true);
-            app.BFtypeListBox.Position = [75 210 98 233];
+            app.BFtypeListBox.Position = [75 225 112 233];
             app.BFtypeListBox.Value = 'Steering';
 
             % Create AngleSpinnerLabel
             app.AngleSpinnerLabel = uilabel(app.MainTab);
             app.AngleSpinnerLabel.HorizontalAlignment = 'right';
-            app.AngleSpinnerLabel.Position = [44 148 36 22];
+            app.AngleSpinnerLabel.Position = [39 179 36 22];
             app.AngleSpinnerLabel.Text = 'Angle';
 
             % Create AngleSpinner
             app.AngleSpinner = uispinner(app.MainTab);
             app.AngleSpinner.Limits = [-90 90];
             app.AngleSpinner.ValueChangedFcn = createCallbackFcn(app, @AngleSpinnerValueChanged, true);
-            app.AngleSpinner.Position = [95 148 77 22];
+            app.AngleSpinner.Position = [90 179 77 22];
 
             % Create DACBFmodeListBoxLabel
             app.DACBFmodeListBoxLabel = uilabel(app.MainTab);
             app.DACBFmodeListBoxLabel.HorizontalAlignment = 'right';
-            app.DACBFmodeListBoxLabel.Position = [13 91 54 27];
+            app.DACBFmodeListBoxLabel.Position = [10 146 54 27];
             app.DACBFmodeListBoxLabel.Text = {'DAC'; 'BF mode'};
 
             % Create DACBFmodeListBox
             app.DACBFmodeListBox = uilistbox(app.MainTab);
-            app.DACBFmodeListBox.Items = {'GUI', 'Random', 'Scaning', 'Rescaning', 'Tracking', 'Retracking', 'Tr_s', 'Retr_s'};
+            app.DACBFmodeListBox.Items = {'GUI', 'Random', 'Scaning', 'Rescaning', 'Tracking', 'Retracking', 'Tr_s', 'Retr_s', 'Off'};
             app.DACBFmodeListBox.ValueChangedFcn = createCallbackFcn(app, @DACBFmodeListBoxValueChanged, true);
-            app.DACBFmodeListBox.Position = [83 7 86 111];
+            app.DACBFmodeListBox.Position = [80 1 89 172];
             app.DACBFmodeListBox.Value = 'GUI';
 
             % Create RXLabel
@@ -1144,14 +1284,14 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.RXLabel.WordWrap = 'on';
             app.RXLabel.FontSize = 16;
             app.RXLabel.FontWeight = 'bold';
-            app.RXLabel.Position = [94 622 25 22];
+            app.RXLabel.Position = [94 637 25 22];
             app.RXLabel.Text = 'RX';
 
             % Create TXLabel
             app.TXLabel = uilabel(app.MainTab);
             app.TXLabel.FontSize = 16;
             app.TXLabel.FontWeight = 'bold';
-            app.TXLabel.Position = [94 180 26 22];
+            app.TXLabel.Position = [94 201 26 22];
             app.TXLabel.Text = 'TX';
 
             % Create SystemTab
@@ -1161,20 +1301,20 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             % Create RFSoCFcSpinnerLabel
             app.RFSoCFcSpinnerLabel = uilabel(app.SystemTab);
             app.RFSoCFcSpinnerLabel.HorizontalAlignment = 'right';
-            app.RFSoCFcSpinnerLabel.Position = [17 590 44 27];
+            app.RFSoCFcSpinnerLabel.Position = [17 605 44 27];
             app.RFSoCFcSpinnerLabel.Text = {'RFSoC'; 'Fc'};
 
             % Create RFSoCFcSpinner
             app.RFSoCFcSpinner = uispinner(app.SystemTab);
             app.RFSoCFcSpinner.Limits = [1 10000];
             app.RFSoCFcSpinner.ValueChangedFcn = createCallbackFcn(app, @RFSoCFcSpinnerValueChanged, true);
-            app.RFSoCFcSpinner.Position = [76 595 77 22];
+            app.RFSoCFcSpinner.Position = [76 610 77 22];
             app.RFSoCFcSpinner.Value = 4500;
 
             % Create RFSoCFsSpinnerLabel
             app.RFSoCFsSpinnerLabel = uilabel(app.SystemTab);
             app.RFSoCFsSpinnerLabel.HorizontalAlignment = 'right';
-            app.RFSoCFsSpinnerLabel.Position = [17 557 44 27];
+            app.RFSoCFsSpinnerLabel.Position = [17 572 44 27];
             app.RFSoCFsSpinnerLabel.Text = {'RFSoC'; 'Fs'};
 
             % Create RFSoCFsSpinner
@@ -1182,13 +1322,13 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.RFSoCFsSpinner.Limits = [1 500];
             app.RFSoCFsSpinner.ValueDisplayFormat = '%.0f';
             app.RFSoCFsSpinner.ValueChangedFcn = createCallbackFcn(app, @RFSoCFsSpinnerValueChanged, true);
-            app.RFSoCFsSpinner.Position = [76 562 77 22];
+            app.RFSoCFsSpinner.Position = [76 577 77 22];
             app.RFSoCFsSpinner.Value = 250;
 
             % Create MaxSignalsSpinnerLabel
             app.MaxSignalsSpinnerLabel = uilabel(app.SystemTab);
             app.MaxSignalsSpinnerLabel.HorizontalAlignment = 'right';
-            app.MaxSignalsSpinnerLabel.Position = [48 34 71 22];
+            app.MaxSignalsSpinnerLabel.Position = [48 49 71 22];
             app.MaxSignalsSpinnerLabel.Text = 'Max Signals';
 
             % Create MaxSignalsSpinner
@@ -1196,13 +1336,13 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.MaxSignalsSpinner.Limits = [1 5];
             app.MaxSignalsSpinner.ValueDisplayFormat = '%.0f';
             app.MaxSignalsSpinner.ValueChangedFcn = createCallbackFcn(app, @MaxSignalsSpinnerValueChanged, true);
-            app.MaxSignalsSpinner.Position = [134 34 45 22];
+            app.MaxSignalsSpinner.Position = [134 49 45 22];
             app.MaxSignalsSpinner.Value = 1;
 
             % Create SigBWSpinnerLabel
             app.SigBWSpinnerLabel = uilabel(app.SystemTab);
             app.SigBWSpinnerLabel.HorizontalAlignment = 'right';
-            app.SigBWSpinnerLabel.Position = [36 524 25 28];
+            app.SigBWSpinnerLabel.Position = [36 539 25 28];
             app.SigBWSpinnerLabel.Text = {'Sig'; 'BW'};
 
             % Create SigBWSpinner
@@ -1210,19 +1350,19 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.SigBWSpinner.Limits = [1 500];
             app.SigBWSpinner.ValueDisplayFormat = '%.0f';
             app.SigBWSpinner.ValueChangedFcn = createCallbackFcn(app, @SigBWSpinnerValueChanged, true);
-            app.SigBWSpinner.Position = [76 530 77 22];
+            app.SigBWSpinner.Position = [76 545 77 22];
             app.SigBWSpinner.Value = 249;
 
             % Create LoadVSAsetupButton
             app.LoadVSAsetupButton = uibutton(app.SystemTab, 'push');
             app.LoadVSAsetupButton.ButtonPushedFcn = createCallbackFcn(app, @LoadVSAsetupButtonPushed, true);
-            app.LoadVSAsetupButton.Position = [114 1 102 22];
+            app.LoadVSAsetupButton.Position = [114 16 102 22];
             app.LoadVSAsetupButton.Text = 'Load VSA setup';
 
             % Create ScanBWEditFieldLabel
             app.ScanBWEditFieldLabel = uilabel(app.SystemTab);
             app.ScanBWEditFieldLabel.HorizontalAlignment = 'right';
-            app.ScanBWEditFieldLabel.Position = [11 1 33 28];
+            app.ScanBWEditFieldLabel.Position = [11 16 33 28];
             app.ScanBWEditFieldLabel.Text = {'Scan'; 'BW'};
 
             % Create ScanBWEditField
@@ -1230,63 +1370,63 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.ScanBWEditField.Limits = [2 180];
             app.ScanBWEditField.RoundFractionalValues = 'on';
             app.ScanBWEditField.ValueChangedFcn = createCallbackFcn(app, @ScanBWEditFieldValueChanged, true);
-            app.ScanBWEditField.Position = [59 7 44 22];
+            app.ScanBWEditField.Position = [59 22 44 22];
             app.ScanBWEditField.Value = 180;
 
             % Create RecalibrateADCsButton
             app.RecalibrateADCsButton = uibutton(app.SystemTab, 'push');
             app.RecalibrateADCsButton.ButtonPushedFcn = createCallbackFcn(app, @RecalibrateADCsButtonPushed, true);
-            app.RecalibrateADCsButton.Position = [68 453 100 35];
+            app.RecalibrateADCsButton.Position = [68 468 100 35];
             app.RecalibrateADCsButton.Text = {'Recalibrate'; 'ADCs'};
 
             % Create EvenNyquistZoneCheckBox
             app.EvenNyquistZoneCheckBox = uicheckbox(app.SystemTab);
             app.EvenNyquistZoneCheckBox.ValueChangedFcn = createCallbackFcn(app, @EvenNyquistZoneCheckBoxValueChanged, true);
             app.EvenNyquistZoneCheckBox.Text = 'Even Nyquist Zone';
-            app.EvenNyquistZoneCheckBox.Position = [64 497 123 22];
+            app.EvenNyquistZoneCheckBox.Position = [64 512 123 22];
 
             % Create ADCsLabel
             app.ADCsLabel = uilabel(app.SystemTab);
             app.ADCsLabel.FontWeight = 'bold';
-            app.ADCsLabel.Position = [93 615 38 22];
+            app.ADCsLabel.Position = [93 630 38 22];
             app.ADCsLabel.Text = 'ADCs';
 
             % Create DACsLabel
             app.DACsLabel = uilabel(app.SystemTab);
             app.DACsLabel.FontWeight = 'bold';
-            app.DACsLabel.Position = [93 416 38 22];
+            app.DACsLabel.Position = [93 431 38 22];
             app.DACsLabel.Text = {'DACs'; ''};
 
             % Create RFSoCFcSpinner_2Label
             app.RFSoCFcSpinner_2Label = uilabel(app.SystemTab);
             app.RFSoCFcSpinner_2Label.HorizontalAlignment = 'right';
-            app.RFSoCFcSpinner_2Label.Position = [42 388 44 27];
+            app.RFSoCFcSpinner_2Label.Position = [42 403 44 27];
             app.RFSoCFcSpinner_2Label.Text = {'RFSoC'; 'Fc'};
 
             % Create RFSoCFcSpinner_2
             app.RFSoCFcSpinner_2 = uispinner(app.SystemTab);
             app.RFSoCFcSpinner_2.Limits = [1 10000];
             app.RFSoCFcSpinner_2.ValueChangedFcn = createCallbackFcn(app, @RFSoCFcSpinner_2ValueChanged, true);
-            app.RFSoCFcSpinner_2.Position = [101 393 77 22];
+            app.RFSoCFcSpinner_2.Position = [101 408 77 22];
             app.RFSoCFcSpinner_2.Value = 4500;
 
             % Create dataStreamCheckBox
             app.dataStreamCheckBox = uicheckbox(app.SystemTab);
             app.dataStreamCheckBox.ValueChangedFcn = createCallbackFcn(app, @dataStreamCheckBoxValueChanged, true);
             app.dataStreamCheckBox.Text = 'dataStream';
-            app.dataStreamCheckBox.Position = [133 615 84 22];
+            app.dataStreamCheckBox.Position = [133 630 84 22];
             app.dataStreamCheckBox.Value = true;
 
             % Create EvenNyquistZoneCheckBox_2
             app.EvenNyquistZoneCheckBox_2 = uicheckbox(app.SystemTab);
             app.EvenNyquistZoneCheckBox_2.ValueChangedFcn = createCallbackFcn(app, @EvenNyquistZoneCheckBox_2ValueChanged, true);
             app.EvenNyquistZoneCheckBox_2.Text = 'Even Nyquist Zone';
-            app.EvenNyquistZoneCheckBox_2.Position = [58 355 123 22];
+            app.EvenNyquistZoneCheckBox_2.Position = [58 370 123 22];
 
             % Create SYNCDropDownLabel
             app.SYNCDropDownLabel = uilabel(app.SystemTab);
             app.SYNCDropDownLabel.HorizontalAlignment = 'right';
-            app.SYNCDropDownLabel.Position = [43 643 39 22];
+            app.SYNCDropDownLabel.Position = [43 658 39 22];
             app.SYNCDropDownLabel.Text = 'SYNC';
 
             % Create SYNCDropDown
@@ -1294,92 +1434,153 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.SYNCDropDown.Items = {'all', 'dac', 'none'};
             app.SYNCDropDown.ItemsData = [2 1 0];
             app.SYNCDropDown.ValueChangedFcn = createCallbackFcn(app, @SYNCDropDownValueChanged, true);
-            app.SYNCDropDown.Position = [97 643 100 22];
+            app.SYNCDropDown.Position = [97 658 100 22];
             app.SYNCDropDown.Value = 1;
 
             % Create MirrorCheckBox
             app.MirrorCheckBox = uicheckbox(app.SystemTab);
             app.MirrorCheckBox.ValueChangedFcn = createCallbackFcn(app, @MirrorCheckBoxValueChanged, true);
             app.MirrorCheckBox.Text = 'Mirror';
-            app.MirrorCheckBox.Position = [160 594 54 22];
+            app.MirrorCheckBox.Position = [160 609 54 22];
 
             % Create SyncButton
             app.SyncButton = uibutton(app.SystemTab, 'push');
             app.SyncButton.ButtonPushedFcn = createCallbackFcn(app, @SyncButtonPushed, true);
-            app.SyncButton.Position = [63 63 100 22];
+            app.SyncButton.Position = [64 162 100 22];
             app.SyncButton.Text = 'Sync';
 
             % Create AntennaLabel
             app.AntennaLabel = uilabel(app.SystemTab);
             app.AntennaLabel.FontWeight = 'bold';
-            app.AntennaLabel.Position = [80 226 53 22];
+            app.AntennaLabel.Position = [87 140 53 22];
             app.AntennaLabel.Text = 'Antenna';
 
             % Create AntennaFcSpinnerLabel
             app.AntennaFcSpinnerLabel = uilabel(app.SystemTab);
             app.AntennaFcSpinnerLabel.HorizontalAlignment = 'right';
-            app.AntennaFcSpinnerLabel.Position = [23 198 50 27];
+            app.AntennaFcSpinnerLabel.Position = [30 112 50 27];
             app.AntennaFcSpinnerLabel.Text = {'Antenna'; 'Fc'};
 
             % Create AntennaFcSpinner
             app.AntennaFcSpinner = uispinner(app.SystemTab);
             app.AntennaFcSpinner.Limits = [1 40000];
             app.AntennaFcSpinner.ValueChangedFcn = createCallbackFcn(app, @AntennaFcSpinnerValueChanged, true);
-            app.AntennaFcSpinner.Position = [88 203 105 22];
+            app.AntennaFcSpinner.Position = [95 117 105 22];
             app.AntennaFcSpinner.Value = 4500;
 
             % Create DacSignalDropDownLabel
             app.DacSignalDropDownLabel = uilabel(app.SystemTab);
             app.DacSignalDropDownLabel.HorizontalAlignment = 'right';
-            app.DacSignalDropDownLabel.Position = [43 320 60 22];
+            app.DacSignalDropDownLabel.Position = [43 335 60 22];
             app.DacSignalDropDownLabel.Text = 'DacSignal';
 
             % Create DacSignalDropDown
             app.DacSignalDropDown = uidropdown(app.SystemTab);
             app.DacSignalDropDown.Items = {'OFDM', 'CW', 'SAW', 'Chirp', 'Off'};
             app.DacSignalDropDown.ValueChangedFcn = createCallbackFcn(app, @DacSignalDropDownValueChanged, true);
-            app.DacSignalDropDown.Position = [118 320 68 22];
+            app.DacSignalDropDown.Position = [118 335 68 22];
             app.DacSignalDropDown.Value = 'Off';
 
             % Create FcEditFieldLabel
             app.FcEditFieldLabel = uilabel(app.SystemTab);
             app.FcEditFieldLabel.HorizontalAlignment = 'right';
-            app.FcEditFieldLabel.Position = [4 286 25 22];
+            app.FcEditFieldLabel.Position = [4 301 25 22];
             app.FcEditFieldLabel.Text = 'Fc';
 
             % Create FcEditField
             app.FcEditField = uieditfield(app.SystemTab, 'numeric');
             app.FcEditField.ValueChangedFcn = createCallbackFcn(app, @FcEditFieldValueChanged, true);
-            app.FcEditField.Position = [44 286 25 22];
+            app.FcEditField.Position = [44 301 25 22];
 
             % Create FeEditFieldLabel
             app.FeEditFieldLabel = uilabel(app.SystemTab);
             app.FeEditFieldLabel.HorizontalAlignment = 'right';
-            app.FeEditFieldLabel.Position = [80 286 25 22];
+            app.FeEditFieldLabel.Position = [80 301 25 22];
             app.FeEditFieldLabel.Text = 'Fe';
 
             % Create FeEditField
             app.FeEditField = uieditfield(app.SystemTab, 'numeric');
             app.FeEditField.ValueChangedFcn = createCallbackFcn(app, @FeEditFieldValueChanged, true);
-            app.FeEditField.Position = [113 286 32 22];
+            app.FeEditField.Position = [113 301 32 22];
             app.FeEditField.Value = 50;
 
             % Create SREditFieldLabel
             app.SREditFieldLabel = uilabel(app.SystemTab);
             app.SREditFieldLabel.HorizontalAlignment = 'right';
-            app.SREditFieldLabel.Position = [151 286 25 22];
+            app.SREditFieldLabel.Position = [151 301 25 22];
             app.SREditFieldLabel.Text = 'SR';
 
             % Create SREditField
             app.SREditField = uieditfield(app.SystemTab, 'numeric');
-            app.SREditField.Position = [181 286 26 22];
+            app.SREditField.Position = [181 301 26 22];
             app.SREditField.Value = 1;
 
             % Create MirrorCheckBox_2
             app.MirrorCheckBox_2 = uicheckbox(app.SystemTab);
             app.MirrorCheckBox_2.ValueChangedFcn = createCallbackFcn(app, @MirrorCheckBox_2ValueChanged, true);
             app.MirrorCheckBox_2.Text = 'Mirror';
-            app.MirrorCheckBox_2.Position = [152 416 54 22];
+            app.MirrorCheckBox_2.Position = [152 431 54 22];
+
+            % Create ChannelcontrolDropDownLabel
+            app.ChannelcontrolDropDownLabel = uilabel(app.SystemTab);
+            app.ChannelcontrolDropDownLabel.HorizontalAlignment = 'right';
+            app.ChannelcontrolDropDownLabel.Position = [11 263 50 27];
+            app.ChannelcontrolDropDownLabel.Text = {'Channel'; 'control'};
+
+            % Create ChannelcontrolDropDown
+            app.ChannelcontrolDropDown = uidropdown(app.SystemTab);
+            app.ChannelcontrolDropDown.Items = {'DAC gain', 'DAC phase', 'ADC gain', 'ADC phase'};
+            app.ChannelcontrolDropDown.ValueChangedFcn = createCallbackFcn(app, @ChannelcontrolDropDownValueChanged, true);
+            app.ChannelcontrolDropDown.Position = [76 268 119 22];
+            app.ChannelcontrolDropDown.Value = 'DAC phase';
+
+            % Create Ch1SpinnerLabel
+            app.Ch1SpinnerLabel = uilabel(app.SystemTab);
+            app.Ch1SpinnerLabel.HorizontalAlignment = 'center';
+            app.Ch1SpinnerLabel.Position = [66 249 27 22];
+            app.Ch1SpinnerLabel.Text = 'Ch1';
+
+            % Create Ch1Spinner
+            app.Ch1Spinner = uispinner(app.SystemTab);
+            app.Ch1Spinner.ValueChangedFcn = createCallbackFcn(app, @Ch1SpinnerValueChanged, true);
+            app.Ch1Spinner.HorizontalAlignment = 'center';
+            app.Ch1Spinner.Position = [51 231 63 22];
+
+            % Create Ch2Spinner
+            app.Ch2Spinner = uispinner(app.SystemTab);
+            app.Ch2Spinner.ValueChangedFcn = createCallbackFcn(app, @Ch2SpinnerValueChanged, true);
+            app.Ch2Spinner.HorizontalAlignment = 'center';
+            app.Ch2Spinner.Position = [117 231 63 22];
+
+            % Create Ch2SpinnerLabel
+            app.Ch2SpinnerLabel = uilabel(app.SystemTab);
+            app.Ch2SpinnerLabel.HorizontalAlignment = 'center';
+            app.Ch2SpinnerLabel.Position = [132 249 27 22];
+            app.Ch2SpinnerLabel.Text = 'Ch2';
+
+            % Create Ch3Spinner
+            app.Ch3Spinner = uispinner(app.SystemTab);
+            app.Ch3Spinner.ValueChangedFcn = createCallbackFcn(app, @Ch3SpinnerValueChanged, true);
+            app.Ch3Spinner.HorizontalAlignment = 'center';
+            app.Ch3Spinner.Position = [51 195 63 22];
+
+            % Create Ch3SpinnerLabel
+            app.Ch3SpinnerLabel = uilabel(app.SystemTab);
+            app.Ch3SpinnerLabel.HorizontalAlignment = 'center';
+            app.Ch3SpinnerLabel.Position = [66 213 27 22];
+            app.Ch3SpinnerLabel.Text = 'Ch3';
+
+            % Create Ch4Spinner
+            app.Ch4Spinner = uispinner(app.SystemTab);
+            app.Ch4Spinner.ValueChangedFcn = createCallbackFcn(app, @Ch4SpinnerValueChanged, true);
+            app.Ch4Spinner.HorizontalAlignment = 'center';
+            app.Ch4Spinner.Position = [117 195 63 22];
+
+            % Create Ch4SpinnerLabel
+            app.Ch4SpinnerLabel = uilabel(app.SystemTab);
+            app.Ch4SpinnerLabel.HorizontalAlignment = 'center';
+            app.Ch4SpinnerLabel.Position = [132 213 27 22];
+            app.Ch4SpinnerLabel.Text = 'Ch4';
 
             % Create DownconverterTab
             app.DownconverterTab = uitab(app.TabGroup);
@@ -1388,24 +1589,24 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             % Create Gauge
             app.Gauge = uigauge(app.DownconverterTab, 'semicircular');
             app.Gauge.Limits = [-90 90];
-            app.Gauge.Position = [14 368 189 102];
+            app.Gauge.Position = [14 383 189 102];
 
             % Create StartphasecalibrationsButton
             app.StartphasecalibrationsButton = uibutton(app.DownconverterTab, 'push');
             app.StartphasecalibrationsButton.ButtonPushedFcn = createCallbackFcn(app, @StartphasecalibrationsButtonPushed, true);
-            app.StartphasecalibrationsButton.Position = [41 277 140 58];
+            app.StartphasecalibrationsButton.Position = [41 292 140 58];
             app.StartphasecalibrationsButton.Text = 'Start phase calibrations';
 
             % Create ArduinoprogramButton
             app.ArduinoprogramButton = uibutton(app.DownconverterTab, 'push');
             app.ArduinoprogramButton.ButtonPushedFcn = createCallbackFcn(app, @ArduinoprogramButtonPushed, true);
-            app.ArduinoprogramButton.Position = [57 612 104 23];
+            app.ArduinoprogramButton.Position = [57 627 104 23];
             app.ArduinoprogramButton.Text = 'Arduino program';
 
             % Create StarrangEditFieldLabel
             app.StarrangEditFieldLabel = uilabel(app.DownconverterTab);
             app.StarrangEditFieldLabel.HorizontalAlignment = 'right';
-            app.StarrangEditFieldLabel.Position = [17 341 54 22];
+            app.StarrangEditFieldLabel.Position = [17 356 54 22];
             app.StarrangEditFieldLabel.Text = 'Starr ang';
 
             % Create StarrangEditField
@@ -1413,20 +1614,20 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.StarrangEditField.Limits = [-90 90];
             app.StarrangEditField.RoundFractionalValues = 'on';
             app.StarrangEditField.ValueChangedFcn = createCallbackFcn(app, @StarrangEditFieldValueChanged, true);
-            app.StarrangEditField.Position = [79 341 29 22];
+            app.StarrangEditField.Position = [79 356 29 22];
             app.StarrangEditField.Value = -60;
 
             % Create StepangEditFieldLabel
             app.StepangEditFieldLabel = uilabel(app.DownconverterTab);
             app.StepangEditFieldLabel.HorizontalAlignment = 'right';
-            app.StepangEditFieldLabel.Position = [114 341 53 22];
+            app.StepangEditFieldLabel.Position = [114 356 53 22];
             app.StepangEditFieldLabel.Text = 'Step ang';
 
             % Create StepangEditField
             app.StepangEditField = uieditfield(app.DownconverterTab, 'numeric');
             app.StepangEditField.Limits = [0.01 50];
             app.StepangEditField.ValueChangedFcn = createCallbackFcn(app, @StepangEditFieldValueChanged, true);
-            app.StepangEditField.Position = [175 341 24 22];
+            app.StepangEditField.Position = [175 356 24 22];
             app.StepangEditField.Value = 10;
 
             % Create DebugTab
@@ -1437,194 +1638,194 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.GetPatternButton = uibutton(app.DebugTab, 'state');
             app.GetPatternButton.ValueChangedFcn = createCallbackFcn(app, @GetPatternButtonValueChanged, true);
             app.GetPatternButton.Text = 'GetPattern';
-            app.GetPatternButton.Position = [69 415 100 22];
+            app.GetPatternButton.Position = [69 430 100 22];
 
             % Create CutoffsetEditFieldLabel
             app.CutoffsetEditFieldLabel = uilabel(app.DebugTab);
             app.CutoffsetEditFieldLabel.HorizontalAlignment = 'right';
-            app.CutoffsetEditFieldLabel.Position = [31 253 57 22];
+            app.CutoffsetEditFieldLabel.Position = [31 268 57 22];
             app.CutoffsetEditFieldLabel.Text = 'Cut offset';
 
             % Create CutoffsetEditField
             app.CutoffsetEditField = uieditfield(app.DebugTab, 'numeric');
             app.CutoffsetEditField.ValueChangedFcn = createCallbackFcn(app, @CutoffsetEditFieldValueChanged, true);
-            app.CutoffsetEditField.Position = [131 253 38 22];
+            app.CutoffsetEditField.Position = [131 268 38 22];
             app.CutoffsetEditField.Value = 500;
 
             % Create dataChanEditFieldLabel
             app.dataChanEditFieldLabel = uilabel(app.DebugTab);
             app.dataChanEditFieldLabel.HorizontalAlignment = 'right';
-            app.dataChanEditFieldLabel.Position = [23 280 58 22];
+            app.dataChanEditFieldLabel.Position = [23 295 58 22];
             app.dataChanEditFieldLabel.Text = 'dataChan';
 
             % Create dataChanEditField
             app.dataChanEditField = uieditfield(app.DebugTab, 'numeric');
             app.dataChanEditField.Limits = [1024 131072];
             app.dataChanEditField.ValueChangedFcn = createCallbackFcn(app, @dataChanEditFieldValueChanged, true);
-            app.dataChanEditField.Position = [95 280 74 22];
+            app.dataChanEditField.Position = [95 295 74 22];
             app.dataChanEditField.Value = 16384;
 
             % Create c1CheckBox
             app.c1CheckBox = uicheckbox(app.DebugTab);
             app.c1CheckBox.ValueChangedFcn = createCallbackFcn(app, @c1CheckBoxValueChanged, true);
             app.c1CheckBox.Text = 'c1';
-            app.c1CheckBox.Position = [134 334 35 22];
+            app.c1CheckBox.Position = [134 349 35 22];
 
             % Create c2CheckBox
             app.c2CheckBox = uicheckbox(app.DebugTab);
             app.c2CheckBox.ValueChangedFcn = createCallbackFcn(app, @c2CheckBoxValueChanged, true);
             app.c2CheckBox.Text = 'c2';
-            app.c2CheckBox.Position = [134 307 35 22];
+            app.c2CheckBox.Position = [134 322 35 22];
 
             % Create MatlabPatternCheckBox
             app.MatlabPatternCheckBox = uicheckbox(app.DebugTab);
             app.MatlabPatternCheckBox.ValueChangedFcn = createCallbackFcn(app, @MatlabPatternCheckBoxValueChanged, true);
             app.MatlabPatternCheckBox.Text = 'MatlabPattern';
-            app.MatlabPatternCheckBox.Position = [87 360 97 22];
+            app.MatlabPatternCheckBox.Position = [87 375 97 22];
 
             % Create UpdRateEditFieldLabel
             app.UpdRateEditFieldLabel = uilabel(app.DebugTab);
             app.UpdRateEditFieldLabel.HorizontalAlignment = 'right';
-            app.UpdRateEditFieldLabel.Position = [22 388 55 22];
+            app.UpdRateEditFieldLabel.Position = [22 403 55 22];
             app.UpdRateEditFieldLabel.Text = 'UpdRate';
 
             % Create UpdRateEditField
             app.UpdRateEditField = uieditfield(app.DebugTab, 'numeric');
             app.UpdRateEditField.Limits = [1 Inf];
             app.UpdRateEditField.ValueChangedFcn = createCallbackFcn(app, @UpdRateEditFieldValueChanged, true);
-            app.UpdRateEditField.Position = [92 388 77 22];
+            app.UpdRateEditField.Position = [92 403 77 22];
             app.UpdRateEditField.Value = 10;
 
             % Create DLFEditFieldLabel
             app.DLFEditFieldLabel = uilabel(app.DebugTab);
             app.DLFEditFieldLabel.HorizontalAlignment = 'right';
-            app.DLFEditFieldLabel.Position = [56 502 55 28];
+            app.DLFEditFieldLabel.Position = [56 517 55 28];
             app.DLFEditFieldLabel.Text = 'DLF';
 
             % Create DLFEditField
             app.DLFEditField = uieditfield(app.DebugTab, 'numeric');
             app.DLFEditField.ValueChangedFcn = createCallbackFcn(app, @DLFEditFieldValueChanged2, true);
-            app.DLFEditField.Position = [126 508 43 22];
+            app.DLFEditField.Position = [126 523 43 22];
             app.DLFEditField.Value = 1;
 
             % Create GetSpectrumButton
             app.GetSpectrumButton = uibutton(app.DebugTab, 'state');
             app.GetSpectrumButton.ValueChangedFcn = createCallbackFcn(app, @GetSpectrumButtonValueChanged, true);
             app.GetSpectrumButton.Text = 'GetSpectrum';
-            app.GetSpectrumButton.Position = [69 442 100 22];
+            app.GetSpectrumButton.Position = [69 457 100 22];
 
             % Create BWEditFieldLabel
             app.BWEditFieldLabel = uilabel(app.DebugTab);
             app.BWEditFieldLabel.HorizontalAlignment = 'right';
-            app.BWEditFieldLabel.Position = [56 469 55 28];
+            app.BWEditFieldLabel.Position = [56 484 55 28];
             app.BWEditFieldLabel.Text = 'BW';
 
             % Create BWEditField
             app.BWEditField = uieditfield(app.DebugTab, 'numeric');
             app.BWEditField.Limits = [0 45];
             app.BWEditField.ValueChangedFcn = createCallbackFcn(app, @BWEditFieldValueChanged, true);
-            app.BWEditField.Position = [126 475 43 22];
+            app.BWEditField.Position = [126 490 43 22];
             app.BWEditField.Value = 0.1;
 
             % Create patternCorrCheckBox
             app.patternCorrCheckBox = uicheckbox(app.DebugTab);
             app.patternCorrCheckBox.ValueChangedFcn = createCallbackFcn(app, @patternCorrCheckBoxValueChanged, true);
             app.patternCorrCheckBox.Text = 'patternCorr';
-            app.patternCorrCheckBox.Position = [86 226 83 22];
+            app.patternCorrCheckBox.Position = [86 241 83 22];
 
             % Create mis_angEditFieldLabel
             app.mis_angEditFieldLabel = uilabel(app.DebugTab);
             app.mis_angEditFieldLabel.HorizontalAlignment = 'right';
-            app.mis_angEditFieldLabel.Position = [60 643 51 22];
+            app.mis_angEditFieldLabel.Position = [60 658 51 22];
             app.mis_angEditFieldLabel.Text = 'mis_ang';
 
             % Create mis_angEditField
             app.mis_angEditField = uieditfield(app.DebugTab, 'numeric');
             app.mis_angEditField.Limits = [0.1 20];
             app.mis_angEditField.ValueChangedFcn = createCallbackFcn(app, @mis_angEditFieldValueChanged, true);
-            app.mis_angEditField.Position = [126 643 43 22];
+            app.mis_angEditField.Position = [126 658 43 22];
             app.mis_angEditField.Value = 15;
 
             % Create alg_scan_resEditFieldLabel
             app.alg_scan_resEditFieldLabel = uilabel(app.DebugTab);
             app.alg_scan_resEditFieldLabel.HorizontalAlignment = 'right';
-            app.alg_scan_resEditFieldLabel.Position = [34 616 77 22];
+            app.alg_scan_resEditFieldLabel.Position = [34 631 77 22];
             app.alg_scan_resEditFieldLabel.Text = 'alg_scan_res';
 
             % Create alg_scan_resEditField
             app.alg_scan_resEditField = uieditfield(app.DebugTab, 'numeric');
             app.alg_scan_resEditField.Limits = [0.001 10];
             app.alg_scan_resEditField.ValueChangedFcn = createCallbackFcn(app, @alg_scan_resEditFieldValueChanged, true);
-            app.alg_scan_resEditField.Position = [126 616 43 22];
+            app.alg_scan_resEditField.Position = [126 631 43 22];
             app.alg_scan_resEditField.Value = 1;
 
             % Create gammaEditFieldLabel
             app.gammaEditFieldLabel = uilabel(app.DebugTab);
             app.gammaEditFieldLabel.HorizontalAlignment = 'right';
-            app.gammaEditFieldLabel.Position = [65 589 46 22];
+            app.gammaEditFieldLabel.Position = [65 604 46 22];
             app.gammaEditFieldLabel.Text = 'gamma';
 
             % Create gammaEditField
             app.gammaEditField = uieditfield(app.DebugTab, 'numeric');
             app.gammaEditField.Limits = [0 Inf];
             app.gammaEditField.ValueChangedFcn = createCallbackFcn(app, @gammaEditFieldValueChanged, true);
-            app.gammaEditField.Position = [126 589 43 22];
+            app.gammaEditField.Position = [126 604 43 22];
             app.gammaEditField.Value = 1;
 
             % Create alphaEditFieldLabel
             app.alphaEditFieldLabel = uilabel(app.DebugTab);
             app.alphaEditFieldLabel.HorizontalAlignment = 'right';
-            app.alphaEditFieldLabel.Position = [76 562 35 22];
+            app.alphaEditFieldLabel.Position = [76 577 35 22];
             app.alphaEditFieldLabel.Text = 'alpha';
 
             % Create alphaEditField
             app.alphaEditField = uieditfield(app.DebugTab, 'numeric');
             app.alphaEditField.Limits = [0 Inf];
             app.alphaEditField.ValueChangedFcn = createCallbackFcn(app, @alphaEditFieldValueChanged, true);
-            app.alphaEditField.Position = [126 562 43 22];
+            app.alphaEditField.Position = [126 577 43 22];
             app.alphaEditField.Value = 1.1;
 
             % Create iterEditFieldLabel
             app.iterEditFieldLabel = uilabel(app.DebugTab);
             app.iterEditFieldLabel.HorizontalAlignment = 'right';
-            app.iterEditFieldLabel.Position = [86 535 25 22];
+            app.iterEditFieldLabel.Position = [86 550 25 22];
             app.iterEditFieldLabel.Text = 'iter';
 
             % Create iterEditField
             app.iterEditField = uieditfield(app.DebugTab, 'numeric');
             app.iterEditField.Limits = [1 Inf];
             app.iterEditField.ValueChangedFcn = createCallbackFcn(app, @iterEditFieldValueChanged, true);
-            app.iterEditField.Position = [126 535 43 22];
+            app.iterEditField.Position = [126 550 43 22];
             app.iterEditField.Value = 1;
 
             % Create CutterCheckBox
             app.CutterCheckBox = uicheckbox(app.DebugTab);
             app.CutterCheckBox.ValueChangedFcn = createCallbackFcn(app, @CutterCheckBoxValueChanged, true);
             app.CutterCheckBox.Text = 'Cutter';
-            app.CutterCheckBox.Position = [89 205 55 22];
+            app.CutterCheckBox.Position = [89 220 55 22];
 
             % Create DebugCheckBox_2
             app.DebugCheckBox_2 = uicheckbox(app.DebugTab);
             app.DebugCheckBox_2.ValueChangedFcn = createCallbackFcn(app, @DebugCheckBox_2ValueChanged, true);
             app.DebugCheckBox_2.Text = 'Debug';
-            app.DebugCheckBox_2.Position = [91 180 57 22];
+            app.DebugCheckBox_2.Position = [91 195 57 22];
 
             % Create NumberofsavedfilesLabel
             app.NumberofsavedfilesLabel = uilabel(app.DebugTab);
             app.NumberofsavedfilesLabel.HorizontalAlignment = 'right';
-            app.NumberofsavedfilesLabel.Position = [18 142 62 27];
+            app.NumberofsavedfilesLabel.Position = [18 157 62 27];
             app.NumberofsavedfilesLabel.Text = {'Number of'; 'saved files'};
 
             % Create NumberofsavedfilesEditField
             app.NumberofsavedfilesEditField = uieditfield(app.DebugTab, 'numeric');
             app.NumberofsavedfilesEditField.Limits = [0 10000];
             app.NumberofsavedfilesEditField.ValueChangedFcn = createCallbackFcn(app, @NumberofsavedfilesEditFieldValueChanged, true);
-            app.NumberofsavedfilesEditField.Position = [95 147 100 22];
+            app.NumberofsavedfilesEditField.Position = [95 162 100 22];
 
             % Create SaveButton
             app.SaveButton = uibutton(app.DebugTab, 'push');
             app.SaveButton.ButtonPushedFcn = createCallbackFcn(app, @SaveButtonPushed, true);
-            app.SaveButton.Position = [82 117 100 22];
+            app.SaveButton.Position = [82 132 100 22];
             app.SaveButton.Text = 'Save';
 
             % Create AvgSpinnerLabel
