@@ -116,6 +116,15 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         CutoffsetEditField             matlab.ui.control.NumericEditField
         CutoffsetEditFieldLabel        matlab.ui.control.Label
         GetPatternButton               matlab.ui.control.StateButton
+        DevicesTab                     matlab.ui.container.Tab
+        ModulationCheckBox             matlab.ui.control.CheckBox
+        PowerCheckBox                  matlab.ui.control.CheckBox
+        AmplitudeSpinner               matlab.ui.control.Spinner
+        AmplitudeSpinnerLabel          matlab.ui.control.Label
+        FrequencySpinner               matlab.ui.control.Spinner
+        FrequencySpinnerLabel          matlab.ui.control.Label
+        DevicecontrolDropDown          matlab.ui.control.DropDown
+        DevicecontrolDropDownLabel     matlab.ui.control.Label
         ResetButton                    matlab.ui.control.StateButton
         RightPanel                     matlab.ui.container.Panel
         GridLayout2                    matlab.ui.container.GridLayout
@@ -181,11 +190,19 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         %         server_ip = '132.68.138.226'; % Use the appropriate IP address or hostname http://192.168.3.1/lab
         server_port = 4000; % Use the same port number used in the Python server
 
-%         gen_ip = '132.68.138.225';
+
+        %% Devices
+        %         gen_ip = '132.68.138.225';
         gen_ip = 'A-N5182B-052325';
 
         
         gen_port = 5025;
+
+        visaDevList;
+        currentDevIP = "";
+        currentDev = "";
+        lorx = struct('Model', "N5182B", 'IP', "", "State", 1, 'Power', 5, 'Fc', 2000, 'Mod', 0);
+        lotx = struct('Model', "E8267D", 'IP', "132.68.138.226", "State", 1, 'Power', 10, 'Fc', 33000, 'Mod', 0);  
 
         %% Upconverter
         phase_cal = 0;
@@ -277,6 +294,8 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             drawnow%!!!!
             [app.data_v, app.setup_v] = vsaDdc(0, app.fsRfsoc, app.fsRfsoc, app.dataChan, 1);
             vsaSetup(app.setupFile)
+            app.visaDevList = visadevlist;
+            app.DevicecontrolDropDown.Items = [app.visaDevList.Model; "E8267D"];
             commandsHandler(app, ['da ' num2str(app.da)]);
             commandsHandler(app, ['dataStream ' num2str(app.dataStream)]);
             disp(app.commands)
@@ -355,7 +374,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                 num2str(app.fc_d0/1e6) '/' num2str(app.nyquistZone_d0) '/' ...
                 num2str(app.fc_d1/1e6) '/' num2str(app.nyquistZone_d1) ...
                 '# dataChan ' num2str(app.dataChan*8)];
-            warning('off','all')
+            warning('off','all')            
             while true
                 if app.reset_req
                     resetApp(app);
@@ -1056,25 +1075,37 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.manualControlState = app.ChannelcontrolDropDown.Value;
             switch app.manualControlState
                 case "DAC gain"
-                    app.dacGain
+                    app.Ch1Spinner.Limits = [0, 199];
+                    app.Ch2Spinner.Limits = [0, 199];
+                    app.Ch3Spinner.Limits = [0, 199];
+                    app.Ch4Spinner.Limits = [0, 199];
                     app.Ch1Spinner.Value = app.dacGain(1);
                     app.Ch2Spinner.Value = app.dacGain(2);
                     app.Ch3Spinner.Value = app.dacGain(3);
                     app.Ch4Spinner.Value = app.dacGain(4);
                 case "DAC phase"
-                    app.dphase
+                    app.Ch1Spinner.Limits = [-179, 179];
+                    app.Ch2Spinner.Limits = [-179, 179];
+                    app.Ch3Spinner.Limits = [-179, 179];
+                    app.Ch4Spinner.Limits = [-179, 179];
                     app.Ch1Spinner.Value = app.dphase(1);
                     app.Ch2Spinner.Value = app.dphase(2);
                     app.Ch3Spinner.Value = app.dphase(3);
                     app.Ch4Spinner.Value = app.dphase(4);
                 case "ADC gain"
-                    app.adcGain
+                    app.Ch1Spinner.Limits = [1, 199];
+                    app.Ch2Spinner.Limits = [1, 199];
+                    app.Ch3Spinner.Limits = [1, 199];
+                    app.Ch4Spinner.Limits = [1, 199];
                     app.Ch1Spinner.Value = app.adcGain(1);
                     app.Ch2Spinner.Value = app.adcGain(2);
                     app.Ch3Spinner.Value = app.adcGain(3);
                     app.Ch4Spinner.Value = app.adcGain(4);
                 case "ADC phase"
-                    app.phase
+                    app.Ch1Spinner.Limits = [-179, 179];
+                    app.Ch2Spinner.Limits = [-179, 179];
+                    app.Ch3Spinner.Limits = [-179, 179];
+                    app.Ch4Spinner.Limits = [-179, 179];
                     app.Ch1Spinner.Value = app.phase(1);
                     app.Ch2Spinner.Value = app.phase(2);
                     app.Ch3Spinner.Value = app.phase(3);
@@ -1152,6 +1183,55 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                     app.phase(4) = app.Ch4Spinner.Value;
                     commandsHandler(app, ['phase ' strjoin(arrayfun(@num2str, app.phase*100, 'UniformOutput', false), '/');]);
             end 
+        end
+
+        % Value changed function: DevicecontrolDropDown
+        function DevicecontrolDropDownValueChanged(app, event)
+            app.currentDev = string(app.DevicecontrolDropDown.Items(app.DevicecontrolDropDown.Value));
+            try
+                app.currentDevIP = regexp(app.visaDevList.ResourceName(app.DevicecontrolDropDown.Value), '\d+\.\d+\.\d+\.\d+', 'match', 'once');
+            catch
+                disp(app.lotx.Model)
+            end
+            switch app.currentDev
+                case app.lorx.Model
+                    app.lorx.IP = app.currentDevIP;
+                    app.PowerCheckBox.Value = app.lorx.State;
+                    app.ModulationCheckBox.Value = app.lorx.Mod;
+                    app.FrequencySpinner.Value = app.lorx.Fc;
+                    app.AmplitudeSpinner.Value = app.lorx.Power;
+                case app.lotx.Model
+                    app.currentDevIP = app.lotx.IP;
+                    app.PowerCheckBox.Value = app.lotx.State;
+                    app.ModulationCheckBox.Value = app.lotx.Mod;
+                    app.FrequencySpinner.Value = app.lotx.Fc;
+                    app.AmplitudeSpinner.Value = app.lotx.Power;
+                otherwise
+                    app.PowerCheckBox.Value = 0;
+                    app.ModulationCheckBox.Value = 0;
+                    app.FrequencySpinner.Value = 100;
+                    app.AmplitudeSpinner.Value = -100;
+            end
+        end
+
+        % Value changed function: FrequencySpinner
+        function FrequencySpinnerValueChanged(app, event)
+            genCtrl(app.currentDevIP, app.gen_port, app.PowerCheckBox.Value, app.AmplitudeSpinner.Value, app.FrequencySpinner.Value*1e6, app.ModulationCheckBox.Value);
+        end
+
+        % Value changed function: AmplitudeSpinner
+        function AmplitudeSpinnerValueChanged(app, event)
+            genCtrl(app.currentDevIP, app.gen_port, app.PowerCheckBox.Value, app.AmplitudeSpinner.Value, app.FrequencySpinner.Value*1e6, app.ModulationCheckBox.Value);
+        end
+
+        % Value changed function: PowerCheckBox
+        function PowerCheckBoxValueChanged2(app, event)
+            genCtrl(app.currentDevIP, app.gen_port, app.PowerCheckBox.Value, app.AmplitudeSpinner.Value, app.FrequencySpinner.Value*1e6, app.ModulationCheckBox.Value);            
+        end
+
+        % Value changed function: ModulationCheckBox
+        function ModulationCheckBoxValueChanged(app, event)
+            genCtrl(app.currentDevIP, app.gen_port, app.PowerCheckBox.Value, app.AmplitudeSpinner.Value, app.FrequencySpinner.Value*1e6, app.ModulationCheckBox.Value);            
         end
 
         % Changes arrangement of the app based on UIFigure width
@@ -1542,12 +1622,14 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
 
             % Create Ch1Spinner
             app.Ch1Spinner = uispinner(app.SystemTab);
+            app.Ch1Spinner.Limits = [-179 179];
             app.Ch1Spinner.ValueChangedFcn = createCallbackFcn(app, @Ch1SpinnerValueChanged, true);
             app.Ch1Spinner.HorizontalAlignment = 'center';
             app.Ch1Spinner.Position = [51 231 63 22];
 
             % Create Ch2Spinner
             app.Ch2Spinner = uispinner(app.SystemTab);
+            app.Ch2Spinner.Limits = [-179 179];
             app.Ch2Spinner.ValueChangedFcn = createCallbackFcn(app, @Ch2SpinnerValueChanged, true);
             app.Ch2Spinner.HorizontalAlignment = 'center';
             app.Ch2Spinner.Position = [117 231 63 22];
@@ -1560,6 +1642,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
 
             % Create Ch3Spinner
             app.Ch3Spinner = uispinner(app.SystemTab);
+            app.Ch3Spinner.Limits = [-179 179];
             app.Ch3Spinner.ValueChangedFcn = createCallbackFcn(app, @Ch3SpinnerValueChanged, true);
             app.Ch3Spinner.HorizontalAlignment = 'center';
             app.Ch3Spinner.Position = [51 195 63 22];
@@ -1572,6 +1655,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
 
             % Create Ch4Spinner
             app.Ch4Spinner = uispinner(app.SystemTab);
+            app.Ch4Spinner.Limits = [-179 179];
             app.Ch4Spinner.ValueChangedFcn = createCallbackFcn(app, @Ch4SpinnerValueChanged, true);
             app.Ch4Spinner.HorizontalAlignment = 'center';
             app.Ch4Spinner.Position = [117 195 63 22];
@@ -1827,6 +1911,60 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.SaveButton.ButtonPushedFcn = createCallbackFcn(app, @SaveButtonPushed, true);
             app.SaveButton.Position = [82 132 100 22];
             app.SaveButton.Text = 'Save';
+
+            % Create DevicesTab
+            app.DevicesTab = uitab(app.TabGroup);
+            app.DevicesTab.Title = 'Devices';
+
+            % Create DevicecontrolDropDownLabel
+            app.DevicecontrolDropDownLabel = uilabel(app.DevicesTab);
+            app.DevicecontrolDropDownLabel.HorizontalAlignment = 'right';
+            app.DevicecontrolDropDownLabel.Position = [1 642 82 22];
+            app.DevicecontrolDropDownLabel.Text = 'Device control';
+
+            % Create DevicecontrolDropDown
+            app.DevicecontrolDropDown = uidropdown(app.DevicesTab);
+            app.DevicecontrolDropDown.ItemsData = [1 2 3 4 5 6 7 8 9];
+            app.DevicecontrolDropDown.ValueChangedFcn = createCallbackFcn(app, @DevicecontrolDropDownValueChanged, true);
+            app.DevicecontrolDropDown.Position = [98 642 100 22];
+            app.DevicecontrolDropDown.Value = 1;
+
+            % Create FrequencySpinnerLabel
+            app.FrequencySpinnerLabel = uilabel(app.DevicesTab);
+            app.FrequencySpinnerLabel.HorizontalAlignment = 'right';
+            app.FrequencySpinnerLabel.Position = [11 604 62 22];
+            app.FrequencySpinnerLabel.Text = 'Frequency';
+
+            % Create FrequencySpinner
+            app.FrequencySpinner = uispinner(app.DevicesTab);
+            app.FrequencySpinner.ValueDisplayFormat = '%.0f';
+            app.FrequencySpinner.ValueChangedFcn = createCallbackFcn(app, @FrequencySpinnerValueChanged, true);
+            app.FrequencySpinner.Position = [88 604 100 22];
+
+            % Create AmplitudeSpinnerLabel
+            app.AmplitudeSpinnerLabel = uilabel(app.DevicesTab);
+            app.AmplitudeSpinnerLabel.HorizontalAlignment = 'right';
+            app.AmplitudeSpinnerLabel.Position = [14 574 59 22];
+            app.AmplitudeSpinnerLabel.Text = 'Amplitude';
+
+            % Create AmplitudeSpinner
+            app.AmplitudeSpinner = uispinner(app.DevicesTab);
+            app.AmplitudeSpinner.Limits = [-144 30];
+            app.AmplitudeSpinner.ValueDisplayFormat = '%.0f';
+            app.AmplitudeSpinner.ValueChangedFcn = createCallbackFcn(app, @AmplitudeSpinnerValueChanged, true);
+            app.AmplitudeSpinner.Position = [88 574 100 22];
+
+            % Create PowerCheckBox
+            app.PowerCheckBox = uicheckbox(app.DevicesTab);
+            app.PowerCheckBox.ValueChangedFcn = createCallbackFcn(app, @PowerCheckBoxValueChanged2, true);
+            app.PowerCheckBox.Text = 'Power';
+            app.PowerCheckBox.Position = [23 533 56 22];
+
+            % Create ModulationCheckBox
+            app.ModulationCheckBox = uicheckbox(app.DevicesTab);
+            app.ModulationCheckBox.ValueChangedFcn = createCallbackFcn(app, @ModulationCheckBoxValueChanged, true);
+            app.ModulationCheckBox.Text = 'Modulation';
+            app.ModulationCheckBox.Position = [119 534 80 22];
 
             % Create AvgSpinnerLabel
             app.AvgSpinnerLabel = uilabel(app.LeftPanel);
