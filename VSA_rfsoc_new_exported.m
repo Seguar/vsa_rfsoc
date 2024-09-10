@@ -117,6 +117,8 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         CutoffsetEditFieldLabel        matlab.ui.control.Label
         GetPatternButton               matlab.ui.control.StateButton
         DevicesTab                     matlab.ui.container.Tab
+        IPEditField                    matlab.ui.control.EditField
+        IPEditFieldLabel               matlab.ui.control.Label
         ModulationCheckBox             matlab.ui.control.CheckBox
         PowerCheckBox                  matlab.ui.control.CheckBox
         AmplitudeSpinner               matlab.ui.control.Spinner
@@ -248,8 +250,12 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         dacGain = [199, 199, 199, 199];
         adcGain = [199, 199, 199, 199];
         dphase = [0,0,0,0];
+        dphaseCorr = [0,9,-132,-18];
         phase = [0,0,0,0];
         manualControlState = "DAC phase";
+
+        phaseMax = 179; %RFSoC limits
+        phaseMin = -179; %RFSoC limits
         %% Reset vars
         data_v
         setup_v
@@ -294,8 +300,12 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             drawnow%!!!!
             [app.data_v, app.setup_v] = vsaDdc(0, app.fsRfsoc, app.fsRfsoc, app.dataChan, 1);
             vsaSetup(app.setupFile)
-            app.visaDevList = visadevlist;
-            app.DevicecontrolDropDown.Items = [app.visaDevList.Model; "E8267D"];
+            try
+                app.visaDevList = visadevlist;
+            catch
+                app.visaDevList.Model = [];
+            end
+            app.DevicecontrolDropDown.Items = [app.visaDevList.Model; "E8267D"; "Custom"];
             commandsHandler(app, ['da ' num2str(app.da)]);
             commandsHandler(app, ['dataStream ' num2str(app.dataStream)]);
             disp(app.commands)
@@ -533,8 +543,12 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
 %                     weight = weight/norm(weight)*2;
                     app.dphase = angle(weight).';
                     app.dphase = round(rad2deg(app.dphase), 2);
-                    app.dphase = app.dphase*100;
-                    commandsHandler(app, ['dphase ' strjoin(arrayfun(@num2str, app.dphase, 'UniformOutput', false), '/');]);
+                    app.dphase = app.dphase + app.dphaseCorr;
+                    % Find the indices where the absolute value of dphase exceeds phaseMax
+                    indices = abs(app.dphase) > app.phaseMax;
+                    app.dphase(indices) = -(app.dphase(indices) - min(max(app.dphase(indices), app.phaseMin), app.phaseMax));
+
+                    commandsHandler(app, ['dphase ' strjoin(arrayfun(@num2str, app.dphase*100, 'UniformOutput', false), '/');]);
                 end
                 if not(isempty(app.commands))
                     oldComs = app.commands;
@@ -778,7 +792,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
 
         % Button pushed function: RecalibrateADCsButton
         function RecalibrateADCsButtonPushed(app, event)
-            commandsHandler(app, ['cal ' num2str(8)]);
+            commandsHandler(app, ['cal ' num2str(app.bw/1e6)]);
         end
 
         % Value changed function: dataStreamCheckBox
@@ -1120,8 +1134,8 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                     app.dacGain(1) = app.Ch1Spinner.Value;
                     commandsHandler(app, ['dgain ' strjoin(arrayfun(@num2str, app.dacGain, 'UniformOutput', false), '/');]);
                 case "DAC phase"
-                    app.dphase(1) = app.Ch1Spinner.Value;
-                    commandsHandler(app, ['dphase ' strjoin(arrayfun(@num2str, app.dphase*100, 'UniformOutput', false), '/');]);
+                    app.dphaseCorr(1) = app.Ch1Spinner.Value;
+                    commandsHandler(app, ['dphase ' strjoin(arrayfun(@num2str, app.dphaseCorr*100, 'UniformOutput', false), '/');]);
                 case "ADC gain"
                     app.adcGain(1) = app.Ch1Spinner.Value;
                     commandsHandler(app, ['again ' strjoin(arrayfun(@num2str, app.adcGain, 'UniformOutput', false), '/');]);                
@@ -1138,8 +1152,8 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                     app.dacGain(2) = app.Ch2Spinner.Value;
                     commandsHandler(app, ['dgain ' strjoin(arrayfun(@num2str, app.dacGain, 'UniformOutput', false), '/');]);
                 case "DAC phase"
-                    app.dphase(2) = app.Ch2Spinner.Value;
-                    commandsHandler(app, ['dphase ' strjoin(arrayfun(@num2str, app.dphase*100, 'UniformOutput', false), '/');]);
+                    app.dphaseCorr(2) = app.Ch2Spinner.Value;
+                    commandsHandler(app, ['dphase ' strjoin(arrayfun(@num2str, app.dphaseCorr*100, 'UniformOutput', false), '/');]);
                 case "ADC gain"
                     app.adcGain(2) = app.Ch2Spinner.Value;
                     commandsHandler(app, ['again ' strjoin(arrayfun(@num2str, app.adcGain, 'UniformOutput', false), '/');]);                
@@ -1156,8 +1170,8 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                     app.dacGain(3) = app.Ch3Spinner.Value;
                     commandsHandler(app, ['dgain ' strjoin(arrayfun(@num2str, app.dacGain, 'UniformOutput', false), '/');]);
                 case "DAC phase"
-                    app.dphase(3) = app.Ch3Spinner.Value;
-                    commandsHandler(app, ['dphase ' strjoin(arrayfun(@num2str, app.dphase*100, 'UniformOutput', false), '/');]);
+                    app.dphaseCorr(3) = app.Ch3Spinner.Value;
+                    commandsHandler(app, ['dphase ' strjoin(arrayfun(@num2str, app.dphaseCorr*100, 'UniformOutput', false), '/');]);
                 case "ADC gain"
                     app.adcGain(3) = app.Ch3Spinner.Value;
                     commandsHandler(app, ['again ' strjoin(arrayfun(@num2str, app.adcGain, 'UniformOutput', false), '/');]);                
@@ -1174,8 +1188,8 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                     app.dacGain(4) = app.Ch4Spinner.Value;
                     commandsHandler(app, ['dgain ' strjoin(arrayfun(@num2str, app.dacGain, 'UniformOutput', false), '/');]);
                 case "DAC phase"
-                    app.dphase(4) = app.Ch4Spinner.Value;
-                    commandsHandler(app, ['dphase ' strjoin(arrayfun(@num2str, app.dphase*100, 'UniformOutput', false), '/');]);
+                    app.dphaseCorr(4) = app.Ch4Spinner.Value;
+                    commandsHandler(app, ['dphase ' strjoin(arrayfun(@num2str, app.dphaseCorr*100, 'UniformOutput', false), '/');]);
                 case "ADC gain"
                     app.adcGain(4) = app.Ch4Spinner.Value;
                     commandsHandler(app, ['again ' strjoin(arrayfun(@num2str, app.adcGain, 'UniformOutput', false), '/');]);                
@@ -1206,6 +1220,12 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                     app.ModulationCheckBox.Value = app.lotx.Mod;
                     app.FrequencySpinner.Value = app.lotx.Fc;
                     app.AmplitudeSpinner.Value = app.lotx.Power;
+                case "Custom"
+                    app.currentDevIP = app.IPEditField.Value;
+                    app.PowerCheckBox.Value = 0;
+                    app.ModulationCheckBox.Value = 0;
+                    app.FrequencySpinner.Value = 100;
+                    app.AmplitudeSpinner.Value = -100;
                 otherwise
                     app.PowerCheckBox.Value = 0;
                     app.ModulationCheckBox.Value = 0;
@@ -1232,6 +1252,12 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         % Value changed function: ModulationCheckBox
         function ModulationCheckBoxValueChanged(app, event)
             genCtrl(app.currentDevIP, app.gen_port, app.PowerCheckBox.Value, app.AmplitudeSpinner.Value, app.FrequencySpinner.Value*1e6, app.ModulationCheckBox.Value);            
+        end
+
+        % Value changed function: IPEditField
+        function IPEditFieldValueChanged(app, event)
+%             app.currentDevIP = app.IPEditField.Value;
+            
         end
 
         % Changes arrangement of the app based on UIFigure width
@@ -1543,7 +1569,8 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
 
             % Create AntennaFcSpinner
             app.AntennaFcSpinner = uispinner(app.SystemTab);
-            app.AntennaFcSpinner.Limits = [1 40000];
+            app.AntennaFcSpinner.Limits = [1 Inf];
+            app.AntennaFcSpinner.ValueDisplayFormat = '%.0f';
             app.AntennaFcSpinner.ValueChangedFcn = createCallbackFcn(app, @AntennaFcSpinnerValueChanged, true);
             app.AntennaFcSpinner.Position = [95 117 105 22];
             app.AntennaFcSpinner.Value = 4500;
@@ -1919,14 +1946,14 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             % Create DevicecontrolDropDownLabel
             app.DevicecontrolDropDownLabel = uilabel(app.DevicesTab);
             app.DevicecontrolDropDownLabel.HorizontalAlignment = 'right';
-            app.DevicecontrolDropDownLabel.Position = [1 642 82 22];
+            app.DevicecontrolDropDownLabel.Position = [4 658 82 22];
             app.DevicecontrolDropDownLabel.Text = 'Device control';
 
             % Create DevicecontrolDropDown
             app.DevicecontrolDropDown = uidropdown(app.DevicesTab);
             app.DevicecontrolDropDown.ItemsData = [1 2 3 4 5 6 7 8 9];
             app.DevicecontrolDropDown.ValueChangedFcn = createCallbackFcn(app, @DevicecontrolDropDownValueChanged, true);
-            app.DevicecontrolDropDown.Position = [98 642 100 22];
+            app.DevicecontrolDropDown.Position = [101 658 100 22];
             app.DevicecontrolDropDown.Value = 1;
 
             % Create FrequencySpinnerLabel
@@ -1965,6 +1992,18 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.ModulationCheckBox.ValueChangedFcn = createCallbackFcn(app, @ModulationCheckBoxValueChanged, true);
             app.ModulationCheckBox.Text = 'Modulation';
             app.ModulationCheckBox.Position = [119 534 80 22];
+
+            % Create IPEditFieldLabel
+            app.IPEditFieldLabel = uilabel(app.DevicesTab);
+            app.IPEditFieldLabel.HorizontalAlignment = 'right';
+            app.IPEditFieldLabel.Position = [48 630 25 22];
+            app.IPEditFieldLabel.Text = 'IP';
+
+            % Create IPEditField
+            app.IPEditField = uieditfield(app.DevicesTab, 'text');
+            app.IPEditField.ValueChangedFcn = createCallbackFcn(app, @IPEditFieldValueChanged, true);
+            app.IPEditField.Position = [88 630 100 22];
+            app.IPEditField.Value = '132.68.138.1';
 
             % Create AvgSpinnerLabel
             app.AvgSpinnerLabel = uilabel(app.LeftPanel);
