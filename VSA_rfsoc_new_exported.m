@@ -250,7 +250,8 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         dacGain = [199, 199, 199, 199];
         adcGain = [199, 199, 199, 199];
         dphase = [0,0,0,0];
-        dphaseCorr = [0,9,-132,-18];
+%         dphaseCorr = [0,9,-132,-18];
+        dphaseCorr = [0,-22,-37,-162];
         phase = [0,0,0,0];
         manualControlState = "DAC phase";
 
