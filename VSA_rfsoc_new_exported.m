@@ -204,7 +204,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         currentDevIP = "";
         currentDev = "";
         lorx = struct('Model', "N5182B", 'IP', "", "State", 1, 'Power', 5, 'Fc', 2000, 'Mod', 0);
-        lotx = struct('Model', "E8267D", 'IP', "132.68.138.226", "State", 1, 'Power', 10, 'Fc', 33000, 'Mod', 0);  
+        lotx = struct('Model', "E8267D", 'IP', "132.68.138.225", "State", 1, 'Power', 10, 'Fc', 28050, 'Mod', 0);  
 
         %% Upconverter
         phase_cal = 0;
@@ -251,8 +251,10 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         adcGain = [199, 199, 199, 199];
         dphase = [0,0,0,0];
 %         dphaseCorr = [0,9,-132,-18];
-        dphaseCorr = [0,-22,-37,-162];
-        phase = [0,0,0,0];
+%         dphaseCorr = [0,-22,-37,-162];
+        dphaseCorr = [0,0,-40,-173];
+%         phase = [0,0,0,0];
+        phase = [0,13,-20,-18];
         manualControlState = "DAC phase";
 
         phaseMax = 179; %RFSoC limits

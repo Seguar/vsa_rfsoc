@@ -1,7 +1,7 @@
 function arduino_prog()
 Arduino = [];
 if (isempty(Arduino))
-    Arduino = serialport("COM14",115200); %Change the COM number according to the available ports
+    Arduino = serialport("COM16",115200); %Change the COM number according to the available ports
 end
     pause(0.8)
 try 
