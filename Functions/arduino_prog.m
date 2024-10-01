@@ -1,7 +1,7 @@
 function arduino_prog()
 Arduino = [];
 if (isempty(Arduino))
-    Arduino = serialport("COM16",115200); %Change the COM number according to the available ports
+    Arduino = serialport("COM12",115200); %Change the COM number according to the available ports
 end
     pause(0.8)
 try 
@@ -36,7 +36,7 @@ RX3_DAC_Q = 30; % RX3 Q DAC for DC offset correction   0:262 1:254 63:-258 mV   
 RX2_DAC_I = 45; % RX2 I DAC for DC offset correction   0:262 1:254 63:-258 mV    6Bit
 RX2_DAC_Q = 34; % RX2 Q DAC for DC offset correction   0:262 1:254 63:-258 mV    6Bit
 RX1_DAC_I = 51; % RX1 I DAC for DC offset correction   0:262 1:254 63:-258 mV    6Bit
-RX1_DAC_Q = 34 ; % RX1 Q DAC for DC offset correction   0:262 1:254 63:-258 mV    6Bit
+RX1_DAC_Q = 34; % RX1 Q DAC for DC offset correction   0:262 1:254 63:-258 mV    6Bit
 VC        = 1 ; % Toggle high frequency mode for the demodulator's divider 0 for LO<=1 GHz, 1 for LO>=1 GHz 1Bit
 %% RUN
 data1 = strcat(num2str(reshape(int2bit(RM2,4,0)', 1,[])),",",...

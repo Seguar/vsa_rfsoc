@@ -1,4 +1,4 @@
-function [weights, fixed_rawData] = cphase(rawData, reference_ant)
+function [weights, fixed_rawData, cal_angs] = cphase(rawData, reference_ant)
 % calibrates phases using FFT phase estimation
 % takes the maximum of the abs value fo the FFT of the signal 
 % and calcultes it's angle, then calcultes the right phase shift with 
