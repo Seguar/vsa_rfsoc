@@ -29,14 +29,27 @@ RF        = 4 ; % RF of BB stage 1 rauch TIA           0:250    1:500  15:4000 O
 CBB       = 15; % CBB of BB stage 1 Rauch TIA          0:0      1:0.5  31:15.5 pF        5Bits
 CM        = 4 ; % Cmiller of BB stage 1 OpAmp          0:0      1:420  15:6300  fF       4Bits
 RM        = 2 ; % Rmiller of BB stage 1 OpAmp       -   0:0      1:5    15:75 Ohm        4Bits
-RX4_DAC_I = 42; % RX4 I DAC for DC offset correction   0:262 1:254 63:-258 mV    6Bit
-RX4_DAC_Q = 33; % RX4 Q DAC for DC offset correction   0:262 1:254 63:-258 mV    6Bit
-RX3_DAC_I = 41; % RX3 I DAC for DC offset correction   0:262 1:254 63:-258 mV    6Bit
-RX3_DAC_Q = 30; % RX3 Q DAC for DC offset correction   0:262 1:254 63:-258 mV    6Bit
-RX2_DAC_I = 45; % RX2 I DAC for DC offset correction   0:262 1:254 63:-258 mV    6Bit
-RX2_DAC_Q = 34; % RX2 Q DAC for DC offset correction   0:262 1:254 63:-258 mV    6Bit
-RX1_DAC_I = 51; % RX1 I DAC for DC offset correction   0:262 1:254 63:-258 mV    6Bit
-RX1_DAC_Q = 34; % RX1 Q DAC for DC offset correction   0:262 1:254 63:-258 mV    6Bit
+
+RX4_DAC_I = 40; % RX4 I DAC for DC offset correction   0:262 1:254 63:-258 mV    6Bit
+RX4_DAC_Q = 32; % RX4 Q DAC for DC offset correction   0:262 1:254 63:-258 mV    6Bit
+
+RX3_DAC_I = 44; % RX3 I DAC for DC offset correction   0:262 1:254 63:-258 mV    6Bit
+RX3_DAC_Q = 28; % RX3 Q DAC for DC offset correction   0:262 1:254 63:-258 mV    6Bit
+
+RX2_DAC_I = 56; % RX2 I DAC for DC offset correction   0:262 1:254 63:-258 mV    6Bit
+RX2_DAC_Q = 21; % RX2 Q DAC for DC offset correction   0:262 1:254 63:-258 mV    6Bit
+
+RX1_DAC_I = 50; % RX1 I DAC for DC offset correction   0:262 1:254 63:-258 mV    6Bit
+RX1_DAC_Q = 20; % RX1 Q DAC for DC offset correction   0:262 1:254 63:-258 mV    6Bit
+
+% RX4_DAC_I = 42; % RX4 I DAC for DC offset correction   0:262 1:254 63:-258 mV    6Bit
+% RX4_DAC_Q = 33; % RX4 Q DAC for DC offset correction   0:262 1:254 63:-258 mV    6Bit
+% RX3_DAC_I = 40; % RX3 I DAC for DC offset correction   0:262 1:254 63:-258 mV    6Bit
+% RX3_DAC_Q = 20; % RX3 Q DAC for DC offset correction   0:262 1:254 63:-258 mV    6Bit
+% RX2_DAC_I = 55; % RX2 I DAC for DC offset correction   0:262 1:254 63:-258 mV    6Bit
+% RX2_DAC_Q = 23; % RX2 Q DAC for DC offset correction   0:262 1:254 63:-258 mV    6Bit
+% RX1_DAC_I = 55; % RX1 I DAC for DC offset correction   0:262 1:254 63:-258 mV    6Bit
+% RX1_DAC_Q = 10; % RX1 Q DAC for DC offset correction   0:262 1:254 63:-258 mV    6Bit
 VC        = 1 ; % Toggle high frequency mode for the demodulator's divider 0 for LO<=1 GHz, 1 for LO>=1 GHz 1Bit
 %% RUN
 data1 = strcat(num2str(reshape(int2bit(RM2,4,0)', 1,[])),",",...
