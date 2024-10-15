@@ -31,6 +31,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         DOAresolutionEditField         matlab.ui.control.NumericEditField
         DOAresolutionEditField_3Label  matlab.ui.control.Label
         SystemTab                      matlab.ui.container.Tab
+        PrintphasemissmatchButton      matlab.ui.control.Button
         Ch4SpinnerLabel                matlab.ui.control.Label
         Ch4Spinner                     matlab.ui.control.Spinner
         Ch3SpinnerLabel                matlab.ui.control.Label
@@ -204,7 +205,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         currentDevIP = "";
         currentDev = "";
         lorx = struct('Model', "N5182B", 'IP', "", "State", 1, 'Power', 5, 'Fc', 2000, 'Mod', 0);
-        lotx = struct('Model', "E8267D", 'IP', "132.68.138.225", "State", 1, 'Power', 10, 'Fc', 28050, 'Mod', 0);  
+        lotx = struct('Model', "E8267D", 'IP', "132.68.138.223", "State", 1, 'Power', 10, 'Fc', 28050, 'Mod', 0);  
 
         %% Upconverter
         phase_cal = 0;
@@ -253,8 +254,9 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
 %         dphaseCorr = [0,9,-132,-18];
 %         dphaseCorr = [0,-22,-37,-162];
         dphaseCorr = [0,0,-40,-173];
-%         phase = [0,0,0,0];
-        phase = [0,13,-20,-18];
+%         dphaseCorr = [0,15,-36,144];
+        phase = [0,0,0,0];
+%         phase = [0,13,-20,-18];
         manualControlState = "DAC phase";
 
         phaseMax = 179; %RFSoC limits
@@ -264,6 +266,9 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         setup_v
         %% Part reset vars
         p_manual_mean, yspec_mean, plot_handle, tcp_client
+
+        %%
+        rawData;
     end
     properties (Access = public)
         scan_axis = -90:1:90;
@@ -400,7 +405,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                 end
                 if app.dataStream        
                     try                        
-                        [yspec, estimated_angle, bfSig, app.weights, rawData] = rfsocBf(app, app.vsa, app.ch, app.bf, app.off, app.gap, app.cutter, ...
+                        [yspec, estimated_angle, bfSig, app.weights, app.rawData] = rfsocBf(app, app.vsa, app.ch, app.bf, app.off, app.gap, app.cutter, ...
                             app.ang_num, app.data_v, app.tcp_client, app.fcAnt, app.dataChan, app.diag, app.bwOff, app.ula, app.scan_axis, ...
                             app.c1, app.c2, app.fsRfsoc, app.bw, app.c, app.estimator, app.alg_scan_res, app.mis_ang, app.alpha, app.gamma, app.iter, app.setup_v, app.debug);
                         if isnan(app.weights)
@@ -489,7 +494,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                                 save(app.saveName, 'saveFile')
                                 saveFile = [];
                             else
-                                saveFile(fileCnt).raw = rawData;
+                                saveFile(fileCnt).raw = app.rawData;
                                 fileCnt = fileCnt + 1;
                             end
                         end
@@ -500,6 +505,10 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                             app.phase_cal_butt = 0;
                             uiwait
 %                             app.StartphasecalibrationsButton.BackgroundColor = 'g';
+                            writeline(app.tcp_client, 'alive 1');    
+                            rawData = 0;
+                            rawData = tcpDataRec(app.tcp_client, (app.dataChan * 8), 8);
+                            rawData = filtSig(rawData, app.fsRfsoc, app.bw);
                             save([pwd '\phase_cal\' num2str(app.cur_ang) '.mat'], 'rawData')
 
                             if app.cur_ang == -(app.start_ang)
@@ -520,39 +529,39 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                             end                            
                         end
                     end
-                if app.dacBFon
-                    switch app.dacBF
-                        case 'Random'
-                            app.dacAngle = randi([-app.scan_bw/2,app.scan_bw/2],1);
-                        case 'Scaning'
-                            app.dacAngle = app.dacTestArray(1);
-                            app.dacTestArray = [app.dacTestArray(2:end) app.dacTestArray(1)];
-                        case 'Rescaning'
-                            app.dacAngle = app.dacTestArray(1);
-                            app.dacTestArray = [app.dacTestArray(end) app.dacTestArray(1:end-1)];
-                        case 'Tracking'
-                            app.dacAngle = estimated_angle(1);   
-                        case 'Retracking'
-                            app.dacAngle = -estimated_angle(1);
-                        case 'Tr_s'
-                            app.dacAngle = round(estimated_angle(1)/10);   
-                        case 'Retr_s'
-                            app.dacAngle = round(-estimated_angle(1)/10);                            
-                        otherwise 
-                            app.dacAngle = app.AngleSpinner.Value;
-                    end
-                    beamforming = phased.SteeringVector('SensorArray',app.ula);
-                    weight = beamforming(app.fcAnt, app.dacAngle);
-%                     weight = weight/norm(weight)*2;
-                    app.dphase = angle(weight).';
-                    app.dphase = round(rad2deg(app.dphase), 2);
-                    app.dphase = app.dphase + app.dphaseCorr;
-                    % Find the indices where the absolute value of dphase exceeds phaseMax
-                    indices = abs(app.dphase) > app.phaseMax;
-                    app.dphase(indices) = -(app.dphase(indices) - min(max(app.dphase(indices), app.phaseMin), app.phaseMax));
+                    if app.dacBFon
+                        switch app.dacBF
+                            case 'Random'
+                                app.dacAngle = randi([-app.scan_bw/2,app.scan_bw/2],1);
+                            case 'Scaning'
+                                app.dacAngle = app.dacTestArray(1);
+                                app.dacTestArray = [app.dacTestArray(2:end) app.dacTestArray(1)];
+                            case 'Rescaning'
+                                app.dacAngle = app.dacTestArray(1);
+                                app.dacTestArray = [app.dacTestArray(end) app.dacTestArray(1:end-1)];
+                            case 'Tracking'
+                                app.dacAngle = estimated_angle(1);
+                            case 'Retracking'
+                                app.dacAngle = -estimated_angle(1);
+                            case 'Tr_s'
+                                app.dacAngle = round(estimated_angle(1)/10);
+                            case 'Retr_s'
+                                app.dacAngle = round(-estimated_angle(1)/10);
+                            otherwise
+                                app.dacAngle = app.AngleSpinner.Value;
+                        end
+                        beamforming = phased.SteeringVector('SensorArray',app.ula);
+                        weight = beamforming(app.fcAnt, app.dacAngle);
+                        %                     weight = weight/norm(weight)*2;
+                        app.dphase = angle(weight).';
+                        app.dphase = round(rad2deg(app.dphase), 2);
+                        app.dphase = app.dphase + app.dphaseCorr;
+                        % Find the indices where the absolute value of dphase exceeds phaseMax
+                        indices = abs(app.dphase) > app.phaseMax;
+                        app.dphase(indices) = -(app.dphase(indices) - min(max(app.dphase(indices), app.phaseMin), app.phaseMax));
 
-                    commandsHandler(app, ['dphase ' strjoin(arrayfun(@num2str, app.dphase*100, 'UniformOutput', false), '/');]);
-                end
+                        commandsHandler(app, ['dphase ' strjoin(arrayfun(@num2str, app.dphase*100, 'UniformOutput', false), '/');]);
+                    end
                 if not(isempty(app.commands))
                     oldComs = app.commands;
                     writeline(app.tcp_client, app.commands);
@@ -1263,6 +1272,12 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             
         end
 
+        % Button pushed function: PrintphasemissmatchButton
+        function PrintphasemissmatchButtonPushed(app, event)
+            [~, ~, phase_relation] = cphase(app.rawData, 1);
+            disp(phase_relation)
+        end
+
         % Changes arrangement of the app based on UIFigure width
         function updateAppLayout(app, event)
             currentFigureWidth = app.RFSoCBeamformerUIFigure.Position(3);
@@ -1485,7 +1500,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             % Create RecalibrateADCsButton
             app.RecalibrateADCsButton = uibutton(app.SystemTab, 'push');
             app.RecalibrateADCsButton.ButtonPushedFcn = createCallbackFcn(app, @RecalibrateADCsButtonPushed, true);
-            app.RecalibrateADCsButton.Position = [68 468 100 35];
+            app.RecalibrateADCsButton.Position = [67 452 100 35];
             app.RecalibrateADCsButton.Text = {'Recalibrate'; 'ADCs'};
 
             % Create EvenNyquistZoneCheckBox
@@ -1695,6 +1710,12 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.Ch4SpinnerLabel.HorizontalAlignment = 'center';
             app.Ch4SpinnerLabel.Position = [132 213 27 22];
             app.Ch4SpinnerLabel.Text = 'Ch4';
+
+            % Create PrintphasemissmatchButton
+            app.PrintphasemissmatchButton = uibutton(app.SystemTab, 'push');
+            app.PrintphasemissmatchButton.ButtonPushedFcn = createCallbackFcn(app, @PrintphasemissmatchButtonPushed, true);
+            app.PrintphasemissmatchButton.Position = [52 491 136 22];
+            app.PrintphasemissmatchButton.Text = 'Print phase missmatch';
 
             % Create DownconverterTab
             app.DownconverterTab = uitab(app.TabGroup);
