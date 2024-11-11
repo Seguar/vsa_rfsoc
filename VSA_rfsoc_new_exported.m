@@ -5,6 +5,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         RFSoCBeamformerUIFigure        matlab.ui.Figure
         GridLayout                     matlab.ui.container.GridLayout
         LeftPanel                      matlab.ui.container.Panel
+        MirrorCheckBox_3               matlab.ui.control.CheckBox
         SignalpriorityButtonGroup      matlab.ui.container.ButtonGroup
         LessPowerfullButton            matlab.ui.control.RadioButton
         MostPowerfullButton            matlab.ui.control.RadioButton
@@ -185,7 +186,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         bw = 249e6;
         num = 1;
         scan_bw = 180;
-        setupFile = [fileparts(mfilename('fullpath')) '\Settings\ofdm_iq_100_16.setx'];
+        setupFile = [fileparts(mfilename('fullpath')) '\Settings\ofdm_iq_20_16.setx'];
 
         server_ip = 'pynq'; % Use the appropriate IP address or hostname http://192.168.3.1/lab
 %         server_ip = '132.68.138.226'; % Use the appropriate IP address or hostname http://192.168.3.1/lab
@@ -220,6 +221,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         reset_req = 1;
         part_reset_req = 1;
         estimator;
+        plotMirror = 0;
         %%
         commands = [];
         dataStream = 1;
@@ -446,6 +448,12 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                             yspec_mean_vec = yspec_mean_vec.*(1./app.koef);
                         end
                         %% Plot
+                        if app.plotMirror
+                            yspec_mean_vec = flip(yspec_mean_vec);
+                            estimated_angle = estimated_angle*-1;
+                            p_manual_mean_db = flip(p_manual_mean_db);
+                        end
+
                         app.UIAxes.Title.String = (['Direction of Arrival:' newline  'Estimated Angles = ' num2str(estimated_angle) newline 'DAC Angles = ' num2str(app.dacAngle)]);
 
                         set(app.plot_handle, 'YData', (yspec_mean_vec/max(yspec_mean_vec)), 'LineWidth', 1.5);
@@ -1278,6 +1286,11 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             disp(phase_relation)
         end
 
+        % Value changed function: MirrorCheckBox_3
+        function MirrorCheckBox_3ValueChanged(app, event)
+            app.plotMirror = app.MirrorCheckBox_3.Value;
+        end
+
         % Changes arrangement of the app based on UIFigure width
         function updateAppLayout(app, event)
             currentFigureWidth = app.RFSoCBeamformerUIFigure.Position(3);
@@ -1329,7 +1342,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.ResetButton = uibutton(app.LeftPanel, 'state');
             app.ResetButton.ValueChangedFcn = createCallbackFcn(app, @ResetButtonValueChanged, true);
             app.ResetButton.Text = 'Reset';
-            app.ResetButton.Position = [83 4 100 22];
+            app.ResetButton.Position = [133 3 100 22];
 
             % Create TabGroup
             app.TabGroup = uitabgroup(app.LeftPanel);
@@ -2098,6 +2111,12 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.LessPowerfullButton = uiradiobutton(app.SignalpriorityButtonGroup);
             app.LessPowerfullButton.Text = 'Less Powerfull';
             app.LessPowerfullButton.Position = [11 15 100 22];
+
+            % Create MirrorCheckBox_3
+            app.MirrorCheckBox_3 = uicheckbox(app.LeftPanel);
+            app.MirrorCheckBox_3.ValueChangedFcn = createCallbackFcn(app, @MirrorCheckBox_3ValueChanged, true);
+            app.MirrorCheckBox_3.Text = 'Mirror';
+            app.MirrorCheckBox_3.Position = [4 3 52 22];
 
             % Create RightPanel
             app.RightPanel = uipanel(app.GridLayout);
