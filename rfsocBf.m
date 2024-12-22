@@ -68,6 +68,7 @@ rawData = filtSig(rawData, fsRfsoc, bw);
 if isa(estimator, 'double')
     num_elements = 4;
     A = zeros(num_elements,1); 
+    % rawData = normalize(rawData);
     Rx = rawData'*rawData;    %Data covarivance matrix 
     Rx_Inv = Rx^(-1);           %Inverse of covariance matrix
     lambda = c/fc;

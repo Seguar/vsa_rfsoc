@@ -79,6 +79,8 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         RFSoCFcSpinner                 matlab.ui.control.Spinner
         RFSoCFcSpinnerLabel            matlab.ui.control.Label
         DownconverterTab               matlab.ui.container.Tab
+        ArduinoportDropDown            matlab.ui.control.DropDown
+        ArduinoportDropDownLabel       matlab.ui.control.Label
         StepangEditField               matlab.ui.control.NumericEditField
         StepangEditFieldLabel          matlab.ui.control.Label
         StarrangEditField              matlab.ui.control.NumericEditField
@@ -310,12 +312,6 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             drawnow%!!!!
             [app.data_v, app.setup_v] = vsaDdc(0, app.fsRfsoc, app.fsRfsoc, app.dataChan, 1);
             vsaSetup(app.setupFile)
-            try
-                app.visaDevList = visadevlist;
-            catch
-                app.visaDevList.Model = [];
-            end
-            app.DevicecontrolDropDown.Items = [app.visaDevList.Model; "E8267D"; "Custom"];
             commandsHandler(app, ['da ' num2str(app.da)]);
             commandsHandler(app, ['dataStream ' num2str(app.dataStream)]);
             disp(app.commands)
@@ -450,8 +446,9 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                         %% Plot
                         if app.plotMirror
                             yspec_mean_vec = flip(yspec_mean_vec);
-                            estimated_angle = estimated_angle*-1;
+                            estimated_angle = -1*estimated_angle;
                             p_manual_mean_db = flip(p_manual_mean_db);
+                            app.dacAngle = -1*app.dacAngle;
                         end
 
                         app.UIAxes.Title.String = (['Direction of Arrival:' newline  'Estimated Angles = ' num2str(estimated_angle) newline 'DAC Angles = ' num2str(app.dacAngle)]);
@@ -1291,6 +1288,18 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.plotMirror = app.MirrorCheckBox_3.Value;
         end
 
+        % Drop down opening function: DevicecontrolDropDown
+        function DevicecontrolDropDownOpening(app, event)
+            try
+                app.DevicecontrolDropDownLabel.Text = 'Loading...';
+                app.visaDevList = visadevlist;
+            catch
+                app.visaDevList.Model = [];
+            end
+            app.DevicecontrolDropDownLabel.Text = 'Device control';
+            app.DevicecontrolDropDown.Items = [app.visaDevList.Model; "E8267D"; "Custom"];
+        end
+
         % Changes arrangement of the app based on UIFigure width
         function updateAppLayout(app, event)
             currentFigureWidth = app.RFSoCBeamformerUIFigure.Position(3);
@@ -1737,24 +1746,24 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             % Create Gauge
             app.Gauge = uigauge(app.DownconverterTab, 'semicircular');
             app.Gauge.Limits = [-90 90];
-            app.Gauge.Position = [14 383 189 102];
+            app.Gauge.Position = [14 497 189 102];
 
             % Create StartphasecalibrationsButton
             app.StartphasecalibrationsButton = uibutton(app.DownconverterTab, 'push');
             app.StartphasecalibrationsButton.ButtonPushedFcn = createCallbackFcn(app, @StartphasecalibrationsButtonPushed, true);
-            app.StartphasecalibrationsButton.Position = [41 292 140 58];
+            app.StartphasecalibrationsButton.Position = [39 404 140 58];
             app.StartphasecalibrationsButton.Text = 'Start phase calibrations';
 
             % Create ArduinoprogramButton
             app.ArduinoprogramButton = uibutton(app.DownconverterTab, 'push');
             app.ArduinoprogramButton.ButtonPushedFcn = createCallbackFcn(app, @ArduinoprogramButtonPushed, true);
-            app.ArduinoprogramButton.Position = [57 627 104 23];
+            app.ArduinoprogramButton.Position = [50 619 104 23];
             app.ArduinoprogramButton.Text = 'Arduino program';
 
             % Create StarrangEditFieldLabel
             app.StarrangEditFieldLabel = uilabel(app.DownconverterTab);
             app.StarrangEditFieldLabel.HorizontalAlignment = 'right';
-            app.StarrangEditFieldLabel.Position = [17 356 54 22];
+            app.StarrangEditFieldLabel.Position = [15 468 54 22];
             app.StarrangEditFieldLabel.Text = 'Starr ang';
 
             % Create StarrangEditField
@@ -1762,21 +1771,31 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.StarrangEditField.Limits = [-90 90];
             app.StarrangEditField.RoundFractionalValues = 'on';
             app.StarrangEditField.ValueChangedFcn = createCallbackFcn(app, @StarrangEditFieldValueChanged, true);
-            app.StarrangEditField.Position = [79 356 29 22];
+            app.StarrangEditField.Position = [77 468 29 22];
             app.StarrangEditField.Value = -60;
 
             % Create StepangEditFieldLabel
             app.StepangEditFieldLabel = uilabel(app.DownconverterTab);
             app.StepangEditFieldLabel.HorizontalAlignment = 'right';
-            app.StepangEditFieldLabel.Position = [114 356 53 22];
+            app.StepangEditFieldLabel.Position = [112 468 53 22];
             app.StepangEditFieldLabel.Text = 'Step ang';
 
             % Create StepangEditField
             app.StepangEditField = uieditfield(app.DownconverterTab, 'numeric');
             app.StepangEditField.Limits = [0.01 50];
             app.StepangEditField.ValueChangedFcn = createCallbackFcn(app, @StepangEditFieldValueChanged, true);
-            app.StepangEditField.Position = [175 356 24 22];
+            app.StepangEditField.Position = [173 468 24 22];
             app.StepangEditField.Value = 10;
+
+            % Create ArduinoportDropDownLabel
+            app.ArduinoportDropDownLabel = uilabel(app.DownconverterTab);
+            app.ArduinoportDropDownLabel.HorizontalAlignment = 'right';
+            app.ArduinoportDropDownLabel.Position = [8 663 70 22];
+            app.ArduinoportDropDownLabel.Text = 'Arduino port';
+
+            % Create ArduinoportDropDown
+            app.ArduinoportDropDown = uidropdown(app.DownconverterTab);
+            app.ArduinoportDropDown.Position = [93 663 100 22];
 
             % Create DebugTab
             app.DebugTab = uitab(app.TabGroup);
@@ -1989,6 +2008,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             % Create DevicecontrolDropDown
             app.DevicecontrolDropDown = uidropdown(app.DevicesTab);
             app.DevicecontrolDropDown.ItemsData = [1 2 3 4 5 6 7 8 9];
+            app.DevicecontrolDropDown.DropDownOpeningFcn = createCallbackFcn(app, @DevicecontrolDropDownOpening, true);
             app.DevicecontrolDropDown.ValueChangedFcn = createCallbackFcn(app, @DevicecontrolDropDownValueChanged, true);
             app.DevicecontrolDropDown.Position = [101 658 100 22];
             app.DevicecontrolDropDown.Value = 1;
