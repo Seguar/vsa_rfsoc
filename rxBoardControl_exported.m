@@ -92,6 +92,34 @@ classdef rxBoardControl_exported < matlab.apps.AppBase
             app.registers.RX1_DAC_Q = app.RX1_DAC_QSpinner.Value;
             app.registers.VC = app.VCSpinner.Value;
         end
+
+        function updateFields(app)
+            app.RM2Spinner.Value = app.registers.RM2;
+            app.R3Spinner.Value = app.registers.R3;
+            app.C2Spinner.Value = app.registers.C2;
+            app.C1Spinner.Value = app.registers.C1;
+            app.CM2Spinner.Value = app.registers.CM2;
+            app.R1Spinner.Value = app.registers.R1;
+            app.R2Spinner.Value = app.registers.R2;
+            app.CFSpinner.Value = app.registers.CF;
+            app.RFSpinner.Value = app.registers.RF;
+            app.CBBSpinner.Value = app.registers.CBB;
+            app.CMSpinner.Value = app.registers.CM;
+            app.RMSpinner.Value = app.registers.RM;
+            app.RX4_DAC_ISpinner.Value = app.registers.RX4_DAC_I;
+            app.RX4_DAC_QSpinner.Value = app.registers.RX4_DAC_Q;
+            app.RX3_DAC_ISpinner.Value = app.registers.RX3_DAC_I;
+            app.RX3_DAC_QSpinner.Value = app.registers.RX3_DAC_Q;
+            app.RX2_DAC_ISpinner.Value = app.registers.RX2_DAC_I;
+            app.RX2_DAC_QSpinner.Value = app.registers.RX2_DAC_Q;
+            app.RX1_DAC_ISpinner.Value = app.registers.RX1_DAC_I;
+            app.RX1_DAC_QSpinner.Value = app.registers.RX1_DAC_Q;
+            app.VCSpinner.Value = app.registers.VC;
+        end
+    end
+
+    methods (Access = private)
+
     end
 
 
@@ -131,6 +159,34 @@ classdef rxBoardControl_exported < matlab.apps.AppBase
                 app.Arduino = [];
                 app.ChoseportandpressthebuttonButton.Text = "Disconnected";
                 app.ChoseportandpressthebuttonButton.BackgroundColor = 'r';
+            end
+        end
+
+        % Button pushed function: SaveRegsButton
+        function SaveRegsButtonPushed(app, event)
+            defaultFile = fullfile(pwd,'Settings','registers.mat');
+            [baseFileName, folder] = uiputfile(defaultFile);
+            if isequal(baseFileName,0) || isequal(folder,0)
+                return; % user pressed Cancel
+            end
+            registers = app.registers;
+            save(fullfile(folder, baseFileName), 'registers');
+        end
+
+        % Button pushed function: LoadRegsButton
+        function LoadRegsButtonPushed(app, event)
+            defaultPath = fullfile(pwd,'Settings','*.mat');
+            [file, path] = uigetfile(defaultPath);
+            if isequal(file,0) || isequal(path,0)
+                return; % user pressed Cancel
+            end
+            data = load(fullfile(path,file));
+            if isfield(data,'registers')
+                app.registers = data.registers;
+                updateFields(app);
+                updateRXboard(app);
+            else
+                uialert(app.UIFigure,'File does not contain registers','Load Error');
             end
         end
 
@@ -262,20 +318,6 @@ classdef rxBoardControl_exported < matlab.apps.AppBase
         % Value changed function: CFSpinner
         function CFSpinnerValueChanged(app, event)
             pollButtons(app);
-            updateRXboard(app);
-        end
-
-        % Button pushed function: SaveRegsButton
-        function SaveRegsButtonPushed(app, event)
-            [baseFileName, folder] = uiputfile([pwd '.\Settings\registers.mat']);
-            registers = app.registers;
-            save(fullfile(folder, baseFileName), 'registers')
-        end
-
-        % Button pushed function: LoadRegsButton
-        function LoadRegsButtonPushed(app, event)
-            [file, path] = uigetfile([pwd '.\Settings\*.mat']);
-            app.registers = load([path file]);
             updateRXboard(app);
         end
     end
