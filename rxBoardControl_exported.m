@@ -190,135 +190,16 @@ classdef rxBoardControl_exported < matlab.apps.AppBase
             end
         end
 
+        % Value changed function: C1Spinner, C2Spinner, CBBSpinner, 
+        % ...and 18 other components
+        function SpinnerValueChanged(app, event)
+            pollButtons(app);
+            updateRXboard(app);
+        end
+
         % Close request function: UIFigure
         function UIFigureCloseRequest(app, event)
             delete(app)
-        end
-
-        % Value changed function: RX4_DAC_ISpinner
-        function RX4_DAC_ISpinnerValueChanged(app, event)
-            pollButtons(app);
-            updateRXboard(app);
-        end
-
-        % Value changed function: RX4_DAC_QSpinner
-        function RX4_DAC_QSpinnerValueChanged(app, event)
-            pollButtons(app);
-            updateRXboard(app);
-        end
-
-        % Value changed function: RX3_DAC_ISpinner
-        function RX3_DAC_ISpinnerValueChanged(app, event)
-            pollButtons(app);
-            updateRXboard(app);
-        end
-
-        % Value changed function: RX3_DAC_QSpinner
-        function RX3_DAC_QSpinnerValueChanged(app, event)
-            pollButtons(app);
-            updateRXboard(app);
-        end
-
-        % Value changed function: VCSpinner
-        function VCSpinnerValueChanged(app, event)
-            pollButtons(app);
-            updateRXboard(app);
-        end
-
-        % Value changed function: RX2_DAC_ISpinner
-        function RX2_DAC_ISpinnerValueChanged(app, event)
-            pollButtons(app);
-            updateRXboard(app);
-        end
-
-        % Value changed function: RX2_DAC_QSpinner
-        function RX2_DAC_QSpinnerValueChanged(app, event)
-            pollButtons(app);
-            updateRXboard(app);
-        end
-
-        % Value changed function: RFSpinner
-        function RFSpinnerValueChanged(app, event)
-            pollButtons(app);
-            updateRXboard(app);
-        end
-
-        % Value changed function: RX1_DAC_ISpinner
-        function RX1_DAC_ISpinnerValueChanged(app, event)
-            pollButtons(app);
-            updateRXboard(app);
-        end
-
-        % Value changed function: RX1_DAC_QSpinner
-        function RX1_DAC_QSpinnerValueChanged(app, event)
-            pollButtons(app);
-            updateRXboard(app);
-        end
-
-        % Value changed function: CBBSpinner
-        function CBBSpinnerValueChanged(app, event)
-            pollButtons(app);
-            updateRXboard(app);
-        end
-
-        % Value changed function: CMSpinner
-        function CMSpinnerValueChanged(app, event)
-            pollButtons(app);
-            updateRXboard(app);
-        end
-
-        % Value changed function: RMSpinner
-        function RMSpinnerValueChanged(app, event)
-            pollButtons(app);
-            updateRXboard(app);
-        end
-
-        % Value changed function: CM2Spinner
-        function CM2SpinnerValueChanged(app, event)
-            pollButtons(app);
-            updateRXboard(app);
-        end
-
-        % Value changed function: RM2Spinner
-        function RM2SpinnerValueChanged(app, event)
-            pollButtons(app);
-            updateRXboard(app);
-        end
-
-        % Value changed function: R3Spinner
-        function R3SpinnerValueChanged(app, event)
-            pollButtons(app);
-            updateRXboard(app);
-        end
-
-        % Value changed function: C2Spinner
-        function C2SpinnerValueChanged(app, event)
-            pollButtons(app);
-            updateRXboard(app);
-        end
-
-        % Value changed function: C1Spinner
-        function C1SpinnerValueChanged(app, event)
-            pollButtons(app);
-            updateRXboard(app);
-        end
-
-        % Value changed function: R1Spinner
-        function R1SpinnerValueChanged(app, event)
-            pollButtons(app);
-            updateRXboard(app);
-        end
-
-        % Value changed function: R2Spinner
-        function R2SpinnerValueChanged(app, event)
-            pollButtons(app);
-            updateRXboard(app);
-        end
-
-        % Value changed function: CFSpinner
-        function CFSpinnerValueChanged(app, event)
-            pollButtons(app);
-            updateRXboard(app);
         end
     end
 
@@ -343,7 +224,7 @@ classdef rxBoardControl_exported < matlab.apps.AppBase
             % Create RX4_DAC_ISpinner
             app.RX4_DAC_ISpinner = uispinner(app.UIFigure);
             app.RX4_DAC_ISpinner.Limits = [0 63];
-            app.RX4_DAC_ISpinner.ValueChangedFcn = createCallbackFcn(app, @RX4_DAC_ISpinnerValueChanged, true);
+            app.RX4_DAC_ISpinner.ValueChangedFcn = createCallbackFcn(app, @SpinnerValueChanged, true);
             app.RX4_DAC_ISpinner.Position = [511 178 45 22];
             app.RX4_DAC_ISpinner.Value = 32;
 
@@ -356,7 +237,7 @@ classdef rxBoardControl_exported < matlab.apps.AppBase
             % Create RX4_DAC_QSpinner
             app.RX4_DAC_QSpinner = uispinner(app.UIFigure);
             app.RX4_DAC_QSpinner.Limits = [0 63];
-            app.RX4_DAC_QSpinner.ValueChangedFcn = createCallbackFcn(app, @RX4_DAC_QSpinnerValueChanged, true);
+            app.RX4_DAC_QSpinner.ValueChangedFcn = createCallbackFcn(app, @SpinnerValueChanged, true);
             app.RX4_DAC_QSpinner.Position = [511 157 45 22];
             app.RX4_DAC_QSpinner.Value = 32;
 
@@ -377,7 +258,7 @@ classdef rxBoardControl_exported < matlab.apps.AppBase
             % Create RX3_DAC_ISpinner
             app.RX3_DAC_ISpinner = uispinner(app.UIFigure);
             app.RX3_DAC_ISpinner.Limits = [0 63];
-            app.RX3_DAC_ISpinner.ValueChangedFcn = createCallbackFcn(app, @RX3_DAC_ISpinnerValueChanged, true);
+            app.RX3_DAC_ISpinner.ValueChangedFcn = createCallbackFcn(app, @SpinnerValueChanged, true);
             app.RX3_DAC_ISpinner.Position = [371 178 45 22];
             app.RX3_DAC_ISpinner.Value = 32;
 
@@ -390,21 +271,21 @@ classdef rxBoardControl_exported < matlab.apps.AppBase
             % Create RX3_DAC_QSpinner
             app.RX3_DAC_QSpinner = uispinner(app.UIFigure);
             app.RX3_DAC_QSpinner.Limits = [0 63];
-            app.RX3_DAC_QSpinner.ValueChangedFcn = createCallbackFcn(app, @RX3_DAC_QSpinnerValueChanged, true);
+            app.RX3_DAC_QSpinner.ValueChangedFcn = createCallbackFcn(app, @SpinnerValueChanged, true);
             app.RX3_DAC_QSpinner.Position = [371 158 45 22];
             app.RX3_DAC_QSpinner.Value = 32;
 
             % Create VCSpinner
             app.VCSpinner = uispinner(app.UIFigure);
             app.VCSpinner.Limits = [0 1];
-            app.VCSpinner.ValueChangedFcn = createCallbackFcn(app, @VCSpinnerValueChanged, true);
+            app.VCSpinner.ValueChangedFcn = createCallbackFcn(app, @SpinnerValueChanged, true);
             app.VCSpinner.Position = [544 107 45 22];
             app.VCSpinner.Value = 1;
 
             % Create RX2_DAC_ISpinner
             app.RX2_DAC_ISpinner = uispinner(app.UIFigure);
             app.RX2_DAC_ISpinner.Limits = [0 63];
-            app.RX2_DAC_ISpinner.ValueChangedFcn = createCallbackFcn(app, @RX2_DAC_ISpinnerValueChanged, true);
+            app.RX2_DAC_ISpinner.ValueChangedFcn = createCallbackFcn(app, @SpinnerValueChanged, true);
             app.RX2_DAC_ISpinner.Position = [235 178 45 22];
             app.RX2_DAC_ISpinner.Value = 32;
 
@@ -417,21 +298,21 @@ classdef rxBoardControl_exported < matlab.apps.AppBase
             % Create RX2_DAC_QSpinner
             app.RX2_DAC_QSpinner = uispinner(app.UIFigure);
             app.RX2_DAC_QSpinner.Limits = [0 63];
-            app.RX2_DAC_QSpinner.ValueChangedFcn = createCallbackFcn(app, @RX2_DAC_QSpinnerValueChanged, true);
+            app.RX2_DAC_QSpinner.ValueChangedFcn = createCallbackFcn(app, @SpinnerValueChanged, true);
             app.RX2_DAC_QSpinner.Position = [235 158 45 22];
             app.RX2_DAC_QSpinner.Value = 32;
 
             % Create RFSpinner
             app.RFSpinner = uispinner(app.UIFigure);
             app.RFSpinner.Limits = [0 15];
-            app.RFSpinner.ValueChangedFcn = createCallbackFcn(app, @RFSpinnerValueChanged, true);
+            app.RFSpinner.ValueChangedFcn = createCallbackFcn(app, @SpinnerValueChanged, true);
             app.RFSpinner.Position = [404 107 45 22];
             app.RFSpinner.Value = 4;
 
             % Create RX1_DAC_ISpinner
             app.RX1_DAC_ISpinner = uispinner(app.UIFigure);
             app.RX1_DAC_ISpinner.Limits = [0 63];
-            app.RX1_DAC_ISpinner.ValueChangedFcn = createCallbackFcn(app, @RX1_DAC_ISpinnerValueChanged, true);
+            app.RX1_DAC_ISpinner.ValueChangedFcn = createCallbackFcn(app, @SpinnerValueChanged, true);
             app.RX1_DAC_ISpinner.Position = [99 178 45 22];
             app.RX1_DAC_ISpinner.Value = 32;
 
@@ -450,14 +331,14 @@ classdef rxBoardControl_exported < matlab.apps.AppBase
             % Create RX1_DAC_QSpinner
             app.RX1_DAC_QSpinner = uispinner(app.UIFigure);
             app.RX1_DAC_QSpinner.Limits = [0 63];
-            app.RX1_DAC_QSpinner.ValueChangedFcn = createCallbackFcn(app, @RX1_DAC_QSpinnerValueChanged, true);
+            app.RX1_DAC_QSpinner.ValueChangedFcn = createCallbackFcn(app, @SpinnerValueChanged, true);
             app.RX1_DAC_QSpinner.Position = [99 158 45 22];
             app.RX1_DAC_QSpinner.Value = 32;
 
             % Create CBBSpinner
             app.CBBSpinner = uispinner(app.UIFigure);
             app.CBBSpinner.Limits = [0 31];
-            app.CBBSpinner.ValueChangedFcn = createCallbackFcn(app, @CBBSpinnerValueChanged, true);
+            app.CBBSpinner.ValueChangedFcn = createCallbackFcn(app, @SpinnerValueChanged, true);
             app.CBBSpinner.Position = [404 87 45 22];
             app.CBBSpinner.Value = 15;
 
@@ -506,7 +387,7 @@ classdef rxBoardControl_exported < matlab.apps.AppBase
             % Create CMSpinner
             app.CMSpinner = uispinner(app.UIFigure);
             app.CMSpinner.Limits = [0 15];
-            app.CMSpinner.ValueChangedFcn = createCallbackFcn(app, @CMSpinnerValueChanged, true);
+            app.CMSpinner.ValueChangedFcn = createCallbackFcn(app, @SpinnerValueChanged, true);
             app.CMSpinner.Position = [404 66 45 22];
             app.CMSpinner.Value = 4;
 
@@ -519,7 +400,7 @@ classdef rxBoardControl_exported < matlab.apps.AppBase
             % Create RMSpinner
             app.RMSpinner = uispinner(app.UIFigure);
             app.RMSpinner.Limits = [0 15];
-            app.RMSpinner.ValueChangedFcn = createCallbackFcn(app, @RMSpinnerValueChanged, true);
+            app.RMSpinner.ValueChangedFcn = createCallbackFcn(app, @SpinnerValueChanged, true);
             app.RMSpinner.Position = [404 46 45 22];
             app.RMSpinner.Value = 2;
 
@@ -532,7 +413,7 @@ classdef rxBoardControl_exported < matlab.apps.AppBase
             % Create CM2Spinner
             app.CM2Spinner = uispinner(app.UIFigure);
             app.CM2Spinner.Limits = [0 7];
-            app.CM2Spinner.ValueChangedFcn = createCallbackFcn(app, @CM2SpinnerValueChanged, true);
+            app.CM2Spinner.ValueChangedFcn = createCallbackFcn(app, @SpinnerValueChanged, true);
             app.CM2Spinner.Position = [259 107 45 22];
             app.CM2Spinner.Value = 2;
 
@@ -551,7 +432,7 @@ classdef rxBoardControl_exported < matlab.apps.AppBase
             % Create RM2Spinner
             app.RM2Spinner = uispinner(app.UIFigure);
             app.RM2Spinner.Limits = [0 15];
-            app.RM2Spinner.ValueChangedFcn = createCallbackFcn(app, @RM2SpinnerValueChanged, true);
+            app.RM2Spinner.ValueChangedFcn = createCallbackFcn(app, @SpinnerValueChanged, true);
             app.RM2Spinner.Position = [97 107 45 22];
             app.RM2Spinner.Value = 5;
 
@@ -564,7 +445,7 @@ classdef rxBoardControl_exported < matlab.apps.AppBase
             % Create R3Spinner
             app.R3Spinner = uispinner(app.UIFigure);
             app.R3Spinner.Limits = [0 7];
-            app.R3Spinner.ValueChangedFcn = createCallbackFcn(app, @R3SpinnerValueChanged, true);
+            app.R3Spinner.ValueChangedFcn = createCallbackFcn(app, @SpinnerValueChanged, true);
             app.R3Spinner.Position = [97 87 45 22];
             app.R3Spinner.Value = 3;
 
@@ -577,7 +458,7 @@ classdef rxBoardControl_exported < matlab.apps.AppBase
             % Create C2Spinner
             app.C2Spinner = uispinner(app.UIFigure);
             app.C2Spinner.Limits = [0 7];
-            app.C2Spinner.ValueChangedFcn = createCallbackFcn(app, @C2SpinnerValueChanged, true);
+            app.C2Spinner.ValueChangedFcn = createCallbackFcn(app, @SpinnerValueChanged, true);
             app.C2Spinner.Position = [97 66 45 22];
             app.C2Spinner.Value = 2;
 
@@ -590,14 +471,14 @@ classdef rxBoardControl_exported < matlab.apps.AppBase
             % Create C1Spinner
             app.C1Spinner = uispinner(app.UIFigure);
             app.C1Spinner.Limits = [0 31];
-            app.C1Spinner.ValueChangedFcn = createCallbackFcn(app, @C1SpinnerValueChanged, true);
+            app.C1Spinner.ValueChangedFcn = createCallbackFcn(app, @SpinnerValueChanged, true);
             app.C1Spinner.Position = [97 46 45 22];
             app.C1Spinner.Value = 14;
 
             % Create R1Spinner
             app.R1Spinner = uispinner(app.UIFigure);
             app.R1Spinner.Limits = [0 1];
-            app.R1Spinner.ValueChangedFcn = createCallbackFcn(app, @R1SpinnerValueChanged, true);
+            app.R1Spinner.ValueChangedFcn = createCallbackFcn(app, @SpinnerValueChanged, true);
             app.R1Spinner.Position = [259 87 45 22];
 
             % Create R2SpinnerLabel
@@ -609,7 +490,7 @@ classdef rxBoardControl_exported < matlab.apps.AppBase
             % Create R2Spinner
             app.R2Spinner = uispinner(app.UIFigure);
             app.R2Spinner.Limits = [0 1];
-            app.R2Spinner.ValueChangedFcn = createCallbackFcn(app, @R2SpinnerValueChanged, true);
+            app.R2Spinner.ValueChangedFcn = createCallbackFcn(app, @SpinnerValueChanged, true);
             app.R2Spinner.Position = [259 66 45 22];
 
             % Create CFSpinnerLabel
@@ -621,7 +502,7 @@ classdef rxBoardControl_exported < matlab.apps.AppBase
             % Create CFSpinner
             app.CFSpinner = uispinner(app.UIFigure);
             app.CFSpinner.Limits = [0 7];
-            app.CFSpinner.ValueChangedFcn = createCallbackFcn(app, @CFSpinnerValueChanged, true);
+            app.CFSpinner.ValueChangedFcn = createCallbackFcn(app, @SpinnerValueChanged, true);
             app.CFSpinner.Position = [259 46 45 22];
 
             % Create SaveRegsButton
