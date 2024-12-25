@@ -79,13 +79,14 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         RFSoCFcSpinner                 matlab.ui.control.Spinner
         RFSoCFcSpinnerLabel            matlab.ui.control.Label
         DownconverterTab               matlab.ui.container.Tab
-        ArduinoportDropDown            matlab.ui.control.DropDown
-        ArduinoportDropDownLabel       matlab.ui.control.Label
+        AutocalStartButton             matlab.ui.control.Button
+        AutocalthresholdEditField      matlab.ui.control.NumericEditField
+        AutocalthresholdLabel          matlab.ui.control.Label
         StepangEditField               matlab.ui.control.NumericEditField
         StepangEditFieldLabel          matlab.ui.control.Label
         StarrangEditField              matlab.ui.control.NumericEditField
         StarrangEditFieldLabel         matlab.ui.control.Label
-        ArduinoprogramButton           matlab.ui.control.Button
+        ArduinoGUIButton               matlab.ui.control.Button
         StartphasecalibrationsButton   matlab.ui.control.Button
         Gauge                          matlab.ui.control.SemicircularGauge
         DebugTab                       matlab.ui.container.Tab
@@ -145,6 +146,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
 
     properties (Access = private)
         Property % Description
+        rxBoardControl_app;
         %% App fields
         vsa = 1;
         ch = 5;
@@ -158,7 +160,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         diag = 1;
         bwOff = 0.1;
 
-        dataChan = 2^14;
+        dataChan = 2^13;
         scan_res = 1;
         debug = 0;
         plotUpd = 1;
@@ -182,16 +184,16 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         gamma = 1;
         iter = 1;
         %% System
-        fc = 4.5e9;
+        fc = 1e9;
         fsRfsoc = 250e6;
         fsDAC = 500e6;
         bw = 249e6;
         num = 1;
         scan_bw = 180;
-        setupFile = [fileparts(mfilename('fullpath')) '\Settings\ofdm_iq_20_16.setx'];
+        setupFile = [fileparts(mfilename('fullpath')) '\Settings\ofdm_iq_100_16.setx'];
 
         server_ip = 'pynq'; % Use the appropriate IP address or hostname http://192.168.3.1/lab
-%         server_ip = '132.68.138.226'; % Use the appropriate IP address or hostname http://192.168.3.1/lab
+        %         server_ip = '132.68.138.226'; % Use the appropriate IP address or hostname http://192.168.3.1/lab
 
         %         server_ip = '132.68.138.226'; % Use the appropriate IP address or hostname http://192.168.3.1/lab
         server_port = 4000; % Use the same port number used in the Python server
@@ -201,16 +203,16 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         %         gen_ip = '132.68.138.225';
         gen_ip = 'A-N5182B-052325';
 
-        
+
         gen_port = 5025;
 
         visaDevList;
         currentDevIP = "";
         currentDev = "";
         lorx = struct('Model', "N5182B", 'IP', "", "State", 1, 'Power', 5, 'Fc', 2000, 'Mod', 0);
-        lotx = struct('Model', "E8267D", 'IP', "132.68.138.223", "State", 1, 'Power', 10, 'Fc', 28050, 'Mod', 0);  
+        lotx = struct('Model', "E8267D", 'IP', "132.68.138.223", "State", 1, 'Power', 10, 'Fc', 28050, 'Mod', 0);
 
-        %% Upconverter
+        %% Downconverter
         phase_cal = 0;
         arduino;
         phase_gauge;
@@ -219,6 +221,10 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         cur_ang = 0;
         phase_cal_butt = 0;
 
+        autocal = 0;
+        autocal_threshold = 50;
+        autocal_min_array = [];
+        autocal_registers = [];
         %% Flags
         reset_req = 1;
         part_reset_req = 1;
@@ -232,7 +238,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         nyquistZone_d1 = 1;
         fc_d0 = 4.5e9;
         fc_d1 = 4.5e9;
-        
+
         dacPow = [1,1,1,1];
         da = 1;
         bwDac = 499e6;
@@ -253,14 +259,14 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         dacSR = 1;
         dacAmp = 2^14-1;
         dacGain = [199, 199, 199, 199];
-        adcGain = [199, 199, 199, 199];
+        adcGain = [60, 199, 116, 72]; % Calibrated with metal surface
         dphase = [0,0,0,0];
-%         dphaseCorr = [0,9,-132,-18];
-%         dphaseCorr = [0,-22,-37,-162];
+        %         dphaseCorr = [0,9,-132,-18];
+        %         dphaseCorr = [0,-22,-37,-162];
         dphaseCorr = [0,0,-40,-173];
-%         dphaseCorr = [0,15,-36,144];
+        %         dphaseCorr = [0,15,-36,144];
         phase = [0,0,0,0];
-%         phase = [0,13,-20,-18];
+        %         phase = [0,13,-20,-18];
         manualControlState = "DAC phase";
 
         phaseMax = 179; %RFSoC limits
@@ -328,7 +334,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         function partReset(app)
             app.ResetButton.Text = 'Reseting...';
             app.ResetButton.BackgroundColor = 'y';
-            drawnow%!!!!            
+            drawnow%!!!!
             app.ula = antPrep(app.num_elements, app.c, app.fcAnt);
             app.scan_axis = -app.scan_bw/2:app.scan_res:app.scan_bw/2;
             app.plot_handle = plotPrep(app, app.scan_axis);
@@ -360,7 +366,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         % Code that executes after component creation
         function startupFcn(app)
             cd(fileparts(mfilename('fullpath')))
-%             addpath(genpath([pwd '\iqtools_2023_10_24']))
+            %             addpath(genpath([pwd '\iqtools_2023_10_24']))
             addpath(genpath([pwd '\Packet-Creator-VHT']))
             addpath(genpath([pwd '\Functions']))
             pwd
@@ -376,6 +382,10 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             dacmain.line = '-m';
             dacmain.txt = 'Dac';
             count = 1;
+            autocal_cnt = 0;
+            inphase_state = 1;
+            data = [];
+            data_dc = [];
             fileCnt = 1;
             am = [];
             bs = [];
@@ -390,7 +400,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                 num2str(app.fc_d0/1e6) '/' num2str(app.nyquistZone_d0) '/' ...
                 num2str(app.fc_d1/1e6) '/' num2str(app.nyquistZone_d1) ...
                 '# dataChan ' num2str(app.dataChan*8)];
-            warning('off','all')            
+            warning('off','all')
             while true
                 if app.reset_req
                     resetApp(app);
@@ -399,17 +409,17 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                 end
                 if app.debug
                     disp('New data')
-                    tic                    
+                    tic
                 end
-                if app.dataStream        
-                    try                        
+                if app.dataStream
+                    try
                         [yspec, estimated_angle, bfSig, app.weights, app.rawData] = rfsocBf(app, app.vsa, app.ch, app.bf, app.off, app.gap, app.cutter, ...
                             app.ang_num, app.data_v, app.tcp_client, app.fcAnt, app.dataChan, app.diag, app.bwOff, app.ula, app.scan_axis, ...
                             app.c1, app.c2, app.fsRfsoc, app.bw, app.c, app.estimator, app.alg_scan_res, app.mis_ang, app.alpha, app.gamma, app.iter, app.setup_v, app.debug);
                         if isnan(app.weights)
                             disp("No signal")
                             app.weights = 0;
-%                             continue
+                            %                             continue
                         end
                     catch
                         disp("Error in rfsocBf")
@@ -420,7 +430,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                                 app.commands = [];
                             end
                         else
-                            writeline(app.tcp_client, 'alive 1');           
+                            writeline(app.tcp_client, 'alive 1');
                         end
                         continue
                     end
@@ -429,144 +439,230 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                         disp(['bf time ' num2str(bf_time) ' s'])
                     end
                 end
-                    %                     disp('___')
-                    %                     toc
-                    %% Pattern calc
-                    if app.plotUpd
-                        app.weights = conj(app.weights);
-                        p_manual = beamPatternCalc(app.weights, app.fcAnt, app.scan_axis, length(app.weights));
+                %                     disp('___')
+                %                     toc
+                %% Pattern calc
+                if app.plotUpd
+                    app.weights = conj(app.weights);
+                    p_manual = beamPatternCalc(app.weights, app.fcAnt, app.scan_axis, length(app.weights));
 
-                        %% Avg
-                        [p_manual_mean_vec, app.p_manual_mean]  = avgData(p_manual, app.p_manual_mean);
-                        p_manual_mean_db = 20*log10(p_manual_mean_vec) - max(20*log10(p_manual_mean_vec));
-                        [yspec_mean_vec, app.yspec_mean]  = avgData(yspec, app.yspec_mean);
-                        if app.patternCorr
-                            yspec_mean_vec = yspec_mean_vec.*(1./app.koef);
-                        end
-                        %% Plot
-                        if app.plotMirror
-                            yspec_mean_vec = flip(yspec_mean_vec);
-                            estimated_angle = -1*estimated_angle;
-                            p_manual_mean_db = flip(p_manual_mean_db);
-                            app.dacAngle = -1*app.dacAngle;
-                        end
+                    %% Avg
+                    [p_manual_mean_vec, app.p_manual_mean]  = avgData(p_manual, app.p_manual_mean);
+                    p_manual_mean_db = 20*log10(p_manual_mean_vec) - max(20*log10(p_manual_mean_vec));
+                    [yspec_mean_vec, app.yspec_mean]  = avgData(yspec, app.yspec_mean);
+                    if app.patternCorr
+                        yspec_mean_vec = yspec_mean_vec.*(1./app.koef);
+                    end
+                    %% Plot
+                    if app.plotMirror
+                        yspec_mean_vec = flip(yspec_mean_vec);
+                        estimated_angle = -1*estimated_angle;
+                        p_manual_mean_db = flip(p_manual_mean_db);
+                        app.dacAngle = -1*app.dacAngle;
+                    end
 
-                        app.UIAxes.Title.String = (['Direction of Arrival:' newline  'Estimated Angles = ' num2str(estimated_angle) newline 'DAC Angles = ' num2str(app.dacAngle)]);
+                    app.UIAxes.Title.String = (['Direction of Arrival:' newline  'Estimated Angles = ' num2str(estimated_angle) newline 'DAC Angles = ' num2str(app.dacAngle)]);
 
-                        set(app.plot_handle, 'YData', (yspec_mean_vec/max(yspec_mean_vec)), 'LineWidth', 1.5);
-                        plot(app.UIAxes2, app.scan_axis,p_manual_mean_db, 'LineWidth', 1.5);
-                        % Xlines
-                        estimated_angle = [estimated_angle NaN NaN]; % To prevent errors in xlines indexing
-                        am = guiXline(am, app.UIAxes, main, estimated_angle(1), 'right');
-                        am2 = guiXline(am2, app.UIAxes2, main, estimated_angle(1), 'right');
-                        if app.dacBFon
-                            adac = guiXline(adac, app.UIAxes, dacmain, app.dacAngle, 'left');
-                            adac2 = guiXline(adac2, app.UIAxes2, dacmain, app.dacAngle, 'left');
+                    set(app.plot_handle, 'YData', (yspec_mean_vec/max(yspec_mean_vec)), 'LineWidth', 1.5);
+                    plot(app.UIAxes2, app.scan_axis,p_manual_mean_db, 'LineWidth', 1.5);
+                    % Xlines
+                    estimated_angle = [estimated_angle NaN NaN]; % To prevent errors in xlines indexing
+                    am = guiXline(am, app.UIAxes, main, estimated_angle(1), 'right');
+                    am2 = guiXline(am2, app.UIAxes2, main, estimated_angle(1), 'right');
+                    if app.dacBFon
+                        adac = guiXline(adac, app.UIAxes, dacmain, app.dacAngle, 'left');
+                        adac2 = guiXline(adac2, app.UIAxes2, dacmain, app.dacAngle, 'left');
+                    end
+                    %% GUI lines
+                    if sum(~isnan(estimated_angle)) > 1
+                        bs = guiXline(bs, app.UIAxes, sub, estimated_angle(2), 'center');
+                        bs2 = guiXline(bs2, app.UIAxes2, sub, estimated_angle(2), 'center');
+                        null_diff = round(p_manual_mean_db((app.scan_axis == estimated_angle(1))) - p_manual_mean_db((app.scan_axis == estimated_angle(2))));
+                        app.UIAxes2.Title.String = (['Beam Pattern' newline  'Gain Difference = ' ...
+                            num2str(abs(null_diff)) ' dB']);
+                        if sum(~isnan(estimated_angle)) > 2
+                            cs = guiXline(cs, app.UIAxes, sub, estimated_angle(3), 'center');
+                            cs2 = guiXline(cs2, app.UIAxes2, sub, estimated_angle(3), 'center');
                         end
-%%
-                        if sum(~isnan(estimated_angle)) > 1
-                            bs = guiXline(bs, app.UIAxes, sub, estimated_angle(2), 'center');
-                            bs2 = guiXline(bs2, app.UIAxes2, sub, estimated_angle(2), 'center');
-                            null_diff = round(p_manual_mean_db((app.scan_axis == estimated_angle(1))) - p_manual_mean_db((app.scan_axis == estimated_angle(2))));
-                            app.UIAxes2.Title.String = (['Beam Pattern' newline  'Gain Difference = ' ...
-                                num2str(abs(null_diff)) ' dB']);
-                            if sum(~isnan(estimated_angle)) > 2
-                                cs = guiXline(cs, app.UIAxes, sub, estimated_angle(3), 'center');
-                                cs2 = guiXline(cs2, app.UIAxes2, sub, estimated_angle(3), 'center');
-                            end
+                    else
+                        null_diff = round(p_manual_mean_db((app.scan_axis == estimated_angle(1))) - min(p_manual_mean_db));
+                        app.UIAxes2.Title.String = (['Beam Pattern' newline  'Gain Difference = ' ...
+                            num2str(abs(null_diff)) ' dB']);
+                    end
+                    %% BF pattern
+                    if app.MatlabPattern
+                        if count >= app.updrate
+                            plotResponse(app.ula,app.fcAnt,app.c,...
+                                'AzimuthAngles',app.scan_axis,...
+                                'Unit','db',...
+                                'Weights',app.weights.');
+                            count = 1;
                         else
-                            null_diff = round(p_manual_mean_db((app.scan_axis == estimated_angle(1))) - min(p_manual_mean_db));
-                            app.UIAxes2.Title.String = (['Beam Pattern' newline  'Gain Difference = ' ...
-                                num2str(abs(null_diff)) ' dB']);
+                            count = count + 1;
                         end
-%%
-                        if app.MatlabPattern
-                            if count >= app.updrate
-                                plotResponse(app.ula,app.fcAnt,app.c,...
-                                    'AzimuthAngles',app.scan_axis,...
-                                    'Unit','db',...
-                                    'Weights',app.weights.');
-                                count = 1;
+                    end
+                    %% Raw Data save
+                    if app.saveFlg
+                        if fileCnt >= app.numFiles
+                            fileCnt = 1;
+                            app.saveFlg = 0;
+                            save(app.saveName, 'saveFile')
+                            saveFile = [];
+                        else
+                            saveFile(fileCnt).raw = app.rawData;
+                            fileCnt = fileCnt + 1;
+                        end
+                    end
+                    %% RX autocal
+                    if app.autocal
+
+                        % --- Safely initialize data_dc if it doesn't exist or is empty ---
+                        if ~exist('data_dc','var') || isempty(data_dc)
+                            data_dc = 0;
+                        end
+
+                        % --- If we haven't finished the in-phase and quadrature sweeps (0->66) ---
+                        if autocal_cnt <= 66
+
+                            % --- If autocal_cnt == 33, reset to 'inphase_state=0' and re-init min array ---
+                            if autocal_cnt == 33
+                                inphase_state = 0;
+                                app.rxBoardControl_app.registers = app.autocal_registers;
+                                app.autocal_min_array = inf(1,4);   % [inf inf inf inf]
+                            end
+
+                            % --- Filter your signal and accumulate power ---
+                            rawData = filtSig(app.rawData, app.fsRfsoc, 1e6);
+                            data_dc = data_dc + bandpower(rawData);
+
+                            % --- Once we reach avg_factor accumulations, average and update ---
+                            if count == app.avg_factor
+
+                                data_dc = data_dc / app.avg_factor;  % average across 'avg_factor'
+                                mask    = data_dc < app.autocal_min_array;
+
+                                % Update registers for channels that found a new minimum
+                                if any(mask)
+                                    % For each channel that has lower data_dc, update autocal_registers
+                                    for iCh = find(mask)
+                                        if inphase_state
+                                            fName = ['RX' num2str(iCh) '_DAC_I'];
+                                        else
+                                            fName = ['RX' num2str(iCh) '_DAC_Q'];
+                                        end
+                                        % Store “best so far” register + min power
+                                        app.autocal_registers.(fName) = app.rxBoardControl_app.registers.(fName);
+                                        app.autocal_min_array(iCh)    = data_dc(iCh);
+                                    end
+                                end
+
+                                % Now increment the current DAC values by updating rxBoardControl_app
+                                % If inphase_state == 1 => we’re sweeping 'I' values
+                                if inphase_state
+                                    for iCh = 1:4
+                                        fName = ['RX' num2str(iCh) '_DAC_I'];
+                                        app.rxBoardControl_app.registers.(fName) = autocal_cnt + 30;
+                                    end
+                                else
+                                    % else we’re sweeping 'Q' values => offset by -63
+                                    for iCh = 1:4
+                                        fName = ['RX' num2str(iCh) '_DAC_Q'];
+                                        app.rxBoardControl_app.registers.(fName) = autocal_cnt - 33;
+                                    end
+                                end
+
+                                % Bump the autocal counter, reset count + data_dc, then update board
+                                autocal_cnt = autocal_cnt + 1;
+                                count       = 1;
+                                data_dc     = [];
+
+                                app.rxBoardControl_app.updateFields;
+                                app.rxBoardControl_app.updateRXboard;
+
                             else
+                                % If we haven’t yet reached app.avg_factor, just increment
                                 count = count + 1;
                             end
+
+                        else
+                            % --- Done with 0->66 sweep => switch to inphase_state=1 or stop calibration
+                            inphase_state = 1;
+                            autocal_cnt   = 0;
+                            count         = 1;
+                            app.autocal   = 0;
+
+                            app.rxBoardControl_app.registers = app.autocal_registers;
+                            app.rxBoardControl_app.updateFields;
+                            app.rxBoardControl_app.updateRXboard;
+
                         end
-%%
-                        if app.saveFlg
-                            if fileCnt >= app.numFiles
-                                fileCnt = 1;
-                                app.saveFlg = 0;
-                                save(app.saveName, 'saveFile')
-                                saveFile = [];
-                            else
-                                saveFile(fileCnt).raw = app.rawData;
-                                fileCnt = fileCnt + 1;
+                    end
+                    %% RX phase and amplitude cal
+                    if app.phase_cal
+                        app.StartphasecalibrationsButton.Text = ['Set ' num2str(app.cur_ang) ' deg and press'];
+                        app.Gauge.Value = app.cur_ang;
+                        app.phase_cal_butt = 0;
+                        uiwait
+                        %                             app.StartphasecalibrationsButton.BackgroundColor = 'g';
+                        writeline(app.tcp_client, 'alive 1');
+                        rawData = 0;
+                        rawData = tcpDataRec(app.tcp_client, (app.dataChan * 8), 8);
+                        rawData = filtSig(rawData, app.fsRfsoc, app.bw);
+                        save([pwd '\phase_cal\' num2str(app.cur_ang) '.mat'], 'rawData')
+
+                        if app.cur_ang == -(app.start_ang)
+                            phase_scan_axis = -abs(app.start_ang):app.step_ang:abs(app.start_ang);
+                            list = dir([pwd '\phase_cal\*.mat']);
+                            for k=1:length(phase_scan_axis)
+                                sig_temp = load([pwd '\phase_cal\' num2str(phase_scan_axis(k)), '.mat']);
+                                sig = sig_temp.rawData;
+                                meas_mat(:,:,k) = sig;
                             end
-                        end
-%%
-                        if app.phase_cal                            
-                            app.StartphasecalibrationsButton.Text = ['Set ' num2str(app.cur_ang) ' deg and press'];
-                            app.Gauge.Value = app.cur_ang;
-                            app.phase_cal_butt = 0;
-                            uiwait
-%                             app.StartphasecalibrationsButton.BackgroundColor = 'g';
-                            writeline(app.tcp_client, 'alive 1');    
-                            rawData = 0;
-                            rawData = tcpDataRec(app.tcp_client, (app.dataChan * 8), 8);
-                            rawData = filtSig(rawData, app.fsRfsoc, app.bw);
-                            save([pwd '\phase_cal\' num2str(app.cur_ang) '.mat'], 'rawData')
-
-                            if app.cur_ang == -(app.start_ang)
-                                phase_scan_axis = -abs(app.start_ang):app.step_ang:abs(app.start_ang);
-                                list = dir([pwd '\phase_cal\*.mat']);
-                                for k=1:length(phase_scan_axis)
-                                    sig_temp = load([pwd '\phase_cal\' num2str(phase_scan_axis(k)), '.mat']);                                
-                                    sig = sig_temp.rawData;  
-                                    meas_mat(:,:,k) = sig;
-                                end
-                                app.StartphasecalibrationsButton.Text = 'Press to start calibrations';
-                                [steering_correction, ~, ~] = phase_pattern_generator(meas_mat,phase_scan_axis,app.scan_res,app.num_elements,app.fcAnt, app.c);
-                                save('steering_correction.mat', 'steering_correction');
-                                app.phase_cal = 0;
-                                app.cur_ang = 0;
-                            else
-                                app.cur_ang = app.cur_ang + app.step_ang;
-                            end                            
+                            app.StartphasecalibrationsButton.Text = 'Press to start calibrations';
+                            [steering_correction, ~, ~] = phase_pattern_generator(meas_mat,phase_scan_axis,app.scan_res,app.num_elements,app.fcAnt, app.c);
+                            save('steering_correction.mat', 'steering_correction');
+                            app.phase_cal = 0;
+                            app.cur_ang = 0;
+                        else
+                            app.cur_ang = app.cur_ang + app.step_ang;
                         end
                     end
-                    if app.dacBFon
-                        switch app.dacBF
-                            case 'Random'
-                                app.dacAngle = randi([-app.scan_bw/2,app.scan_bw/2],1);
-                            case 'Scaning'
-                                app.dacAngle = app.dacTestArray(1);
-                                app.dacTestArray = [app.dacTestArray(2:end) app.dacTestArray(1)];
-                            case 'Rescaning'
-                                app.dacAngle = app.dacTestArray(1);
-                                app.dacTestArray = [app.dacTestArray(end) app.dacTestArray(1:end-1)];
-                            case 'Tracking'
-                                app.dacAngle = estimated_angle(1);
-                            case 'Retracking'
-                                app.dacAngle = -estimated_angle(1);
-                            case 'Tr_s'
-                                app.dacAngle = round(estimated_angle(1)/10);
-                            case 'Retr_s'
-                                app.dacAngle = round(-estimated_angle(1)/10);
-                            otherwise
-                                app.dacAngle = app.AngleSpinner.Value;
-                        end
-                        beamforming = phased.SteeringVector('SensorArray',app.ula);
-                        weight = beamforming(app.fcAnt, app.dacAngle);
-                        %                     weight = weight/norm(weight)*2;
-                        app.dphase = angle(weight).';
-                        app.dphase = round(rad2deg(app.dphase), 2);
-                        app.dphase = app.dphase + app.dphaseCorr;
-                        % Find the indices where the absolute value of dphase exceeds phaseMax
-                        indices = abs(app.dphase) > app.phaseMax;
-                        app.dphase(indices) = -(app.dphase(indices) - min(max(app.dphase(indices), app.phaseMin), app.phaseMax));
-
-                        commandsHandler(app, ['dphase ' strjoin(arrayfun(@num2str, app.dphase*100, 'UniformOutput', false), '/');]);
+                end
+                %% DAC BF
+                if app.dacBFon
+                    switch app.dacBF
+                        case 'Random'
+                            app.dacAngle = randi([-app.scan_bw/2,app.scan_bw/2],1);
+                        case 'Scaning'
+                            app.dacAngle = app.dacTestArray(1);
+                            app.dacTestArray = [app.dacTestArray(2:end) app.dacTestArray(1)];
+                        case 'Rescaning'
+                            app.dacAngle = app.dacTestArray(1);
+                            app.dacTestArray = [app.dacTestArray(end) app.dacTestArray(1:end-1)];
+                        case 'Tracking'
+                            app.dacAngle = estimated_angle(1);
+                        case 'Retracking'
+                            app.dacAngle = -estimated_angle(1);
+                        case 'Tr_s'
+                            app.dacAngle = round(estimated_angle(1)/10);
+                        case 'Retr_s'
+                            app.dacAngle = round(-estimated_angle(1)/10);
+                        otherwise
+                            app.dacAngle = app.AngleSpinner.Value;
                     end
+                    beamforming = phased.SteeringVector('SensorArray',app.ula);
+                    weight = beamforming(app.fcAnt, app.dacAngle);
+                    %                     weight = weight/norm(weight)*2;
+                    app.dphase = angle(weight).';
+                    app.dphase = round(rad2deg(app.dphase), 2);
+                    app.dphase = app.dphase + app.dphaseCorr;
+                    % Find the indices where the absolute value of dphase exceeds phaseMax
+                    indices = abs(app.dphase) > app.phaseMax;
+                    app.dphase(indices) = -(app.dphase(indices) - min(max(app.dphase(indices), app.phaseMin), app.phaseMax));
+
+                    commandsHandler(app, ['dphase ' strjoin(arrayfun(@num2str, app.dphase*100, 'UniformOutput', false), '/');]);
+                end
+                %% TCP/IP tx
                 if not(isempty(app.commands))
                     oldComs = app.commands;
                     writeline(app.tcp_client, app.commands);
@@ -574,14 +670,14 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                         app.commands = [];
                     end
                 else
-                    writeline(app.tcp_client, 'alive 1');           
+                    writeline(app.tcp_client, 'alive 1');
                 end
-                    if app.debug
-                        full_time = toc;
-                        disp(['Full time ' num2str(full_time) ' s'])
-                        disp('--------------------------------')
-                    end
-%                 end
+                if app.debug
+                    full_time = toc;
+                    disp(['Full time ' num2str(full_time) ' s'])
+                    disp('--------------------------------')
+                end
+                %                 end
             end
         end
 
@@ -866,10 +962,10 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
 
         % Callback function
         function RFSoCFcSpinner_3ValueChanged(app, event)
-%             app.fc_d1 = app.AntennaFcSpinner.Value*1e6;
-%             commandsHandler(app, ['fc ' num2str(app.fc/1e6) '/' num2str(app.nyquistZone) '/' ...
-%                 num2str(app.fc_d0/1e6) '/' num2str(app.nyquistZone_d0) '/' ...
-%                 num2str(app.fc_d1/1e6) '/' num2str(app.nyquistZone_d1)]);
+            %             app.fc_d1 = app.AntennaFcSpinner.Value*1e6;
+            %             commandsHandler(app, ['fc ' num2str(app.fc/1e6) '/' num2str(app.nyquistZone) '/' ...
+            %                 num2str(app.fc_d0/1e6) '/' num2str(app.nyquistZone_d0) '/' ...
+            %                 num2str(app.fc_d1/1e6) '/' num2str(app.nyquistZone_d1)]);
 
         end
 
@@ -974,10 +1070,10 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                 if exist('phase_cal', 'dir')
                     rmdir('phase_cal', 's')
                 end
-                mkdir('phase_cal')                
+                mkdir('phase_cal')
                 app.cur_ang = app.start_ang;
-%                 [baseFileName, folder] = uiputfile([pwd 'steering_correction_' num2str(app.start_ang) '_' num2str(app.step_ang) 'deg_res.mat']);
-%                 app.saveName = fullfile(folder, baseFileName);
+                %                 [baseFileName, folder] = uiputfile([pwd 'steering_correction_' num2str(app.start_ang) '_' num2str(app.step_ang) 'deg_res.mat']);
+                %                 app.saveName = fullfile(folder, baseFileName);
                 app.phase_cal = 1;
             end
             uiresume
@@ -987,17 +1083,18 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
 
         % Value changed function: StepangEditField
         function StepangEditFieldValueChanged(app, event)
-            app.step_ang = app.StepangEditField.Value;            
+            app.step_ang = app.StepangEditField.Value;
         end
 
         % Value changed function: StarrangEditField
         function StarrangEditFieldValueChanged(app, event)
-            app.start_ang = app.StarrangEditField.Value;            
+            app.start_ang = app.StarrangEditField.Value;
         end
 
-        % Button pushed function: ArduinoprogramButton
-        function ArduinoprogramButtonPushed(app, event)
-            arduino_prog();
+        % Button pushed function: ArduinoGUIButton
+        function ArduinoGUIButtonPushed(app, event)
+            % arduino_prog();
+            app.rxBoardControl_app = rxBoardControl;
         end
 
         % Value changed function: MirrorCheckBox
@@ -1021,7 +1118,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
 
         % Value changed function: AntennaFcSpinner
         function AntennaFcSpinnerValueChanged(app, event)
-            app.fcAnt = app.AntennaFcSpinner.Value*1e6;            
+            app.fcAnt = app.AntennaFcSpinner.Value*1e6;
             app.part_reset_req = 1;
         end
 
@@ -1089,7 +1186,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.dacBF = app.DACBFmodeListBox.Value;
             if string(app.dacBF) == 'Off'
                 app.dacBFon = 0;
-            else 
+            else
                 app.dacBFon = 1;
             end
         end
@@ -1155,11 +1252,11 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                     commandsHandler(app, ['dphase ' strjoin(arrayfun(@num2str, app.dphaseCorr*100, 'UniformOutput', false), '/');]);
                 case "ADC gain"
                     app.adcGain(1) = app.Ch1Spinner.Value;
-                    commandsHandler(app, ['again ' strjoin(arrayfun(@num2str, app.adcGain, 'UniformOutput', false), '/');]);                
+                    commandsHandler(app, ['again ' strjoin(arrayfun(@num2str, app.adcGain, 'UniformOutput', false), '/');]);
                 case "ADC phase"
                     app.phase(1) = app.Ch1Spinner.Value;
                     commandsHandler(app, ['phase ' strjoin(arrayfun(@num2str, app.phase*100, 'UniformOutput', false), '/');]);
-            end            
+            end
         end
 
         % Value changed function: Ch2Spinner
@@ -1173,11 +1270,11 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                     commandsHandler(app, ['dphase ' strjoin(arrayfun(@num2str, app.dphaseCorr*100, 'UniformOutput', false), '/');]);
                 case "ADC gain"
                     app.adcGain(2) = app.Ch2Spinner.Value;
-                    commandsHandler(app, ['again ' strjoin(arrayfun(@num2str, app.adcGain, 'UniformOutput', false), '/');]);                
+                    commandsHandler(app, ['again ' strjoin(arrayfun(@num2str, app.adcGain, 'UniformOutput', false), '/');]);
                 case "ADC phase"
                     app.phase(2) = app.Ch2Spinner.Value;
                     commandsHandler(app, ['phase ' strjoin(arrayfun(@num2str, app.phase*100, 'UniformOutput', false), '/');]);
-            end             
+            end
         end
 
         % Value changed function: Ch3Spinner
@@ -1191,11 +1288,11 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                     commandsHandler(app, ['dphase ' strjoin(arrayfun(@num2str, app.dphaseCorr*100, 'UniformOutput', false), '/');]);
                 case "ADC gain"
                     app.adcGain(3) = app.Ch3Spinner.Value;
-                    commandsHandler(app, ['again ' strjoin(arrayfun(@num2str, app.adcGain, 'UniformOutput', false), '/');]);                
+                    commandsHandler(app, ['again ' strjoin(arrayfun(@num2str, app.adcGain, 'UniformOutput', false), '/');]);
                 case "ADC phase"
                     app.phase(3) = app.Ch3Spinner.Value;
                     commandsHandler(app, ['phase ' strjoin(arrayfun(@num2str, app.phase*100, 'UniformOutput', false), '/');]);
-            end                
+            end
         end
 
         % Value changed function: Ch4Spinner
@@ -1209,11 +1306,11 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                     commandsHandler(app, ['dphase ' strjoin(arrayfun(@num2str, app.dphaseCorr*100, 'UniformOutput', false), '/');]);
                 case "ADC gain"
                     app.adcGain(4) = app.Ch4Spinner.Value;
-                    commandsHandler(app, ['again ' strjoin(arrayfun(@num2str, app.adcGain, 'UniformOutput', false), '/');]);                
+                    commandsHandler(app, ['again ' strjoin(arrayfun(@num2str, app.adcGain, 'UniformOutput', false), '/');]);
                 case "ADC phase"
                     app.phase(4) = app.Ch4Spinner.Value;
                     commandsHandler(app, ['phase ' strjoin(arrayfun(@num2str, app.phase*100, 'UniformOutput', false), '/');]);
-            end 
+            end
         end
 
         % Value changed function: DevicecontrolDropDown
@@ -1263,18 +1360,18 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
 
         % Value changed function: PowerCheckBox
         function PowerCheckBoxValueChanged2(app, event)
-            genCtrl(app.currentDevIP, app.gen_port, app.PowerCheckBox.Value, app.AmplitudeSpinner.Value, app.FrequencySpinner.Value*1e6, app.ModulationCheckBox.Value);            
+            genCtrl(app.currentDevIP, app.gen_port, app.PowerCheckBox.Value, app.AmplitudeSpinner.Value, app.FrequencySpinner.Value*1e6, app.ModulationCheckBox.Value);
         end
 
         % Value changed function: ModulationCheckBox
         function ModulationCheckBoxValueChanged(app, event)
-            genCtrl(app.currentDevIP, app.gen_port, app.PowerCheckBox.Value, app.AmplitudeSpinner.Value, app.FrequencySpinner.Value*1e6, app.ModulationCheckBox.Value);            
+            genCtrl(app.currentDevIP, app.gen_port, app.PowerCheckBox.Value, app.AmplitudeSpinner.Value, app.FrequencySpinner.Value*1e6, app.ModulationCheckBox.Value);
         end
 
         % Value changed function: IPEditField
         function IPEditFieldValueChanged(app, event)
-%             app.currentDevIP = app.IPEditField.Value;
-            
+            %             app.currentDevIP = app.IPEditField.Value;
+
         end
 
         % Button pushed function: PrintphasemissmatchButton
@@ -1298,6 +1395,37 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             end
             app.DevicecontrolDropDownLabel.Text = 'Device control';
             app.DevicecontrolDropDown.Items = [app.visaDevList.Model; "E8267D"; "Custom"];
+        end
+
+        % Button pushed function: AutocalStartButton
+        function AutocalStartButtonPushed(app, event)
+
+            if isempty(app.rxBoardControl_app)
+                uialert(app.RFSoCBeamformerUIFigure,'Set up arduino connection first','Autocal Error');
+            else
+                app.autocal = 1;
+                app.autocal_min_array = repmat(app.AutocalthresholdEditField.Value, 1, app.num_elements); % Cal reset
+            end
+            if isempty(app.autocal_registers)
+                app.autocal_registers = app.rxBoardControl_app.registers;
+            else
+                app.rxBoardControl_app.registers = app.autocal_registers;
+                app.rxBoardControl_app.updateFields;
+                app.rxBoardControl_app.updateRXboard;
+            end
+            app.autocal_min_array = [inf, inf, inf, inf];
+        end
+
+        % Value changed function: AutocalthresholdEditField
+        function AutocalthresholdEditFieldValueChanged(app, event)
+            app.autocal_threshold = app.AutocalthresholdEditField.Value;
+            app.autocal_min_array = repmat(app.autocal_threshold, 1, app.num_elements);
+        end
+
+        % Close request function: RFSoCBeamformerUIFigure
+        function RFSoCBeamformerUIFigureCloseRequest(app, event)
+            delete(app)
+
         end
 
         % Changes arrangement of the app based on UIFigure width
@@ -1330,6 +1458,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.RFSoCBeamformerUIFigure.AutoResizeChildren = 'off';
             app.RFSoCBeamformerUIFigure.Position = [100 100 835 949];
             app.RFSoCBeamformerUIFigure.Name = 'RFSoC Beamformer';
+            app.RFSoCBeamformerUIFigure.CloseRequestFcn = createCallbackFcn(app, @RFSoCBeamformerUIFigureCloseRequest, true);
             app.RFSoCBeamformerUIFigure.SizeChangedFcn = createCallbackFcn(app, @updateAppLayout, true);
             app.RFSoCBeamformerUIFigure.Scrollable = 'on';
 
@@ -1455,7 +1584,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.RFSoCFcSpinner.Limits = [1 10000];
             app.RFSoCFcSpinner.ValueChangedFcn = createCallbackFcn(app, @RFSoCFcSpinnerValueChanged, true);
             app.RFSoCFcSpinner.Position = [76 610 77 22];
-            app.RFSoCFcSpinner.Value = 4500;
+            app.RFSoCFcSpinner.Value = 1000;
 
             % Create RFSoCFsSpinnerLabel
             app.RFSoCFsSpinnerLabel = uilabel(app.SystemTab);
@@ -1746,24 +1875,24 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             % Create Gauge
             app.Gauge = uigauge(app.DownconverterTab, 'semicircular');
             app.Gauge.Limits = [-90 90];
-            app.Gauge.Position = [14 497 189 102];
+            app.Gauge.Position = [17 330 189 102];
 
             % Create StartphasecalibrationsButton
             app.StartphasecalibrationsButton = uibutton(app.DownconverterTab, 'push');
             app.StartphasecalibrationsButton.ButtonPushedFcn = createCallbackFcn(app, @StartphasecalibrationsButtonPushed, true);
-            app.StartphasecalibrationsButton.Position = [39 404 140 58];
+            app.StartphasecalibrationsButton.Position = [42 237 140 58];
             app.StartphasecalibrationsButton.Text = 'Start phase calibrations';
 
-            % Create ArduinoprogramButton
-            app.ArduinoprogramButton = uibutton(app.DownconverterTab, 'push');
-            app.ArduinoprogramButton.ButtonPushedFcn = createCallbackFcn(app, @ArduinoprogramButtonPushed, true);
-            app.ArduinoprogramButton.Position = [50 619 104 23];
-            app.ArduinoprogramButton.Text = 'Arduino program';
+            % Create ArduinoGUIButton
+            app.ArduinoGUIButton = uibutton(app.DownconverterTab, 'push');
+            app.ArduinoGUIButton.ButtonPushedFcn = createCallbackFcn(app, @ArduinoGUIButtonPushed, true);
+            app.ArduinoGUIButton.Position = [62 660 104 23];
+            app.ArduinoGUIButton.Text = 'Arduino GUI';
 
             % Create StarrangEditFieldLabel
             app.StarrangEditFieldLabel = uilabel(app.DownconverterTab);
             app.StarrangEditFieldLabel.HorizontalAlignment = 'right';
-            app.StarrangEditFieldLabel.Position = [15 468 54 22];
+            app.StarrangEditFieldLabel.Position = [18 301 54 22];
             app.StarrangEditFieldLabel.Text = 'Starr ang';
 
             % Create StarrangEditField
@@ -1771,31 +1900,40 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.StarrangEditField.Limits = [-90 90];
             app.StarrangEditField.RoundFractionalValues = 'on';
             app.StarrangEditField.ValueChangedFcn = createCallbackFcn(app, @StarrangEditFieldValueChanged, true);
-            app.StarrangEditField.Position = [77 468 29 22];
+            app.StarrangEditField.Position = [80 301 29 22];
             app.StarrangEditField.Value = -60;
 
             % Create StepangEditFieldLabel
             app.StepangEditFieldLabel = uilabel(app.DownconverterTab);
             app.StepangEditFieldLabel.HorizontalAlignment = 'right';
-            app.StepangEditFieldLabel.Position = [112 468 53 22];
+            app.StepangEditFieldLabel.Position = [115 301 53 22];
             app.StepangEditFieldLabel.Text = 'Step ang';
 
             % Create StepangEditField
             app.StepangEditField = uieditfield(app.DownconverterTab, 'numeric');
             app.StepangEditField.Limits = [0.01 50];
             app.StepangEditField.ValueChangedFcn = createCallbackFcn(app, @StepangEditFieldValueChanged, true);
-            app.StepangEditField.Position = [173 468 24 22];
+            app.StepangEditField.Position = [176 301 24 22];
             app.StepangEditField.Value = 10;
 
-            % Create ArduinoportDropDownLabel
-            app.ArduinoportDropDownLabel = uilabel(app.DownconverterTab);
-            app.ArduinoportDropDownLabel.HorizontalAlignment = 'right';
-            app.ArduinoportDropDownLabel.Position = [8 663 70 22];
-            app.ArduinoportDropDownLabel.Text = 'Arduino port';
+            % Create AutocalthresholdLabel
+            app.AutocalthresholdLabel = uilabel(app.DownconverterTab);
+            app.AutocalthresholdLabel.HorizontalAlignment = 'right';
+            app.AutocalthresholdLabel.Position = [48 600 54 30];
+            app.AutocalthresholdLabel.Text = {'Autocal'; 'threshold'};
 
-            % Create ArduinoportDropDown
-            app.ArduinoportDropDown = uidropdown(app.DownconverterTab);
-            app.ArduinoportDropDown.Position = [93 663 100 22];
+            % Create AutocalthresholdEditField
+            app.AutocalthresholdEditField = uieditfield(app.DownconverterTab, 'numeric');
+            app.AutocalthresholdEditField.Limits = [-100 100];
+            app.AutocalthresholdEditField.ValueChangedFcn = createCallbackFcn(app, @AutocalthresholdEditFieldValueChanged, true);
+            app.AutocalthresholdEditField.Position = [117 608 59 22];
+            app.AutocalthresholdEditField.Value = 50;
+
+            % Create AutocalStartButton
+            app.AutocalStartButton = uibutton(app.DownconverterTab, 'push');
+            app.AutocalStartButton.ButtonPushedFcn = createCallbackFcn(app, @AutocalStartButtonPushed, true);
+            app.AutocalStartButton.Position = [66 541 100 37];
+            app.AutocalStartButton.Text = {'Autocal'; 'Start'};
 
             % Create DebugTab
             app.DebugTab = uitab(app.TabGroup);
@@ -1830,7 +1968,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.dataChanEditField.Limits = [1024 131072];
             app.dataChanEditField.ValueChangedFcn = createCallbackFcn(app, @dataChanEditFieldValueChanged, true);
             app.dataChanEditField.Position = [95 295 74 22];
-            app.dataChanEditField.Value = 16384;
+            app.dataChanEditField.Value = 8192;
 
             % Create c1CheckBox
             app.c1CheckBox = uicheckbox(app.DebugTab);
