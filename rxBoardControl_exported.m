@@ -58,6 +58,7 @@ classdef rxBoardControl_exported < matlab.apps.AppBase
         portList = [];
         port = [];
         readBack = [];
+        path = fullfile(pwd,'Settings','registers.mat');
         registers = struct('RM2', 5, 'R3', 3, 'C2', 2, 'C1', 14, 'CM2', 2, ...
             'R1', 0, 'R2', 0, 'CF', 0, 'RF', 4, 'CBB', 15, 'CM', 4, 'RM', 2, ...
             'RX4_DAC_I', 32, 'RX4_DAC_Q', 32, 'RX3_DAC_I', 32, 'RX3_DAC_Q', 32, ...
@@ -130,6 +131,10 @@ classdef rxBoardControl_exported < matlab.apps.AppBase
         function startupFcn(app)
             cd(fileparts(mfilename('fullpath')))
             addpath(genpath([pwd '\Functions']))
+            addpath(genpath([pwd '\Settings']))
+            data = load(app.path);
+            app.registers = data.registers;
+            updateFields(app)
         end
 
         % Drop down opening function: PortListDropDown
