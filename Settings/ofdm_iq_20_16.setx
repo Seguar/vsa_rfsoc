@@ -80,11 +80,11 @@
           <Boolean key="Analysis.TimeVersusTime.MaxAnalysisPointsAuto" value="true" />
           <Double key="Analysis.TimeVersusTime.MaxAnalysisTimeDuration" value="0.26041666666666669" />
           <Boolean key="AutoFreqPoints" value="false" />
-          <Boolean key="AverageFast" value="false" />
-          <Boolean key="AverageRestart" value="false" />
-          <Int16 key="AverageType" value="0" />
-          <Int32 key="AverageUpdate" value="10" />
-          <Boolean key="AverageUpdateIsCnt" value="false" />
+          <Boolean key="AverageFast" value="true" />
+          <Boolean key="AverageRestart" value="true" />
+          <Int32 key="AverageType" value="0" />
+          <Int32 key="AverageUpdate" value="5" />
+          <Boolean key="AverageUpdateIsCnt" value="true" />
           <Int16 key="ConfigDemod" value="20" />
           <Boolean key="ContinuousSweep" value="true" />
           <Boolean key="CoupleIQChannels" value="true" />
@@ -186,7 +186,7 @@
           <BooleanArray key="DemodFlexOfdmScmaEnabledLayers" value="true true" />
           <Int32 key="DemodFlexOfdmScmaNumLayers" value="2" />
           <Int32 key="DemodFlexOfdmScmaSprFactor" value="2" />
-          <Double key="DemodFlexOfdmSrchLen" value="2.5599999999999982E-05" />
+          <Double key="DemodFlexOfdmSrchLen" value="0.00010000000000000003" />
           <Double key="DemodFlexOfdmSymTimeAdj" value="-12.5" />
           <Double key="DemodFlexOfdmSymbolPhaseCompensationFrequency" value="1000000000" />
           <Int32 key="DemodFlexOfdmSymbolPhaseCompensationSource" value="0" />
@@ -198,7 +198,7 @@
           <Int32 key="DemodFlexOfdmSyncSearchOffset" value="0" />
           <Int32 key="DemodFlexOfdmSynchronizationRxChannelIndex" value="0" />
           <Int32 key="DemodFlexOfdmSynchronizationTxChannelIndex" value="0" />
-          <Double key="DemodFlexOfdmSysSmpFreq" value="100000000" />
+          <Double key="DemodFlexOfdmSysSmpFreq" value="20000000" />
           <Int32 key="DemodFlexOfdmTimeGapsRepeatIdx" value="0" />
           <Boolean key="DemodFlexOfdmTrkAmp" value="true" />
           <Boolean key="DemodFlexOfdmTrkData" value="true" />
@@ -220,7 +220,7 @@
           <Boolean key="ExtMirror" value="false" />
           <Double key="GateDelay" value="0" />
           <Boolean key="GateEnable" value="false" />
-          <Double key="GateLength" value="3.828125E-07" />
+          <Double key="GateLength" value="6.640625E-07" />
           <Double key="GateTrigDelay" value="0" />
           <Boolean key="GateTrigEnabled" value="false" />
           <Double key="GateTrigExtLevel" value="1.2" />
@@ -263,7 +263,7 @@
           <Int32 key="InputRangeOptimization" value="0" />
           <Double key="InputRefImped" value="50" />
           <Boolean key="InputRefImpedanceIsConnector" value="true" />
-          <Double key="InputSpan" value="100000000" />
+          <Double key="InputSpan" value="20000000" />
           <Boolean key="InputSpanZoom" value="true" />
           <Boolean key="InputZoom" value="true" />
           <Boolean key="IntrnlAnalogCalOn" value="true" />
@@ -285,7 +285,7 @@
           <Int32 key="MeasChanSequenceTrackingMode" value="0" />
           <Boolean key="MirrorSpectrum" value="false" />
           <Boolean key="NoiseCorrection" value="false" />
-          <Int32 key="NumberOfAverages" value="10" />
+          <Int32 key="NumberOfAverages" value="5" />
           <Double key="ObwPercent" value="0.99" />
           <Double key="ObwPercent.Trace2" value="0.99" />
           <Double key="ObwPercent.Trace3" value="0.99" />
@@ -330,7 +330,7 @@
           <Boolean key="RecordSettle" value="true" />
           <Double key="RecordSize" value="50" />
           <String key="RecordSizeUnit" value="records" />
-          <Double key="ResBW" value="300000" />
+          <Double key="ResBW" value="100000" />
           <Boolean key="ResBWArb" value="false" />
           <Boolean key="SegCapture" value="false" />
           <Int32 key="SegCount" value="10" />
@@ -372,7 +372,7 @@
           <Double key="SwitchAttenuation" value="1.7976931348623157E+308" />
           <Int32 key="SwitchPathsPerAcquisition" value="0" />
           <Int32 key="SwitchRepeatedPathsPerAcquisition" value="0" />
-          <Double key="TimeMainLength" value="1.2734375E-05" />
+          <Double key="TimeMainLength" value="3.8203125E-05" />
           <Boolean key="TimeResolutionAuto" value="false" />
           <Int32 key="TimestampSource" value="0" />
           <Int32 key="TimestampSourceActual" value="1" />
@@ -666,7 +666,7 @@
       <Boolean key="ObwVisible.Trace4" value="false" />
       <Boolean key="ObwVisible.Trace5" value="false" />
       <Boolean key="ObwVisible.Trace6" value="false" />
-      <Int32 key="SelectedTrace" value="1" />
+      <Int32 key="SelectedTrace" value="2" />
       <Double key="Trace1.Aperture" value="0.5" />
       <Boolean key="Trace1.AutoCoupled" value="true" />
       <Boolean key="Trace1.Coupled" value="true" />
@@ -779,9 +779,9 @@
       <Int32 key="Trace2.Mkr1.Position" value="0" />
       <Int32 key="Trace2.Mkr1.Reference" value="0" />
       <Int32 key="Trace2.Mkr1.ReferenceTrace" value="-1" />
-      <Double key="Trace2.Mkr1.Value" value="50000000" />
+      <Double key="Trace2.Mkr1.Value" value="9999999.9999999981" />
       <Boolean key="Trace2.Mkr1.Visible" value="false" />
-      <Double key="Trace2.Mkr1.Y" value="0" />
+      <Double key="Trace2.Mkr1.Y" value="-107.70206325528707" />
       <Double key="Trace2.Mkr1.Z" value="0" />
       <Boolean key="Trace2.Overlay" value="false" />
       <Double key="Trace2.PhsOffset" value="0" />
@@ -805,23 +805,23 @@
       <Boolean key="Trace2.Visible" value="true" />
       <Int32 key="Trace2.XAxisCoordinate" value="2" />
       <Boolean key="Trace2.XAxisCoupled" value="false" />
-      <Double key="Trace2.XAxisLeft" value="-50000000" />
+      <Double key="Trace2.XAxisLeft" value="-9999999.9999999981" />
       <Double key="Trace2.XAxisRefPos" value="50" />
-      <Double key="Trace2.XAxisRight" value="50000000" />
+      <Double key="Trace2.XAxisRight" value="10000000" />
       <Double key="Trace2.XEyeLength" value="2" />
-      <Double key="Trace2.XLeft" value="-50000000" />
+      <Double key="Trace2.XLeft" value="-9999999.9999999981" />
       <Boolean key="Trace2.XLog" value="false" />
-      <Double key="Trace2.XRight" value="50000000" />
+      <Double key="Trace2.XRight" value="10000000" />
       <Boolean key="Trace2.XScaleAuto" value="true" />
       <Int32 key="Trace2.XUnit" value="0" />
       <Int32 key="Trace2.YAxisCoordinate" value="2" />
       <Boolean key="Trace2.YAxisCoupled" value="false" />
-      <Double key="Trace2.YBottom" value="-165" />
+      <Double key="Trace2.YBottom" value="-20" />
       <Int32 key="Trace2.YCoordinate" value="0" />
       <Double key="Trace2.YRefPos" value="100" />
       <Boolean key="Trace2.YRefTrackRange" value="false" />
       <Boolean key="Trace2.YRefVisible" value="false" />
-      <Double key="Trace2.YTop" value="-15" />
+      <Double key="Trace2.YTop" value="80" />
       <Int32 key="Trace2.YUnit" value="0" />
       <Double key="Trace3.Aperture" value="0.5" />
       <Boolean key="Trace3.AutoCoupled" value="true" />
@@ -857,7 +857,7 @@
       <Int32 key="Trace3.Mkr1.Position" value="0" />
       <Int32 key="Trace3.Mkr1.Reference" value="0" />
       <Int32 key="Trace3.Mkr1.ReferenceTrace" value="-1" />
-      <Double key="Trace3.Mkr1.Value" value="-1.91328125E-05" />
+      <Double key="Trace3.Mkr1.Value" value="-9.6093750000000015E-06" />
       <Boolean key="Trace3.Mkr1.Visible" value="false" />
       <Double key="Trace3.Mkr1.Y" value="0" />
       <Double key="Trace3.Mkr1.Z" value="0" />
@@ -871,7 +871,7 @@
       <Int32 key="Trace3.Mkr2.Position" value="0" />
       <Int32 key="Trace3.Mkr2.Reference" value="0" />
       <Int32 key="Trace3.Mkr2.ReferenceTrace" value="-1" />
-      <Double key="Trace3.Mkr2.Value" value="-1.91328125E-05" />
+      <Double key="Trace3.Mkr2.Value" value="-9.6093750000000015E-06" />
       <Boolean key="Trace3.Mkr2.Visible" value="false" />
       <Double key="Trace3.Mkr2.Y" value="0" />
       <Double key="Trace3.Mkr2.Z" value="0" />
@@ -897,23 +897,23 @@
       <Boolean key="Trace3.Visible" value="true" />
       <Int32 key="Trace3.XAxisCoordinate" value="2" />
       <Boolean key="Trace3.XAxisCoupled" value="false" />
-      <Double key="Trace3.XAxisLeft" value="-1.91328125E-05" />
+      <Double key="Trace3.XAxisLeft" value="-3.1484375000000005E-05" />
       <Double key="Trace3.XAxisRefPos" value="50" />
-      <Double key="Trace3.XAxisRight" value="6.460937500000113E-06" />
+      <Double key="Trace3.XAxisRight" value="6.8476562499997251E-05" />
       <Double key="Trace3.XEyeLength" value="2" />
-      <Double key="Trace3.XLeft" value="-1.91328125E-05" />
+      <Double key="Trace3.XLeft" value="-3.1484375000000005E-05" />
       <Boolean key="Trace3.XLog" value="false" />
-      <Double key="Trace3.XRight" value="6.460937500000113E-06" />
+      <Double key="Trace3.XRight" value="6.8476562499997251E-05" />
       <Boolean key="Trace3.XScaleAuto" value="true" />
       <Int32 key="Trace3.XUnit" value="0" />
       <Int32 key="Trace3.YAxisCoordinate" value="2" />
       <Boolean key="Trace3.YAxisCoupled" value="false" />
-      <Double key="Trace3.YBottom" value="-220" />
+      <Double key="Trace3.YBottom" value="-45" />
       <Int32 key="Trace3.YCoordinate" value="0" />
       <Double key="Trace3.YRefPos" value="100" />
       <Boolean key="Trace3.YRefTrackRange" value="false" />
       <Boolean key="Trace3.YRefVisible" value="false" />
-      <Double key="Trace3.YTop" value="-20" />
+      <Double key="Trace3.YTop" value="105" />
       <Int32 key="Trace3.YUnit" value="0" />
       <Double key="Trace4.Aperture" value="0.5" />
       <Boolean key="Trace4.AutoCoupled" value="true" />
@@ -1027,7 +1027,7 @@
       <Int32 key="Trace5.Mkr1.Position" value="0" />
       <Int32 key="Trace5.Mkr1.Reference" value="0" />
       <Int32 key="Trace5.Mkr1.ReferenceTrace" value="-1" />
-      <Double key="Trace5.Mkr1.Value" value="-1.91328125E-05" />
+      <Double key="Trace5.Mkr1.Value" value="-9.6093750000000015E-06" />
       <Boolean key="Trace5.Mkr1.Visible" value="false" />
       <Double key="Trace5.Mkr1.Y" value="0" />
       <Double key="Trace5.Mkr1.Z" value="0" />
@@ -1053,13 +1053,13 @@
       <Boolean key="Trace5.Visible" value="false" />
       <Int32 key="Trace5.XAxisCoordinate" value="2" />
       <Boolean key="Trace5.XAxisCoupled" value="false" />
-      <Double key="Trace5.XAxisLeft" value="-1.91328125E-05" />
+      <Double key="Trace5.XAxisLeft" value="-3.1484375000000005E-05" />
       <Double key="Trace5.XAxisRefPos" value="50" />
-      <Double key="Trace5.XAxisRight" value="6.460937500000113E-06" />
+      <Double key="Trace5.XAxisRight" value="6.8476562499997251E-05" />
       <Double key="Trace5.XEyeLength" value="2" />
-      <Double key="Trace5.XLeft" value="-1.91328125E-05" />
+      <Double key="Trace5.XLeft" value="-3.1484375000000005E-05" />
       <Boolean key="Trace5.XLog" value="false" />
-      <Double key="Trace5.XRight" value="6.460937500000113E-06" />
+      <Double key="Trace5.XRight" value="6.8476562499997251E-05" />
       <Boolean key="Trace5.XScaleAuto" value="true" />
       <Int32 key="Trace5.XUnit" value="0" />
       <Int32 key="Trace5.YAxisCoordinate" value="2" />
