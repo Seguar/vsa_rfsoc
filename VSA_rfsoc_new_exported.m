@@ -204,9 +204,9 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
 
 
         %% Devices
-        %         gen_ip = '132.68.138.225';
-        gen_ip = 'A-N5182B-052325';
-
+        %         gen_ip = '132.68.138.225';        
+        % gen_ip = 'A-N5182B-052325';
+        gen_ip = '132.68.138.193';
 
         gen_port = 5025;
 
@@ -229,6 +229,11 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         autocal_threshold = 50;
         autocal_min_array = [];
         autocal_registers = [];
+        autocal_rx_amp = 0;
+        autocal_rx_phase = 0;
+        %% Upconverter
+        autocal_tx_amp = 0;
+        autocal_tx_phase = 0;
         %% Flags
         reset_req = 1;
         part_reset_req = 1;
@@ -269,7 +274,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         %         dphaseCorr = [0,-22,-37,-162];
         dphaseCorr = [0,0,-40,-173];
         %         dphaseCorr = [0,15,-36,144];
-        phase = [0,0,0,0]; 
+        phase = [0,0,0,0];
         % phase = [0,-68,-23,-30]; % [  0.         -68.16668724 -23.64564807 -30.27015883] [  0.         -87.57967336 -41.12039743 -49.63200857]
         %         phase = [0,13,-20,-18];
         manualControlState = "DAC phase";
@@ -506,133 +511,172 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                             count = count + 1;
                         end
                     end
-                    %% Raw Data save
-                    if app.saveFlg
-                        if fileCnt >= app.numFiles
-                            fileCnt = 1;
-                            app.saveFlg = 0;
-                            save(app.saveName, 'saveFile')
-                            saveFile = [];
-                        else
-                            saveFile(fileCnt).raw = app.rawData;
-                            fileCnt = fileCnt + 1;
-                        end
+                end
+                %% Raw Data save
+                if app.saveFlg
+                    if fileCnt >= app.numFiles
+                        fileCnt = 1;
+                        app.saveFlg = 0;
+                        save(app.saveName, 'saveFile')
+                        saveFile = [];
+                    else
+                        saveFile(fileCnt).raw = app.rawData;
+                        fileCnt = fileCnt + 1;
                     end
-                    %% RX autocal
-                    if app.autocal
+                end
+                %% RX DC Leakage autocal
+                while app.autocal % if for on-line
+                    % --- Safely initialize data_dc if it doesn't exist or is empty ---
+                    if ~exist('data_dc','var') || isempty(data_dc)
+                        data_dc = 0;
+                    end
 
-                        % --- Safely initialize data_dc if it doesn't exist or is empty ---
-                        if ~exist('data_dc','var') || isempty(data_dc)
-                            data_dc = 0;
-                        end
+                    % --- If we haven't finished the in-phase and quadrature sweeps (0->66) ---
+                    if autocal_cnt <= 66
 
-                        % --- If we haven't finished the in-phase and quadrature sweeps (0->66) ---
-                        if autocal_cnt <= 66
-
-                            % --- If autocal_cnt == 33, reset to 'inphase_state=0' and re-init min array ---
-                            if autocal_cnt == 33
-                                inphase_state = 0;
-                                app.rxBoardControl_app.registers = app.autocal_registers;
-                                app.autocal_min_array = inf(1,4);   % [inf inf inf inf]
-                            end
-
-                            % --- Filter your signal and accumulate power ---
-                            rawData = filtSig(app.rawData, app.fsRfsoc, 1e6);
-                            data_dc = data_dc + bandpower(rawData);
-
-                            % --- Once we reach avg_factor accumulations, average and update ---
-                            if count == app.avg_factor
-
-                                data_dc = data_dc / app.avg_factor;  % average across 'avg_factor'
-                                mask    = data_dc < app.autocal_min_array;
-
-                                % Update registers for channels that found a new minimum
-                                if any(mask)
-                                    % For each channel that has lower data_dc, update autocal_registers
-                                    for iCh = find(mask)
-                                        if inphase_state
-                                            fName = ['RX' num2str(iCh) '_DAC_I'];
-                                        else
-                                            fName = ['RX' num2str(iCh) '_DAC_Q'];
-                                        end
-                                        % Store “best so far” register + min power
-                                        app.autocal_registers.(fName) = app.rxBoardControl_app.registers.(fName);
-                                        app.autocal_min_array(iCh)    = data_dc(iCh);
-                                    end
-                                end
-
-                                % Now increment the current DAC values by updating rxBoardControl_app
-                                % If inphase_state == 1 => we’re sweeping 'I' values
-                                if inphase_state
-                                    for iCh = 1:4
-                                        fName = ['RX' num2str(iCh) '_DAC_I'];
-                                        app.rxBoardControl_app.registers.(fName) = autocal_cnt + 30;
-                                    end
-                                else
-                                    % else we’re sweeping 'Q' values => offset by -63
-                                    for iCh = 1:4
-                                        fName = ['RX' num2str(iCh) '_DAC_Q'];
-                                        app.rxBoardControl_app.registers.(fName) = autocal_cnt - 33;
-                                    end
-                                end
-
-                                % Bump the autocal counter, reset count + data_dc, then update board
-                                autocal_cnt = autocal_cnt + 1;
-                                count       = 1;
-                                data_dc     = [];
-
-                                app.rxBoardControl_app.updateFields;
-                                app.rxBoardControl_app.updateRXboard;
-
-                            else
-                                % If we haven’t yet reached app.avg_factor, just increment
-                                count = count + 1;
-                            end
-
-                        else
-                            % --- Done with 0->66 sweep => switch to inphase_state=1 or stop calibration
-                            inphase_state = 1;
-                            autocal_cnt   = 0;
-                            count         = 1;
-                            app.autocal   = 0;
-
-                            
+                        % --- If autocal_cnt == 33, reset to 'inphase_state=0' and re-init min array ---
+                        if autocal_cnt == 33
+                            inphase_state = 0;
                             app.rxBoardControl_app.registers = app.autocal_registers;
-                            app.rxBoardControl_app.updateFields;
-                            app.rxBoardControl_app.updateRXboard;
-                            app.DCLeakageAutocalStartButton.BackgroundColor = 'g';
-
+                            app.autocal_min_array = inf(1,4);   % [inf inf inf inf]
                         end
-                    end
-                    %% RX phase and amplitude cal
-                    if app.phase_cal
-                        app.StartanglecalibrationsButton.Text = ['Set ' num2str(app.cur_ang) ' deg and press'];
-                        app.Gauge.Value = app.cur_ang;
-                        app.phase_cal_butt = 0;
-                        uiwait
-                        %                             app.StartanglecalibrationsButton.BackgroundColor = 'g';
+
+                        % --- Filter your signal and accumulate power
+                        % --- DC leakage on narrow band
                         writeline(app.tcp_client, 'alive 1');
                         rawData = 0;
-                        rawData = tcpDataRec(app.tcp_client, (app.dataChan * 8), 8);
-                        rawData = filtSig(rawData, app.fsRfsoc, app.bw);
-                        save([pwd '\phase_cal\' num2str(app.cur_ang) '.mat'], 'rawData')
+                        rawData = tcpDataRec(app.tcp_client, (app.dataChan * 8), 8); % Comment for on-line
+                        rawData = filtSig(rawData, app.fsRfsoc, 1e6);%  Comment for on-line
+                        % rawData = filtSig(app.rawData, app.fsRfsoc, 1e6); % Uncomment for on-line
+                        data_dc = data_dc + bandpower(rawData);
 
-                        if app.cur_ang == -(app.start_ang)
-                            phase_scan_axis = -abs(app.start_ang):app.step_ang:abs(app.start_ang);
-                            list = dir([pwd '\phase_cal\*.mat']);
-                            for k=1:length(phase_scan_axis)
-                                sig_temp = load([pwd '\phase_cal\' num2str(phase_scan_axis(k)), '.mat']);
-                                sig = sig_temp.rawData;
-                                meas_mat(:,:,k) = sig;
+                        % --- Once we reach avg_factor accumulations, average and update ---
+                        if count == app.avg_factor
+
+                            data_dc = data_dc / app.avg_factor;  % average across 'avg_factor'
+                            mask    = data_dc < app.autocal_min_array;
+
+                            % Update registers for channels that found a new minimum
+                            if any(mask)
+                                % For each channel that has lower data_dc, update autocal_registers
+                                for iCh = find(mask)
+                                    if inphase_state
+                                        fName = ['RX' num2str(iCh) '_DAC_I'];
+                                    else
+                                        fName = ['RX' num2str(iCh) '_DAC_Q'];
+                                    end
+                                    % Store “best so far” register + min power
+                                    app.autocal_registers.(fName) = app.rxBoardControl_app.registers.(fName);
+                                    app.autocal_min_array(iCh)    = data_dc(iCh);
+                                end
                             end
-                            app.StartanglecalibrationsButton.Text = 'Press to start calibrations';
-                            [steering_correction, ~, ~] = phase_pattern_generator(meas_mat,phase_scan_axis,app.scan_res,app.num_elements,app.fcAnt, app.c);
-                            save('steering_correction.mat', 'steering_correction');
-                            app.phase_cal = 0;
-                            app.cur_ang = 0;
+
+                            % Now increment the current DAC values by updating rxBoardControl_app
+                            % If inphase_state == 1 => we’re sweeping 'I' values
+                            if inphase_state
+                                for iCh = 1:4
+                                    fName = ['RX' num2str(iCh) '_DAC_I'];
+                                    app.rxBoardControl_app.registers.(fName) = autocal_cnt + 30;
+                                end
+                            else
+                                % else we’re sweeping 'Q' values => offset by -63
+                                for iCh = 1:4
+                                    fName = ['RX' num2str(iCh) '_DAC_Q'];
+                                    app.rxBoardControl_app.registers.(fName) = autocal_cnt - 33;
+                                end
+                            end
+
+                            % Bump the autocal counter, reset count + data_dc, then update board
+                            autocal_cnt = autocal_cnt + 1;
+                            count       = 1;
+                            data_dc     = [];
+
+                            app.rxBoardControl_app.updateFields;
+                            app.rxBoardControl_app.updateRXboard;
+
                         else
-                            app.cur_ang = app.cur_ang + app.step_ang;
+                            % If we haven’t yet reached app.avg_factor, just increment
+                            count = count + 1;
                         end
+
+                    else
+                        % --- Done with 0->66 sweep => switch to inphase_state=1 or stop calibration
+                        inphase_state = 1;
+                        autocal_cnt   = 0;
+                        count         = 1;
+                        app.autocal   = 0;
+
+
+                        app.rxBoardControl_app.registers = app.autocal_registers;
+                        app.rxBoardControl_app.updateFields;
+                        app.rxBoardControl_app.updateRXboard;
+                        app.DCLeakageAutocalStartButton.BackgroundColor = 'g';
+
+                    end
+                end
+                %% RX Amplitude autocal
+                while app.autocal_rx_amp
+                    app.autocal_rx_amp = 0;
+                end
+                %% RX Phase autocal
+                while app.autocal_rx_phase
+                    genCtrl(app.gen_ip, app.gen_port, 0, 5, 2e9, 0);
+                    pause(1)
+                    genCtrl(app.gen_ip, app.gen_port, 1, 5, 2e9, 0);
+                    % pause(1)
+                    writeline(app.tcp_client, 'alive 1');
+                    rawData = 0;
+                    rawData = tcpDataRec(app.tcp_client, (app.dataChan * 8), 8); 
+                    rawData = filtSig(rawData, app.fsRfsoc, app.bw);
+
+                    [~, ~, phase_relation] = cphase(rawData, 1);
+                    phase_relation_deg = rad2deg(phase_relation);
+                    disp('-----')
+                    disp('Phase missmatch:')
+                    fprintf('   %.2f\n', phase_relation_deg);
+                    phase_relation_deg = abs(phase_relation_deg);
+                    phase_relation_deg(phase_relation_deg > 180) = abs(phase_relation_deg(phase_relation_deg > 180) - 360);
+                    if all(phase_relation_deg < 100)
+                        app.PhaseAutocalStartButton.BackgroundColor = 'g';
+                        app.autocal_rx_phase = 0;
+                    end                    
+                end
+                %% TX Amplitude autocal
+                while app.autocal_tx_amp
+                    app.autocal_tx_amp = 0;
+                end
+                %% TX Phase autocal
+                while app.autocal_tx_phase
+                    app.autocal_tx_phase = 0;
+                end
+                %% RX Angles cal
+                while app.phase_cal
+                    app.StartanglecalibrationsButton.Text = ['Set ' num2str(app.cur_ang) ' deg and press'];
+                    app.Gauge.Value = app.cur_ang;
+                    app.phase_cal_butt = 0;
+                    uiwait
+                    %                             app.StartanglecalibrationsButton.BackgroundColor = 'g';
+                    writeline(app.tcp_client, 'alive 1');
+                    rawData = 0;
+                    rawData = tcpDataRec(app.tcp_client, (app.dataChan * 8), 8);
+                    rawData = filtSig(rawData, app.fsRfsoc, app.bw);
+                    save([pwd '\phase_cal\' num2str(app.cur_ang) '.mat'], 'rawData')
+
+                    if app.cur_ang == -(app.start_ang)
+                        phase_scan_axis = -abs(app.start_ang):app.step_ang:abs(app.start_ang);
+                        list = dir([pwd '\phase_cal\*.mat']);
+                        for k=1:length(phase_scan_axis)
+                            sig_temp = load([pwd '\phase_cal\' num2str(phase_scan_axis(k)), '.mat']);
+                            sig = sig_temp.rawData;
+                            meas_mat(:,:,k) = sig;
+                        end
+                        app.StartanglecalibrationsButton.Text = 'Press to start calibrations';
+                        [steering_correction, ~, ~] = phase_pattern_generator(meas_mat,phase_scan_axis,app.scan_res,app.num_elements,app.fcAnt, app.c);
+                        save('steering_correction.mat', 'steering_correction');
+                        app.phase_cal = 0;
+                        app.cur_ang = 0;
+                    else
+                        app.cur_ang = app.cur_ang + app.step_ang;
                     end
                 end
                 %% DAC BF
@@ -705,11 +749,6 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.reset_req = 1;
         end
 
-        % Callback function
-        function IQtoolsButtonPushed(app, event)
-            iqtools
-        end
-
         % Value changed function: CutterCheckBox
         function CutterCheckBoxValueChanged(app, event)
             app.cutter = app.CutterCheckBox.Value;
@@ -753,11 +792,6 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         % Value changed function: ResetButton
         function ResetButtonValueChanged(app, event)
             app.reset_req = app.ResetButton.Value;
-        end
-
-        % Callback function
-        function PlutoButtonPushed(app, event)
-            PlutoControl
         end
 
         % Value changed function: c1CheckBox
@@ -1385,9 +1419,10 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         % Button pushed function: PrintphasemissmatchButton
         function PrintphasemissmatchButtonPushed(app, event)
             [~, ~, phase_relation] = cphase(app.rawData, 1);
+            phase_relation_deg = rad2deg(phase_relation);
             disp('-----')
             disp('Phase missmatch:')
-            fprintf('   %.2f\n',rad2deg(phase_relation));
+            fprintf('   %.2f\n',phase_relation_deg);
 
         end
 
@@ -1410,7 +1445,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
 
         % Button pushed function: DCLeakageAutocalStartButton
         function DCLeakageAutocalStartButtonPushed(app, event)
-
+            app.DCLeakageAutocalStartButton.BackgroundColor = 'r';
             if isempty(app.rxBoardControl_app)
                 uialert(app.RFSoCBeamformerUIFigure,'Set up arduino connection first','Autocal Error');
             else
@@ -1433,22 +1468,24 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
 
         % Button pushed function: AmplitudeAutocalStartButton
         function RXAmplitudeAutocalStartButtonPushed(app, event)
-            
+            app.AmplitudeAutocalStartButton.BackgroundColor = 'r';
+            app.autocal_rx_amp = 1;
         end
 
         % Button pushed function: PhaseAutocalStartButton
         function RXPhaseAutocalStartButtonPushed(app, event)
-            
+            app.PhaseAutocalStartButton.BackgroundColor = 'r';
+            app.autocal_rx_phase = 1;
         end
 
         % Button pushed function: AmplitudeAutocalStartButton_2
         function TXAmplitudeAutocalStartButtonPushed(app, event)
-            
+
         end
 
         % Button pushed function: PhaseAutocalStartButton_2
         function TXPhaseAutocalStartButtonPushed(app, event)
-            
+
         end
 
         % Changes arrangement of the app based on UIFigure width
