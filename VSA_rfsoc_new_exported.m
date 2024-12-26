@@ -204,7 +204,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
 
 
         %% Devices
-        %         gen_ip = '132.68.138.225';        
+        %         gen_ip = '132.68.138.225';
         % gen_ip = 'A-N5182B-052325';
         gen_ip = '132.68.138.193';
 
@@ -260,15 +260,15 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         dacAngle = 0;
         dacSignalType = 0;
 
-        dacBF = 'GUI';
-        dacBFon = 1;
+        dacBF = 'Off';
+        dacBFon = 0;
         dacTestArray;
         dacFc = 0;
         dacFe = 50;
         dacSR = 1;
         dacAmp = 2^14-1;
         dacGain = [199, 199, 199, 199];
-        adcGain = [91, 199, 168, 75]; % Calibrated with metal surface
+        adcGain = [80, 199, 140, 70]; % Calibrated with metal surface
         dphase = [0,0,0,0];
         %         dphaseCorr = [0,9,-132,-18];
         %         dphaseCorr = [0,-22,-37,-162];
@@ -366,6 +366,24 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             else
                 app.commands = append(app.commands, '#', command);
             end
+        end
+
+        function phase_relation_deg = PAcheck(app, data)
+            [~, ~, phase_relation] = cphase(data, 1);
+            phase_relation_deg = rad2deg(phase_relation);
+            disp('-----')
+            disp('Phase missmatch:')
+            fprintf('   %.2f\n',phase_relation_deg);
+            plot(real(data(1:100,:))/max(max(real(data(1:100,:)))))
+            hold on
+            plot(imag(data(1:100,:))/max(max(imag(data(1:100,:)))), '--')
+            legend('Ch1 I', 'Ch2 I', 'Ch3 I', 'Ch4 I', 'Ch1 Q', 'Ch2 Q', 'Ch3 Q', 'Ch4 Q')
+            ylim([-1.2 1.2])
+            title('Phase and Amplitudes check')
+            xlabel('Time')
+            ylabel('Amplitude')
+            hold off
+            uistack(gcf,'top')
         end
     end
 
@@ -616,30 +634,72 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                 end
                 %% RX Amplitude autocal
                 while app.autocal_rx_amp
+                    bs_left = [1,1,1,1];
+                    bs_right = [199,199,199,199];
+
+                    % writeline(app.tcp_client, app.commands);
+                    rawData = 0;
+                    rawData = tcpDataRec(app.tcp_client, (app.dataChan * 8), 8);
+                    rawData = filtSig(rawData, app.fsRfsoc, app.bw);
+                    app.AmplitudeAutocalStartButton.BackgroundColor = 'g';
+                    % writeline(app.tcp_client, 'alive 1');
+                    min_val = min(max(real(rawData)));
+                    min_ch = find(max(real(rawData) == min_val)); % Min channel
+                    cal_flag = 1;
+                    while cal_flag
+                        bs_middle = round((bs_left+bs_right)/2);
+                        bs_middle(min_ch) = 199;
+                        app.adcGain = bs_middle;
+                        commandsHandler(app, ['again ' strjoin(arrayfun(@num2str, app.adcGain, 'UniformOutput', false), '/');]);
+                        writeline(app.tcp_client, app.commands);
+                        app.commands = [];
+                        rawData = 0;
+                        rawData = tcpDataRec(app.tcp_client, (app.dataChan * 8), 8);
+                        rawData = filtSig(rawData, app.fsRfsoc, app.bw);
+                        PAcheck(app, rawData);
+                        all_max = max(real(rawData));
+                        min_val = all_max(min_ch);
+                        all_max = all_max/min_val;
+                        round_max = round(all_max, 1); % 5% precision
+                        % round_max = round(max(real(rawData))); % 1% precision
+                        mask = round_max == round_max(min_ch);
+                        if all(mask)
+                            cal_flag = 0;
+                            disp(app.adcGain);
+                        end
+
+                        for i=1:4
+                            if round_max(i) < round_max(min_ch)
+                                bs_left(i) =  bs_middle(i) + 1;
+                            elseif round_max(i) > round_max(min_ch)
+                               bs_right(i) =  bs_middle(i) - 1;
+                            else
+                                app.adcGain(i) = bs_middle(i);
+                            end
+                        end
+                        disp(app.adcGain);
+                    end
                     app.autocal_rx_amp = 0;
                 end
                 %% RX Phase autocal
-                while app.autocal_rx_phase
+                while app.autocal_rx_phase % if for on-line
                     genCtrl(app.gen_ip, app.gen_port, 0, 5, 2e9, 0);
                     pause(1)
                     genCtrl(app.gen_ip, app.gen_port, 1, 5, 2e9, 0);
-                    % pause(1)
-                    writeline(app.tcp_client, 'alive 1');
+                    pause(0.1)
+                    % writeline(app.tcp_client, 'alive 1');
                     rawData = 0;
-                    rawData = tcpDataRec(app.tcp_client, (app.dataChan * 8), 8); 
+                    rawData = tcpDataRec(app.tcp_client, (app.dataChan * 8), 8);
                     rawData = filtSig(rawData, app.fsRfsoc, app.bw);
 
-                    [~, ~, phase_relation] = cphase(rawData, 1);
-                    phase_relation_deg = rad2deg(phase_relation);
-                    disp('-----')
-                    disp('Phase missmatch:')
-                    fprintf('   %.2f\n', phase_relation_deg);
+                    phase_relation_deg = PAcheck(app, rawData);
                     phase_relation_deg = abs(phase_relation_deg);
-                    phase_relation_deg(phase_relation_deg > 180) = abs(phase_relation_deg(phase_relation_deg > 180) - 360);
+                    % phase_relation_deg(phase_relation_deg > 180) = abs(phase_relation_deg(phase_relation_deg > 180) - 360);
                     if all(phase_relation_deg < 100)
                         app.PhaseAutocalStartButton.BackgroundColor = 'g';
                         app.autocal_rx_phase = 0;
-                    end                    
+                    end
+                    writeline(app.tcp_client, 'alive 1');
                 end
                 %% TX Amplitude autocal
                 while app.autocal_tx_amp
@@ -1418,12 +1478,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
 
         % Button pushed function: PrintphasemissmatchButton
         function PrintphasemissmatchButtonPushed(app, event)
-            [~, ~, phase_relation] = cphase(app.rawData, 1);
-            phase_relation_deg = rad2deg(phase_relation);
-            disp('-----')
-            disp('Phase missmatch:')
-            fprintf('   %.2f\n',phase_relation_deg);
-
+            PAcheck(app, app.rawData);
         end
 
         % Value changed function: MirrorCheckBox_3
@@ -1469,12 +1524,20 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         % Button pushed function: AmplitudeAutocalStartButton
         function RXAmplitudeAutocalStartButtonPushed(app, event)
             app.AmplitudeAutocalStartButton.BackgroundColor = 'r';
+            app.adcGain = [199,199,199,199];
+            commandsHandler(app, ['again ' strjoin(arrayfun(@num2str, app.adcGain, 'UniformOutput', false), '/');]);
+            writeline(app.tcp_client, app.commands);
+            app.commands = [];
             app.autocal_rx_amp = 1;
         end
 
         % Button pushed function: PhaseAutocalStartButton
         function RXPhaseAutocalStartButtonPushed(app, event)
             app.PhaseAutocalStartButton.BackgroundColor = 'r';
+            app.phase = [0,0,0,0];
+            commandsHandler(app, ['phase ' strjoin(arrayfun(@num2str, app.phase, 'UniformOutput', false), '/');]);
+            writeline(app.tcp_client, app.commands);
+            app.commands = [];
             app.autocal_rx_phase = 1;
         end
 
@@ -1612,7 +1675,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.DACBFmodeListBox.Items = {'GUI', 'Random', 'Scaning', 'Rescaning', 'Tracking', 'Retracking', 'Tr_s', 'Retr_s', 'Off'};
             app.DACBFmodeListBox.ValueChangedFcn = createCallbackFcn(app, @DACBFmodeListBoxValueChanged, true);
             app.DACBFmodeListBox.Position = [80 1 89 172];
-            app.DACBFmodeListBox.Value = 'GUI';
+            app.DACBFmodeListBox.Value = 'Off';
 
             % Create RXLabel
             app.RXLabel = uilabel(app.MainTab);
