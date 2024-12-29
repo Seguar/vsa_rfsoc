@@ -269,9 +269,11 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         dacAmp = 2^14-1;
         dacGain = [199, 199, 199, 199];
         adcGain = [80, 199, 140, 70]; % Calibrated with metal surface
+        dacActiveCh = [1,1,1,1];
         dphase = [0,0,0,0];
         %         dphaseCorr = [0,9,-132,-18];
         %         dphaseCorr = [0,-22,-37,-162];
+        dgainCorr = [199,199,199,199];
         dphaseCorr = [0,0,-40,-173];
         %         dphaseCorr = [0,15,-36,144];
         phase = [0,0,0,0];
@@ -633,23 +635,30 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                     end
                 end
                 %% RX Amplitude autocal
+                cal_flag = 0;
                 while app.autocal_rx_amp
-                    bs_left = [1,1,1,1];
-                    bs_right = [199,199,199,199];
+                    if ~(cal_flag) % First value only
+                        rawData = 0;
+                        rawData = tcpDataRec(app.tcp_client, (app.dataChan * 8), 8);
+                        rawData = filtSig(rawData, app.fsRfsoc, app.bw);
+                        min_val = min(max(real(rawData)));
+                        min_ch = find(max(real(rawData) == min_val)); % Min channel
+                        bs_left = [1,1,1,1];
+                        bs_right = [199,199,199,199];
+                        cal_flag = 1;
+                    end
 
-                    % writeline(app.tcp_client, app.commands);
-                    rawData = 0;
-                    rawData = tcpDataRec(app.tcp_client, (app.dataChan * 8), 8);
-                    rawData = filtSig(rawData, app.fsRfsoc, app.bw);
-                    app.AmplitudeAutocalStartButton.BackgroundColor = 'g';
-                    % writeline(app.tcp_client, 'alive 1');
-                    min_val = min(max(real(rawData)));
-                    min_ch = find(max(real(rawData) == min_val)); % Min channel
-                    cal_flag = 1;
-                    while cal_flag
+                    if cal_flag
                         bs_middle = round((bs_left+bs_right)/2);
+                        if any(bs_middle > 199)
+                            disp(bs_middle)
+                            uialert(app.RFSoCBeamformerUIFigure,'Out of limits, check Fc and BW','Calibration Error');
+                            app.autocal_rx_amp = 0;
+                            break
+                        end
                         bs_middle(min_ch) = 199;
                         app.adcGain = bs_middle;
+                        
                         commandsHandler(app, ['again ' strjoin(arrayfun(@num2str, app.adcGain, 'UniformOutput', false), '/');]);
                         writeline(app.tcp_client, app.commands);
                         app.commands = [];
@@ -661,25 +670,26 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                         min_val = all_max(min_ch);
                         all_max = all_max/min_val;
                         round_max = round(all_max, 1); % 5% precision
-                        % round_max = round(max(real(rawData))); % 1% precision
+                        % round_max = round(all_max); % 1% precision
                         mask = round_max == round_max(min_ch);
-                        if all(mask)
+                        if all(mask) %% end
                             cal_flag = 0;
+                            app.autocal_rx_amp = 0;
                             disp(app.adcGain);
+                            app.AmplitudeAutocalStartButton.BackgroundColor = 'g';
                         end
 
                         for i=1:4
                             if round_max(i) < round_max(min_ch)
                                 bs_left(i) =  bs_middle(i) + 1;
                             elseif round_max(i) > round_max(min_ch)
-                               bs_right(i) =  bs_middle(i) - 1;
+                                bs_right(i) =  bs_middle(i) - 1;
                             else
                                 app.adcGain(i) = bs_middle(i);
                             end
                         end
                         disp(app.adcGain);
-                    end
-                    app.autocal_rx_amp = 0;
+                    end                    
                 end
                 %% RX Phase autocal
                 while app.autocal_rx_phase % if for on-line
@@ -702,12 +712,135 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                     writeline(app.tcp_client, 'alive 1');
                 end
                 %% TX Amplitude autocal
+                cal_flag = 0;
+                min_val = inf;
                 while app.autocal_tx_amp
-                    app.autocal_tx_amp = 0;
+                    if ~(cal_flag) % First value only
+                        for i=1:4
+                            app.dacGain = [0,0,0,0];
+                            app.dacGain(i) = 199;
+                            commandsHandler(app, ['dgain ' strjoin(arrayfun(@num2str, app.dacGain, 'UniformOutput', false), '/');]);
+                            writeline(app.tcp_client, app.commands);
+                            app.commands = [];
+                            rawData = 0;
+                            rawData = tcpDataRec(app.tcp_client, (app.dataChan * 8), 8);
+                            rawData = filtSig(rawData, app.fsRfsoc, app.bw);
+                            data = sum(rawData,2);
+                            if min_val > max(real(data))
+                                min_val = max(real(data));
+                                min_ch = i; % Min channel
+                            end
+                            plot(real(data(1:100))/max(max(real(data(1:100)))))
+                            hold on
+                            % plot(imag(data(1:100))/max(max(imag(data(1:100)))))
+                            ylim([-1.2 1.2])
+                            uistack(gcf,'top')
+
+                        end
+                        bs_left = 1;
+                        bs_right = 199;
+                        mask = [0,0,0,0];
+                        bs_middle = [0,0,0,0];
+                        mask(min_ch) = 1;
+                        bs_middle(min_ch) = 199;
+                        cal_flag = 1;
+                        j = 1;
+                        hold off
+                    end
+                    if cal_flag
+                        if mask(j) && j <= 3
+                            j = j + 1;
+                            bs_left = 1;
+                            bs_right = 199;
+                        end
+                        bs_middle(j) = round((bs_left+bs_right)/2);
+                        if any(bs_middle > 199)
+                            disp(bs_middle)
+                            uialert(app.RFSoCBeamformerUIFigure,'Out of limits, check Fc and BW','Calibration Error');
+                            app.autocal_tx_amp = 0;
+                            break
+                        end
+                        % bs_middle(min_ch) = 199;
+                        app.dacGain = [0,0,0,0];
+                        app.dacGain(j) = bs_middle(j);
+                        commandsHandler(app, ['dgain ' strjoin(arrayfun(@num2str, app.dacGain, 'UniformOutput', false), '/');]);
+                        writeline(app.tcp_client, app.commands);
+                        app.commands = [];
+                        rawData = 0;
+                        rawData = tcpDataRec(app.tcp_client, (app.dataChan * 8), 8);
+                        rawData = filtSig(rawData, app.fsRfsoc, app.bw);
+                        % PAcheck(app, rawData);
+                        data = sum(rawData,2);
+                        all_max = max(real(data));
+                        % min_val = all_max(min_ch);
+                        all_max = all_max/min_val;
+                        round_max = round(all_max, 1); % 5% precision
+                        % round_max = round(all_max); % 1% precision
+                        mask(j) = round_max == min_val/min_val;
+                        if all(mask) %% end
+                            app.dgainCorr = bs_middle;
+                            app.dacGain = bs_middle;
+                            commandsHandler(app, ['dgain ' strjoin(arrayfun(@num2str, app.dacGain, 'UniformOutput', false), '/');]);
+                            cal_flag = 0;
+                            app.autocal_tx_amp = 0;
+                            disp(bs_middle);
+                            app.AmplitudeAutocalStartButton_2.BackgroundColor = 'g';
+                        end
+
+                        % for i=1:4
+                        if round_max < min_val/min_val
+                            bs_left =  bs_middle(j) + 1;
+                        elseif round_max > min_val/min_val
+                            bs_right =  bs_middle(j) - 1;
+                        else
+                            app.dacGain(j) = bs_middle(j);
+                        end
+                        % end
+                        disp(app.dacGain);
+                    end
                 end
                 %% TX Phase autocal
+                phaseStep = 1; % Change for preciesion
+                all_min = inf(1,4);
                 while app.autocal_tx_phase
+                    for curCh=2:4
+                        app.dacActiveCh(curCh) = 1;
+                        app.dacGain = app.dgainCorr.*app.dacActiveCh;
+                        commandsHandler(app, ['dgain ' strjoin(arrayfun(@num2str, app.dacGain, 'UniformOutput', false), '/');]);
+                        for curPhase=app.phaseMin:phaseStep:app.phaseMax
+                            disp(curPhase)
+                            app.dphase(curCh) = curPhase;
+                            app.dphase = app.dphase.*app.dacActiveCh;
+                            commandsHandler(app, ['dphase ' strjoin(arrayfun(@num2str, app.dphase*100, 'UniformOutput', false), '/');]);
+                            writeline(app.tcp_client, app.commands);
+                            app.commands = [];
+
+                            rawData = 0;
+                            rawData = tcpDataRec(app.tcp_client, (app.dataChan * 8), 8);
+                            rawData = filtSig(rawData, app.fsRfsoc, app.bw);
+                            % PAcheck(app, rawData);
+                            data = sum(rawData,2);
+                            all_max = max(real(data));
+                            if all_max < all_min
+                                all_min = all_max;
+                                if curPhase < 0 % Convert to corrections
+                                    app.dphaseCorr(curCh) = curPhase + 180;
+                                else
+                                    app.dphaseCorr(curCh) = curPhase - 180;
+                                end
+                            end
+
+                            if curPhase == app.phaseMax
+                                app.dacActiveCh = [1,0,0,0];
+                                disp(app.dphaseCorr)
+                            end
+                        end
+                    end
+                    app.PhaseAutocalStartButton_2.BackgroundColor = 'g';
                     app.autocal_tx_phase = 0;
+                    app.dacActiveCh = [1,1,1,1];
+                    app.dacGain = app.dgainCorr.*app.dacActiveCh;
+                    commandsHandler(app, ['dgain ' strjoin(arrayfun(@num2str, app.dacGain, 'UniformOutput', false), '/');]);
                 end
                 %% RX Angles cal
                 while app.phase_cal
@@ -1523,32 +1656,59 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
 
         % Button pushed function: AmplitudeAutocalStartButton
         function RXAmplitudeAutocalStartButtonPushed(app, event)
-            app.AmplitudeAutocalStartButton.BackgroundColor = 'r';
-            app.adcGain = [199,199,199,199];
-            commandsHandler(app, ['again ' strjoin(arrayfun(@num2str, app.adcGain, 'UniformOutput', false), '/');]);
-            writeline(app.tcp_client, app.commands);
-            app.commands = [];
-            app.autocal_rx_amp = 1;
+            if app.autocal_rx_amp
+                app.autocal_rx_amp = 0;
+            else
+                app.AmplitudeAutocalStartButton.BackgroundColor = 'r';
+                app.adcGain = [199,199,199,199];
+                commandsHandler(app, ['again ' strjoin(arrayfun(@num2str, app.adcGain, 'UniformOutput', false), '/');]);
+                writeline(app.tcp_client, app.commands);
+                app.commands = [];
+                app.autocal_rx_amp = 1;
+            end
+
         end
 
         % Button pushed function: PhaseAutocalStartButton
         function RXPhaseAutocalStartButtonPushed(app, event)
-            app.PhaseAutocalStartButton.BackgroundColor = 'r';
-            app.phase = [0,0,0,0];
-            commandsHandler(app, ['phase ' strjoin(arrayfun(@num2str, app.phase, 'UniformOutput', false), '/');]);
-            writeline(app.tcp_client, app.commands);
-            app.commands = [];
-            app.autocal_rx_phase = 1;
+            if app.autocal_rx_phase
+                app.autocal_rx_phase = 0;
+            else
+                app.PhaseAutocalStartButton.BackgroundColor = 'r';
+                app.phase = [0,0,0,0];
+                commandsHandler(app, ['phase ' strjoin(arrayfun(@num2str, app.phase, 'UniformOutput', false), '/');]);
+                writeline(app.tcp_client, app.commands);
+                app.commands = [];
+                app.autocal_rx_phase = 1;
+            end
         end
 
         % Button pushed function: AmplitudeAutocalStartButton_2
         function TXAmplitudeAutocalStartButtonPushed(app, event)
-
+            if app.autocal_tx_amp
+                app.autocal_tx_amp = 0;
+            else
+                app.AmplitudeAutocalStartButton_2.BackgroundColor = 'r';
+                app.autocal_tx_amp = 1;
+            end
         end
 
         % Button pushed function: PhaseAutocalStartButton_2
         function TXPhaseAutocalStartButtonPushed(app, event)
-
+            if app.autocal_tx_phase
+                app.autocal_tx_phase = 0;
+            else
+                app.PhaseAutocalStartButton_2.BackgroundColor = 'r';
+                app.dphaseCorr = [0,0,0,0];
+                app.dphase = [0,0,0,0];
+                % app.dacActiveCh = [1,1,0,0];
+                % app.dacGain = app.dgainCorr*app.dacActiveCh;   %% Ch1 + Ch2 on                  
+                % commandsHandler(app, ['dgain ' strjoin(arrayfun(@num2str, app.dacGain, 'UniformOutput', false), '/');]);
+                % commandsHandler(app, ['dphase ' strjoin(arrayfun(@num2str, app.dphase*100, 'UniformOutput', false), '/');]);
+                % writeline(app.tcp_client, app.commands);
+                % app.commands = [];
+                app.autocal_tx_phase = 1;
+            end
         end
 
         % Changes arrangement of the app based on UIFigure width
