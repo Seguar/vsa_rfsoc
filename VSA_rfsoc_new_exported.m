@@ -179,7 +179,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         saveName;
         %%
         ula
-        fcAnt = 4500e6;
+        fcAnt = 28e9;
         weights
         c = physconst('LightSpeed'); % propagation velocity [m/s]
         alg_scan_res = 1;
@@ -686,6 +686,8 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                                 bs_right(i) =  bs_middle(i) - 1;
                             else
                                 app.adcGain(i) = bs_middle(i);
+                                % bs_left(i) =  bs_middle(i);
+                                % bs_right(i) =  bs_middle(i);
                             end
                         end
                         disp(app.adcGain);
@@ -794,6 +796,8 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                             bs_right =  bs_middle(j) - 1;
                         else
                             app.dacGain(j) = bs_middle(j);
+                            % bs_left(j) =  bs_middle(j);
+                            % bs_right(j) =  bs_middle(j);
                         end
                         % end
                         disp(app.dacGain);
