@@ -200,7 +200,7 @@ bfSig = rawSum(cutInds);
 %% VSA
 if (vsa)
     buff = zeros(size(rawSum));
-    buff(cutInds) = bfSig/70000; % VSA normalization
+    buff(cutInds) = bfSig/2^16; % VSA normalization
     vsaSendData(buff, data_v)
     %     vsaSendData(bfSig, data_v)
 end
