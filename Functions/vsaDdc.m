@@ -1,6 +1,7 @@
 function [data_v, setup_v] = vsaDdc(fc_v, sr_v, bw_v, dataLen, channelCount)
 %% 1. Connect to VSA
-vsa_path = dir('C:\Program Files\Keysight\89600 Software 202*')
+vsa_path = dir('C:\Program Files\Keysight\89600 Software 202*');
+vsa_path = vsa_path(end)
 try
     asmPath = strcat(vsa_path.folder, '\', vsa_path.name, '\89600 VSA Software\Examples\DotNET\Interfaces\');
 catch
