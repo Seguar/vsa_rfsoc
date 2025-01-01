@@ -1,4 +1,10 @@
-filename = '1000_100_short.mat';
+% Create IQtools signal with Fs=BW
+% Resamble signal to 1 GHz SR with resample/fft
+clear
+% filename = '1000_100_short.mat';
+% filename = 'ofdm100_1000.mat';
+filename = 'o100_1000.mat';
+
 load(filename)
 
 dac_max = 2^14 - 1;
