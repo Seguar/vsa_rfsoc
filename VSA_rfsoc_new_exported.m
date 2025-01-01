@@ -400,6 +400,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             addpath(genpath([pwd '\Packet-Creator-VHT']))
             addpath(genpath([pwd '\Functions']))
             pwd
+            powCalc = @(x) -round(max(db(fftshift(fft(x))))/2, 1); % Power from FFT calculations
             %             load koef
             %             app.koef = koef;
             app.RFSoCBeamformerUIFigure.Visible = 'off';
@@ -658,7 +659,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                         end
                         bs_middle(min_ch) = 199;
                         app.adcGain = bs_middle;
-                        
+
                         commandsHandler(app, ['again ' strjoin(arrayfun(@num2str, app.adcGain, 'UniformOutput', false), '/');]);
                         writeline(app.tcp_client, app.commands);
                         app.commands = [];
@@ -686,12 +687,12 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                                 bs_right(i) =  bs_middle(i) - 1;
                             else
                                 app.adcGain(i) = bs_middle(i);
-                                % bs_left(i) =  bs_middle(i);
-                                % bs_right(i) =  bs_middle(i);
+                                bs_left(i) =  bs_middle(i);
+                                bs_right(i) =  bs_middle(i);
                             end
                         end
                         disp(app.adcGain);
-                    end                    
+                    end
                 end
                 %% RX Phase autocal
                 while app.autocal_rx_phase % if for on-line
@@ -732,13 +733,15 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                                 min_val = max(real(data));
                                 min_ch = i; % Min channel
                             end
-                            plot(real(data(1:100))/max(max(real(data(1:100)))))
+                            plot(real(data(1:100)))
+                            legend('Ch1', 'Ch2', 'Ch3', 'Ch4')
                             hold on
-                            % plot(imag(data(1:100))/max(max(imag(data(1:100)))))
-                            ylim([-1.2 1.2])
+                            % plot(imag(data(1:100)))
+                            % ylim([-1.2 1.2])
                             uistack(gcf,'top')
 
                         end
+                        disp(min_ch)
                         bs_left = 1;
                         bs_right = 199;
                         mask = [0,0,0,0];
@@ -796,8 +799,8 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                             bs_right =  bs_middle(j) - 1;
                         else
                             app.dacGain(j) = bs_middle(j);
-                            % bs_left(j) =  bs_middle(j);
-                            % bs_right(j) =  bs_middle(j);
+                            bs_left(j) =  bs_middle(j);
+                            bs_right(j) =  bs_middle(j);
                         end
                         % end
                         disp(app.dacGain);
@@ -1706,7 +1709,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                 app.dphaseCorr = [0,0,0,0];
                 app.dphase = [0,0,0,0];
                 % app.dacActiveCh = [1,1,0,0];
-                % app.dacGain = app.dgainCorr*app.dacActiveCh;   %% Ch1 + Ch2 on                  
+                % app.dacGain = app.dgainCorr*app.dacActiveCh;   %% Ch1 + Ch2 on
                 % commandsHandler(app, ['dgain ' strjoin(arrayfun(@num2str, app.dacGain, 'UniformOutput', false), '/');]);
                 % commandsHandler(app, ['dphase ' strjoin(arrayfun(@num2str, app.dphase*100, 'UniformOutput', false), '/');]);
                 % writeline(app.tcp_client, app.commands);
@@ -2029,7 +2032,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.AntennaFcSpinner.ValueDisplayFormat = '%.0f';
             app.AntennaFcSpinner.ValueChangedFcn = createCallbackFcn(app, @AntennaFcSpinnerValueChanged, true);
             app.AntennaFcSpinner.Position = [95 117 105 22];
-            app.AntennaFcSpinner.Value = 4500;
+            app.AntennaFcSpinner.Value = 28000;
 
             % Create DacSignalDropDownLabel
             app.DacSignalDropDownLabel = uilabel(app.SystemTab);
