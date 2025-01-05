@@ -725,10 +725,11 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                             commandsHandler(app, ['dgain ' strjoin(arrayfun(@num2str, app.dacGain, 'UniformOutput', false), '/');]);
                             writeline(app.tcp_client, app.commands);
                             app.commands = [];
+                            % pause(1)
                             rawData = 0;
                             rawData = tcpDataRec(app.tcp_client, (app.dataChan * 8), 8);
                             rawData = filtSig(rawData, app.fsRfsoc, app.bw);
-                            data = sum(rawData,2);
+                            data = abs(sum(rawData,2));
                             if min_val > max(real(data))
                                 min_val = max(real(data));
                                 min_ch = i; % Min channel
@@ -775,7 +776,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                         rawData = tcpDataRec(app.tcp_client, (app.dataChan * 8), 8);
                         rawData = filtSig(rawData, app.fsRfsoc, app.bw);
                         % PAcheck(app, rawData);
-                        data = sum(rawData,2);
+                        data = abs(sum(rawData,2));
                         all_max = max(real(data));
                         % min_val = all_max(min_ch);
                         all_max = all_max/min_val;
@@ -811,13 +812,18 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                 all_min = inf(1,4);
                 while app.autocal_tx_phase
                     for curCh=2:4
+                        app.dacActiveCh = [0,0,0,0];
+                        app.dacActiveCh(curCh-1) = 1;
                         app.dacActiveCh(curCh) = 1;
+                        % app.dacGain = app.dgainCorr.*app.dacActiveCh;
                         app.dacGain = app.dgainCorr.*app.dacActiveCh;
                         commandsHandler(app, ['dgain ' strjoin(arrayfun(@num2str, app.dacGain, 'UniformOutput', false), '/');]);
                         for curPhase=app.phaseMin:phaseStep:app.phaseMax
                             disp(curPhase)
+                            app.dphase = app.dphaseCorr;
                             app.dphase(curCh) = curPhase;
                             app.dphase = app.dphase.*app.dacActiveCh;
+
                             commandsHandler(app, ['dphase ' strjoin(arrayfun(@num2str, app.dphase*100, 'UniformOutput', false), '/');]);
                             writeline(app.tcp_client, app.commands);
                             app.commands = [];
@@ -826,10 +832,10 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                             rawData = tcpDataRec(app.tcp_client, (app.dataChan * 8), 8);
                             rawData = filtSig(rawData, app.fsRfsoc, app.bw);
                             % PAcheck(app, rawData);
-                            data = sum(rawData,2);
+                            data = abs(sum(rawData,2));
                             all_max = max(real(data));
-                            if all_max < all_min
-                                all_min = all_max;
+                            if all_max < all_min(curCh)
+                                all_min(curCh) = all_max;
                                 if curPhase < 0 % Convert to corrections
                                     app.dphaseCorr(curCh) = curPhase + 180;
                                 else
@@ -838,7 +844,6 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                             end
 
                             if curPhase == app.phaseMax
-                                app.dacActiveCh = [1,0,0,0];
                                 disp(app.dphaseCorr)
                             end
                         end
@@ -847,7 +852,10 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                     app.autocal_tx_phase = 0;
                     app.dacActiveCh = [1,1,1,1];
                     app.dacGain = app.dgainCorr.*app.dacActiveCh;
+                    % app.dacGain = app.dgainCorr.*app.dacActiveCh;
                     commandsHandler(app, ['dgain ' strjoin(arrayfun(@num2str, app.dacGain, 'UniformOutput', false), '/');]);
+                    app.dphase = app.dphaseCorr.*app.dacActiveCh;
+                    commandsHandler(app, ['dphase ' strjoin(arrayfun(@num2str, app.dphase*100, 'UniformOutput', false), '/');]);
                 end
                 %% RX Angles cal
                 while app.phase_cal
