@@ -193,7 +193,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         fsDAC = 500e6;
         bw = 249e6;
         num = 1;
-        scan_bw = 180;
+        scan_bw = 120;
         setupFile = [fileparts(mfilename('fullpath')) '\Settings\ofdm_iq_100_16.setx'];
 
         server_ip = 'pynq'; % Use the appropriate IP address or hostname http://192.168.3.1/lab
@@ -245,7 +245,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         nyquistZone = 1;
         nyquistZone_d0 = 1;
         nyquistZone_d1 = 1;
-        fc_d0 = 4.5e9;
+        fc_d0 = 4.95e9;
         fc_d1 = 4.5e9;
 
         dacPow = [1,1,1,1];
@@ -267,16 +267,16 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         dacFe = 50;
         dacSR = 1;
         dacAmp = 2^14-1;
-        dacGain = [199, 199, 199, 199];
-        adcGain = [80, 199, 140, 70]; % Calibrated with metal surface
+        dacGain = [150, 125, 82, 199];
+        adcGain = [82, 199, 175, 75]; % Calibrated with metal surface
         dacActiveCh = [1,1,1,1];
         dphase = [0,0,0,0];
         %         dphaseCorr = [0,9,-132,-18];
         %         dphaseCorr = [0,-22,-37,-162];
-        dgainCorr = [199,199,199,199];
-        dphaseCorr = [0,0,-40,-173];
+        dgainCorr = [199, 199, 199, 199];
+        dphaseCorr = [0, 5, 21, 138];
         %         dphaseCorr = [0,15,-36,144];
-        phase = [0,0,0,0];
+        phase = [0,104,156,139];
         % phase = [0,-68,-23,-30]; % [  0.         -68.16668724 -23.64564807 -30.27015883] [  0.         -87.57967336 -41.12039743 -49.63200857]
         %         phase = [0,13,-20,-18];
         manualControlState = "DAC phase";
@@ -494,8 +494,8 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
 
                     app.UIAxes.Title.String = (['Direction of Arrival:' newline  'Estimated Angles = ' num2str(estimated_angle) newline 'DAC Angles = ' num2str(app.dacAngle)]);
 
-                    set(app.plot_handle, 'YData', (yspec_mean_vec/max(yspec_mean_vec)), 'LineWidth', 1.5);
-                    plot(app.UIAxes2, app.scan_axis,p_manual_mean_db, 'LineWidth', 1.5);
+                    set(app.plot_handle, 'YData', (yspec_mean_vec/max(yspec_mean_vec)), 'LineWidth', 4.5);
+                    plot(app.UIAxes2, app.scan_axis,p_manual_mean_db, 'LineWidth', 4.5);
                     % Xlines
                     estimated_angle = [estimated_angle NaN NaN]; % To prevent errors in xlines indexing
                     am = guiXline(am, app.UIAxes, main, estimated_angle(1), 'right');
@@ -1944,7 +1944,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.ScanBWEditField.RoundFractionalValues = 'on';
             app.ScanBWEditField.ValueChangedFcn = createCallbackFcn(app, @ScanBWEditFieldValueChanged, true);
             app.ScanBWEditField.Position = [59 22 44 22];
-            app.ScanBWEditField.Value = 180;
+            app.ScanBWEditField.Value = 120;
 
             % Create RecalibrateADCsButton
             app.RecalibrateADCsButton = uibutton(app.SystemTab, 'push');
@@ -1981,7 +1981,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.RFSoCFcSpinner_2.Limits = [1 10000];
             app.RFSoCFcSpinner_2.ValueChangedFcn = createCallbackFcn(app, @RFSoCFcSpinner_2ValueChanged, true);
             app.RFSoCFcSpinner_2.Position = [101 408 77 22];
-            app.RFSoCFcSpinner_2.Value = 4500;
+            app.RFSoCFcSpinner_2.Value = 4950;
 
             % Create dataStreamCheckBox
             app.dataStreamCheckBox = uicheckbox(app.SystemTab);
@@ -2610,6 +2610,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.GridLayout2.RowHeight = {'100x', '100x'};
             app.GridLayout2.RowSpacing = 1.33333333333333;
             app.GridLayout2.Padding = [2.5 1.33333333333333 2.5 1.33333333333333];
+            app.GridLayout2.BackgroundColor = [1 1 1];
 
             % Create UIAxes
             app.UIAxes = uiaxes(app.GridLayout2);
