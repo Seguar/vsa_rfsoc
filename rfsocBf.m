@@ -65,28 +65,40 @@ end
 %% Matlab MVDR DOA FUNC
 rawData = filtSig(rawData, fsRfsoc, bw);
 %% DOA
+Rx = rawData'*rawData;    %Data covarivance matrix 
 if isa(estimator, 'double')
     num_elements = 4;
     A = zeros(num_elements,1); 
     % rawData = normalize(rawData);
-    Rx = rawData'*rawData;    %Data covarivance matrix 
+    
     Rx_Inv = Rx^(-1);           %Inverse of covariance matrix
     lambda = c/fc;
     d = lambda/2;
-    for t=1:length(scan_axis) 
-        A = exp(-1j*2*pi*d*(0:num_elements-1).'*sind(scan_axis(t))/lambda);
-        A_fixed = A.*estimator(t,:)';
-        B_fixed = A_fixed'*Rx_Inv*A_fixed;
-%         yspec(t) = 10*log10(abs(1/B_fixed)); 
-        yspec(t) = abs(1/B_fixed); 
+%     for t=1:length(scan_axis) 
+%         A = exp(-1j*2*pi*d*(0:num_elements-1).'*sind(scan_axis(t))/lambda);
+%         A_fixed = A.*estimator(t,:)';
+%         B_fixed = A_fixed'*Rx_Inv*A_fixed;
+% %         yspec(t) = 10*log10(abs(1/B_fixed)); 
+%         yspec(t) = abs(1/B_fixed); 
+%     end
+    for t=1:length(scan_axis)
+        A = exp(-1j*pi*(0:num_elements-1)'*sind(scan_axis(t)));
+        A_fixed = A.*app.steering_correction(t,:)';
+        sig_final_fixed = sig./(pow_claibration_intrp(t, :).^0.5);
+        Rx_fixed = sig_final_fixed'*sig_final_fixed;    %Data covarivance matrix 
+        Rx_Inv_fixed = Rx_fixed^(-1);           %Inverse of covariance matrix
+        B_fixed = A_fixed'*Rx_Inv_fixed*A_fixed;
+        B = A'*Rx_Inv*A;
+        yspec(t) = 10*log10(abs(1/B)); 
+        yspec_fixed(t) = 10*log10(abs(1/B_fixed));
     end
     [~,ind] = findpeaks(yspec);
     estimated_angle = scan_axis(ind);
 else
     try
-        [yspec, estimated_angle] = estimator(rawData'*rawData);
+        [yspec, estimated_angle] = estimator(Rx);
     catch
-        estimated_angle = estimator(rawData'*rawData);
+        estimated_angle = estimator(Rx);
         yspec = zeros(size(scan_axis));
     end
 end
@@ -112,6 +124,14 @@ end
 [~, idx] = sort(powbp, 'ascend');
 if idx(ang_num) == 1
     estimated_angle = flip(estimated_angle);
+end
+%%
+
+% sig_final = conj(sig_correction).*sig_final_tmp./pow_correction;
+if c1
+    sig_correction = app.steering_correction.steering_correction(find(scan_axis==estimated_angle(1)),:);
+    pow_correction = app.pow_claibration_intrp.pow_claibration_intrp(find(scan_axis==estimated_angle(1)),:).^0.5;
+    rawData = conj(sig_correction).*rawData./pow_correction;
 end
 %% Beamforming
 switch bf
@@ -152,9 +172,9 @@ switch bf
         weights = ones(1,4);
 end
 
-if c1
-    weights = conj(weights);
-end
+% if c1
+%     weights = conj(weights);
+% end
 weights = weights/norm(weights)*2;
 rawDataAdj(:,1) = rawData(:,1)*weights(1);
 rawDataAdj(:,2) = rawData(:,2)*weights(2);

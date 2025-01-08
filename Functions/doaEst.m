@@ -8,6 +8,7 @@ switch doa
         estimator = ones(size(scan_axis))';
     case 'MVDRman_corr' 
         load("steering_correction.mat");
+        load("pow_claibration_intrp.mat");
         % if length(steering_correction) ~= length(scan_axis)
         %     len = abs(length(steering_correction) - length(scan_axis));
         %     steering_correction = wextend('1D','sym',steering_correction,len/2);

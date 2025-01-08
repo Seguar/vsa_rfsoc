@@ -291,8 +291,12 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
 
         %%
         rawData;
+        %%
+
     end
     properties (Access = public)
+        steering_correction = [];
+        pow_claibration_intrp = [];
         scan_axis = -90:1:90;
         %% Hardcode (temporally)
         koef;
@@ -356,6 +360,8 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             %             app.koef = antSinglePattern(app.fc, app.scan_axis)';
             load koef
             app.koef = koef;
+            app.steering_correction = load("steering_correction.mat");
+            app.pow_claibration_intrp = load("pow_claibration_intrp.mat");
             app.koef = interp1(linspace(1,length(app.koef),length(app.koef))', app.koef, linspace(1,length(app.koef),length(app.scan_axis))', 'linear', 'extrap');
             app.part_reset_req = 0;
             app.ResetButton.Text = 'Reset';
@@ -431,6 +437,8 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                 num2str(app.fc_d0/1e6) '/' num2str(app.nyquistZone_d0) '/' ...
                 num2str(app.fc_d1/1e6) '/' num2str(app.nyquistZone_d1) ...
                 '# dataChan ' num2str(app.dataChan*8)];
+
+
             warning('off','all')
             while true
                 if app.reset_req
@@ -879,8 +887,10 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                             meas_mat(:,:,k) = sig;
                         end
                         app.StartanglecalibrationsButton.Text = 'Press to start calibrations';
-                        [steering_correction, ~, ~] = phase_pattern_generator(meas_mat,phase_scan_axis,app.scan_res,app.num_elements,app.fcAnt, app.c);
+                        [steering_correction, ~, ~] = phase_pattern_generator(meas_mat,phase_scan_axis,app.scan_res,app.num_elements);
+                        % pow_claibration_intrp = power_pattern_generator(meas_mat,phase_scan_axis,app.scan_res,app.num_elements);
                         save('steering_correction.mat', 'steering_correction');
+                        save('pow_claibration_intrp.mat', 'pow_claibration_intrp');
                         app.phase_cal = 0;
                         app.cur_ang = 0;
                     else
