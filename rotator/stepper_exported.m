@@ -37,6 +37,7 @@ classdef stepper_exported < matlab.apps.AppBase
         
         function setAngle(app, value)
             writeline(app.Arduino, ['o ' num2str(value)]);
+            readBack = readline(app.Arduino)
         end
     end
 
@@ -82,7 +83,7 @@ classdef stepper_exported < matlab.apps.AppBase
         % Value changed function: Knob
         function KnobValueChanged(app, event)
             app.angle = app.Knob.Value;
-            app.angle = round(app.angle, 2);
+            app.angle = round(app.angle);
             app.DegreeEditField.Value = app.angle;
 
             setAngle(app, app.angle);
@@ -108,11 +109,12 @@ classdef stepper_exported < matlab.apps.AppBase
         % Button pushed function: DisableButton
         function DisableButtonPushed(app, event)
             writeline(app.Arduino, 's');
+
         end
 
         % Button pushed function: degButton
         function degButtonPushed(app, event)
-            if app.angle - 1 == -app.angleLims
+            if app.angle - 1 <= -app.angleLims
                 disp('Limmits')
             else
                 app.angle = app.angle - 1;
@@ -123,7 +125,7 @@ classdef stepper_exported < matlab.apps.AppBase
 
         % Button pushed function: degButton_2
         function degButton_2Pushed(app, event)
-            if app.angle - 10 == -app.angleLims
+            if app.angle - 10 <= -app.angleLims
                 disp('Limmits')
             else
                 app.angle = app.angle - 10;
@@ -134,7 +136,7 @@ classdef stepper_exported < matlab.apps.AppBase
 
         % Button pushed function: degButton_3
         function degButton_3Pushed(app, event)
-            if app.angle - 90 == -app.angleLims
+            if app.angle - 90 <= -app.angleLims
                 disp('Limmits')
             else
                 app.angle = app.angle - 90;
@@ -145,7 +147,7 @@ classdef stepper_exported < matlab.apps.AppBase
 
         % Button pushed function: degButton_4
         function degButton_4Pushed(app, event)
-            if app.angle + 1 == app.angleLims
+            if app.angle + 1 >= app.angleLims
                 disp('Limmits')
             else
                 app.angle = app.angle + 1;
@@ -156,7 +158,7 @@ classdef stepper_exported < matlab.apps.AppBase
 
         % Button pushed function: degButton_5
         function degButton_5Pushed(app, event)
-            if app.angle + 10 == app.angleLims
+            if app.angle + 10 >= app.angleLims
                 disp('Limmits')
             else
                 app.angle = app.angle + 10;
@@ -167,7 +169,7 @@ classdef stepper_exported < matlab.apps.AppBase
 
         % Button pushed function: degButton_6
         function degButton_6Pushed(app, event)
-            if app.angle + 90 == app.angleLims
+            if app.angle + 90 >= app.angleLims
                 disp('Limmits')
             else
                 app.angle = app.angle + 90;

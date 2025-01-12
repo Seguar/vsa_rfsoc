@@ -57,77 +57,51 @@ void loop() {
   //    stepper.setTargetDeg(pos, RELATIVE);
   //  }
   //if (!stepper.tick()) {
-  stepper.tick();
-  if (Serial.available() > 0) {
-    char incoming = Serial.read();
-    switch (incoming) {
-      case 'w': stepper.reset(); stepper.enable();
-        break;
-      case 'a': pos = -1; stepper.setTargetDeg(pos, RELATIVE);
-        break;
-      case 'q': pos = -10; stepper.setTargetDeg(pos, RELATIVE);
-        break;
-      case 's': stepper.stop();  stepper.disable();
-        break;
-      case 'd': pos = 1; stepper.setTargetDeg(pos, RELATIVE);
-        break;
-      case 'e': pos = 10; stepper.setTargetDeg(pos, RELATIVE);
-        break;
-      case 'r': pos = -90; stepper.setTargetDeg(pos, RELATIVE);
-        break;
-      case 'f': pos = 90; stepper.setTargetDeg(pos, RELATIVE);
-        break;
-      case 'o':
-        while (Serial.available() == 0) {
-          // Wait here until number arrives
-        }
-        // Read until newline (or timeout)
-        String posStr = Serial.readStringUntil('\n');
-
-        // Convert the string to an integer
-        pos = posStr.toInt();
-
-        // Send to stepper in ABSOLUTE mode
-        stepper.setTargetDeg(pos, ABSOLUTE);
-
-        // Print out the parsed value for debugging
-        Serial.print("Received angle: ");
-        Serial.println(pos);
-        break;
-      case 'x': {
-          int randomAngle = random(-60, 61);  // -60 to +60 inclusive
-          stepper.setTargetDeg(randomAngle, ABSOLUTE);
-          Serial.print("Random angle: ");
-          Serial.println(randomAngle);
+  
+  if (!stepper.tick()) {
+    if (Serial.available() > 0) {
+      char incoming = Serial.read();
+      switch (incoming) {
+        case 'w': stepper.reset(); stepper.enable();
           break;
-        }
+        case 'a': pos = -1; stepper.setTargetDeg(pos, RELATIVE);
+          break;
+        case 'q': pos = -10; stepper.setTargetDeg(pos, RELATIVE);
+          break;
+        case 's': stepper.stop();  stepper.disable();
+          break;
+        case 'd': pos = 1; stepper.setTargetDeg(pos, RELATIVE);
+          break;
+        case 'e': pos = 10; stepper.setTargetDeg(pos, RELATIVE);
 
-      // 2) Scan from -60 to +60
-      case 'y': {
-          Serial.println("Scanning from -60 to +60...");
-          for (int angle = -60; angle <= 60; angle += 5) {
-            stepper.setTargetDeg(angle, ABSOLUTE);
-            Serial.print("Angle: ");
-            Serial.println(angle);
-            delay(500); // Adjust delay as needed
+          break;
+        case 'r': pos = -90; stepper.setTargetDeg(pos, RELATIVE);
+          break;
+        case 'f': pos = 90; stepper.setTargetDeg(pos, RELATIVE);
+          break;
+        case 'o':
+          while (Serial.available() == 0) {
+            // Wait here until number arrives
           }
-          break;
-        }
+          // Read until newline (or timeout)
+          String posStr = Serial.readStringUntil('\n');
 
-      // 3) Scan from +60 to -60
-      case 'z': {
-          Serial.println("Scanning from +60 to -60...");
-          for (int angle = 60; angle >= -60; angle -= 5) {
-            stepper.setTargetDeg(angle, ABSOLUTE);
-            Serial.print("Angle: ");
-            Serial.println(angle);
-            delay(500); // Adjust delay as needed
-          }
+          // Convert the string to an integer
+          pos = posStr.toInt();
+
+          // Send to stepper in ABSOLUTE mode
+          stepper.setTargetDeg(pos, ABSOLUTE);
+
+          // Print out the parsed value for debugging
+          //        Serial.print("Received angle: ");
+
           break;
-        }
+      }
     }
-
-
+    stepper.tick();
+  }
+  if (stepper.ready()) {
+    Serial.println(pos);
   }
   //  }
 }
