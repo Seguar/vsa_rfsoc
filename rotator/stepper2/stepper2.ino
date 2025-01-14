@@ -2,8 +2,7 @@
 
 #include <GyverStepper2.h>
 //GStepper2<STEPPER2WIRE> stepper(3200, 3, 6, 8); // 0.9
-GStepper2<STEPPER2WIRE> stepper(1600, 3, 6, 8); // 1.8
-
+GStepper2<STEPPER2WIRE> stepper(1600, 8, 9, 2); // 1.8 with Amperka board
 // мотор с драйвером ULN2003 подключается по порядку пинов, но крайние нужно поменять местами
 // то есть у меня подключено D2-IN1, D3-IN2, D4-IN3, D5-IN4, но в программе поменял 5 и 2
 
@@ -41,7 +40,7 @@ void setup() {
 
 
   // отключать мотор при достижении цели
-  //  stepper.autoPower(true);
+//    stepper.autoPower(true);
 
   // включить мотор (если указан пин en)
   stepper.enable();
