@@ -176,7 +176,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         setupFile = [fileparts(mfilename('fullpath')) '\Settings\ofdm_iq_100_16_4x2.setx'];
 
 %         server_ip = 'pynq'; % Use the appropriate IP address or hostname http://192.168.3.1/lab
-        server_ip = '132.68.138.226'; % Use the appropriate IP address or hostname http://192.168.3.1/lab
+        server_ip = '192.168.3.1'; % Use the appropriate IP address or hostname http://192.168.3.1/lab
 
         %         server_ip = '132.68.138.226'; % Use the appropriate IP address or hostname http://192.168.3.1/lab
         server_port = 4000; % Use the same port number used in the Python server
