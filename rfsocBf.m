@@ -1,5 +1,5 @@
 function [yspec, estimated_angle, bfSig, weights, rawData] = rfsocBf(app, vsa, ch, bf, off, gap, cutter, ang_num, data_v, tcp_client, fc, dataChan, diag, bwOff, ula, scan_axis, ...
-    c1, c2, fsRfsoc, bw, c, estimator, alg_scan_res, mis_ang, alpha, gamma, iter, setup_v, debug)
+    c1, c2, fsRfsoc, bw, c, estimator, alg_scan_res, mis_ang, alpha, gamma, iter, setup_v, debug, pow_claibration_intrp)
     % Inputs:
 %   - app: Application object
 %   - vsa: Flag indicating whether to perform VSA (Vector Signal Analyzer) operation
@@ -83,16 +83,18 @@ if isa(estimator, 'double')
 %     end
     for t=1:length(scan_axis)
         A = exp(-1j*pi*(0:num_elements-1)'*sind(scan_axis(t)));
-        A_fixed = A.*app.steering_correction(t,:)';
-        sig_final_fixed = sig./(pow_claibration_intrp(t, :).^0.5);
+        A_fixed = A.*estimator(t,:)';
+        % A_fixed = A.*estimator(t,:).';
+        sig_final_fixed = rawData./(pow_claibration_intrp(t, :).^0.5);
         Rx_fixed = sig_final_fixed'*sig_final_fixed;    %Data covarivance matrix 
         Rx_Inv_fixed = Rx_fixed^(-1);           %Inverse of covariance matrix
         B_fixed = A_fixed'*Rx_Inv_fixed*A_fixed;
         B = A'*Rx_Inv*A;
         yspec(t) = 10*log10(abs(1/B)); 
-        yspec_fixed(t) = 10*log10(abs(1/B_fixed));
+        yspec(t) = 10*log10(abs(1/B_fixed)); %% yspec_fixed
+        
     end
-    [~,ind] = findpeaks(yspec);
+    [~,ind] = findpeaks(yspec,"SortStr","descend");
     estimated_angle = scan_axis(ind);
 else
     try
@@ -127,10 +129,12 @@ if idx(ang_num) == 1
 end
 %%
 
-% sig_final = conj(sig_correction).*sig_final_tmp./pow_correction;
+
 if c1
-    sig_correction = app.steering_correction.steering_correction(find(scan_axis==estimated_angle(1)),:);
-    pow_correction = app.pow_claibration_intrp.pow_claibration_intrp(find(scan_axis==estimated_angle(1)),:).^0.5;
+    ang_idx = find(scan_axis == estimated_angle(1));
+    % sig_final = conj(estimator(ang_idx,:)).*sig_final_tmp./pow_correction;
+    sig_correction = estimator(ang_idx,:);
+    pow_correction = pow_claibration_intrp(ang_idx,:).^0.5;
     rawData = conj(sig_correction).*rawData./pow_correction;
 end
 %% Beamforming

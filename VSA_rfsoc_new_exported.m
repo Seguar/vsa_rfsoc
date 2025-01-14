@@ -79,6 +79,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         RFSoCFcSpinner                 matlab.ui.control.Spinner
         RFSoCFcSpinnerLabel            matlab.ui.control.Label
         mmWaveFrontEndTab              matlab.ui.container.Tab
+        StepperGUIButton               matlab.ui.control.Button
         AmplitudeAutocalStartButton_2  matlab.ui.control.Button
         PhaseAutocalStartButton_2      matlab.ui.control.Button
         TXLabel_2                      matlab.ui.control.Label
@@ -151,6 +152,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
     properties (Access = private)
         Property % Description
         rxBoardControl_app;
+        stepper_app;
         %% App fields
         vsa = 1;
         ch = 5;
@@ -362,6 +364,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.koef = koef;
             app.steering_correction = load("steering_correction.mat");
             app.pow_claibration_intrp = load("pow_claibration_intrp.mat");
+            app.pow_claibration_intrp = app.pow_claibration_intrp.pow_claibration_intrp;
             app.koef = interp1(linspace(1,length(app.koef),length(app.koef))', app.koef, linspace(1,length(app.koef),length(app.scan_axis))', 'linear', 'extrap');
             app.part_reset_req = 0;
             app.ResetButton.Text = 'Reset';
@@ -454,7 +457,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                     try
                         [yspec, estimated_angle, bfSig, app.weights, app.rawData] = rfsocBf(app, app.vsa, app.ch, app.bf, app.off, app.gap, app.cutter, ...
                             app.ang_num, app.data_v, app.tcp_client, app.fcAnt, app.dataChan, app.diag, app.bwOff, app.ula, app.scan_axis, ...
-                            app.c1, app.c2, app.fsRfsoc, app.bw, app.c, app.estimator, app.alg_scan_res, app.mis_ang, app.alpha, app.gamma, app.iter, app.setup_v, app.debug);
+                            app.c1, app.c2, app.fsRfsoc, app.bw, app.c, app.estimator, app.alg_scan_res, app.mis_ang, app.alpha, app.gamma, app.iter, app.setup_v, app.debug, app.pow_claibration_intrp);
                         if isnan(app.weights)
                             disp("No signal")
                             app.weights = 0;
@@ -874,6 +877,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                     %                             app.StartanglecalibrationsButton.BackgroundColor = 'g';
                     writeline(app.tcp_client, 'alive 1');
                     rawData = 0;
+                    pow_claibration_intrp = 0;
                     rawData = tcpDataRec(app.tcp_client, (app.dataChan * 8), 8);
                     rawData = filtSig(rawData, app.fsRfsoc, app.bw);
                     save([pwd '\phase_cal\' num2str(app.cur_ang) '.mat'], 'rawData')
@@ -888,7 +892,8 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                         end
                         app.StartanglecalibrationsButton.Text = 'Press to start calibrations';
                         [steering_correction, ~, ~] = phase_pattern_generator(meas_mat,phase_scan_axis,app.scan_res,app.num_elements);
-                        % pow_claibration_intrp = power_pattern_generator(meas_mat,phase_scan_axis,app.scan_res,app.num_elements);
+                        pow_claibration_intrp = power_pattern_generator(meas_mat,phase_scan_axis,app.scan_res,app.num_elements);
+                        app.pow_claibration_intrp = pow_claibration_intrp;
                         save('steering_correction.mat', 'steering_correction');
                         save('pow_claibration_intrp.mat', 'pow_claibration_intrp');
                         app.phase_cal = 0;
@@ -1736,6 +1741,12 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             end
         end
 
+        % Button pushed function: StepperGUIButton
+        function StepperGUIButtonPushed(app, event)
+            app.stepper_app = stepper;
+            app.StepperGUIButton.BackgroundColor = 'g';
+        end
+
         % Changes arrangement of the app based on UIFigure width
         function updateAppLayout(app, event)
             currentFigureWidth = app.RFSoCBeamformerUIFigure.Position(3);
@@ -2188,7 +2199,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             % Create StartanglecalibrationsButton
             app.StartanglecalibrationsButton = uibutton(app.mmWaveFrontEndTab, 'push');
             app.StartanglecalibrationsButton.ButtonPushedFcn = createCallbackFcn(app, @StartanglecalibrationsButtonPushed, true);
-            app.StartanglecalibrationsButton.Position = [42 237 140 58];
+            app.StartanglecalibrationsButton.Position = [38 206 140 58];
             app.StartanglecalibrationsButton.Text = 'Start angle calibrations';
 
             % Create ArduinoGUIButton
@@ -2253,7 +2264,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.TXLabel_2 = uilabel(app.mmWaveFrontEndTab);
             app.TXLabel_2.FontSize = 14;
             app.TXLabel_2.FontWeight = 'bold';
-            app.TXLabel_2.Position = [95 195 25 22];
+            app.TXLabel_2.Position = [95 183 25 22];
             app.TXLabel_2.Text = 'TX';
 
             % Create PhaseAutocalStartButton_2
@@ -2267,6 +2278,12 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.AmplitudeAutocalStartButton_2.ButtonPushedFcn = createCallbackFcn(app, @TXAmplitudeAutocalStartButtonPushed, true);
             app.AmplitudeAutocalStartButton_2.Position = [58 126 100 51];
             app.AmplitudeAutocalStartButton_2.Text = {'Amplitude'; 'Autocal'; 'Start'};
+
+            % Create StepperGUIButton
+            app.StepperGUIButton = uibutton(app.mmWaveFrontEndTab, 'push');
+            app.StepperGUIButton.ButtonPushedFcn = createCallbackFcn(app, @StepperGUIButtonPushed, true);
+            app.StepperGUIButton.Position = [56 273 100 22];
+            app.StepperGUIButton.Text = 'Stepper GUI';
 
             % Create DebugTab
             app.DebugTab = uitab(app.TabGroup);
