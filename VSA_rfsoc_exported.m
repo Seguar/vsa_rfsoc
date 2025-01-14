@@ -158,7 +158,7 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         saveName;
         %%
         ula
-        fcAnt = 1000e6;
+        fcAnt = 5.1e9;
         weights
         c = physconst('LightSpeed'); % propagation velocity [m/s]
         alg_scan_res = 1;
@@ -167,13 +167,13 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         gamma = 1;
         iter = 1;
         %% System
-        fc = 4.5e9;
-        fsRfsoc = 250e6;
+        fc = 5.1e9;
+        fsRfsoc = 125e6;
         fsDAC = 500e6;
-        bw = 249e6;
-        num = 2;
+        bw = 100e6;
+        num = 1;
         scan_bw = 120;
-        setupFile = [fileparts(mfilename('fullpath')) '\Settings\ofdm_iq_100_16.setx'];
+        setupFile = [fileparts(mfilename('fullpath')) '\Settings\ofdm_iq_100_16_4x2.setx'];
 
 %         server_ip = 'pynq'; % Use the appropriate IP address or hostname http://192.168.3.1/lab
         server_ip = '132.68.138.226'; % Use the appropriate IP address or hostname http://192.168.3.1/lab
@@ -206,8 +206,8 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
         nyquistZone = 1;
         nyquistZone_d0 = 1;
         nyquistZone_d1 = 1;
-        fc_d0 = 4.5e9;
-        fc_d1 = 4.5e9;
+        fc_d0 = 5.1e9;
+        fc_d1 = 5.1e9;
         dphase = [0,0,0,0];
         dacPow = [1,0,1,0];
         da = 1;
@@ -395,8 +395,8 @@ classdef VSA_rfsoc_exported < matlab.apps.AppBase
                         estimated_angle = [estimated_angle NaN NaN]; % To prevent errors in xlines indexing
                         am = guiXline(am, app.UIAxes, main, estimated_angle(1), 'right');
                         am2 = guiXline(am2, app.UIAxes2, main, estimated_angle(1), 'right');
-                        adac = guiXline(adac, app.UIAxes, dacmain, app.dacAngle, 'left');
-                        adac2 = guiXline(adac2, app.UIAxes2, dacmain, app.dacAngle, 'left');
+                        % adac = guiXline(adac, app.UIAxes, dacmain, app.dacAngle, 'left');
+                        % adac2 = guiXline(adac2, app.UIAxes2, dacmain, app.dacAngle, 'left');
 %%
                         if sum(~isnan(estimated_angle)) > 1
                             bs = guiXline(bs, app.UIAxes, sub, estimated_angle(2), 'center');
