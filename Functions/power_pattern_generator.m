@@ -1,5 +1,5 @@
 function pow_claibration_intrp = power_pattern_generator(meas_mat, scan_axis, interpulation_resolution, num_elements)
-    norm_sig = zeros(num_elements, length(meas_mat));
+    norm_sig = zeros(num_elements, length(scan_axis));
     for k=1:length(scan_axis)
         sig = meas_mat(:,:,k);
         norm_sig(:,k) = 20*log10(std(sig));
@@ -11,7 +11,7 @@ function pow_claibration_intrp = power_pattern_generator(meas_mat, scan_axis, in
     pow_claibration_intrp(:,2) = spline(scan_axis,pow_claibration_src(2,:), iterpulation_axis);
     pow_claibration_intrp(:,3) = spline(scan_axis,pow_claibration_src(3,:), iterpulation_axis);
     pow_claibration_intrp(:,4) = spline(scan_axis,pow_claibration_src(4,:), iterpulation_axis);
-    pow_claibration_intrp = pow_claibration_intrp/(pow_claibration_src(1,7));
+    % pow_claibration_intrp = pow_claibration_intrp/(pow_claibration_src(1,7));
 %     figure(8);
 %     hold on;
 %     plot(iterpulation_axis,db(pow_claibration_intrp)/2,LineStyle="-", LineWidth=3);
