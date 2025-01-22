@@ -1,4 +1,4 @@
-function [yspec, estimated_angle, bfSig, weights, rawData] = rfsocBf(app, vsa, ch, bf, off, gap, cutter, ang_num, data_v, tcp_client, fc, dataChan, diag, bwOff, ula, scan_axis, ...
+function [yspec, estimated_angle, bfSig, weights, rawData] = rfsocBf(app, vsa, ch, bf, off, gap, cutter, ang_num, num, data_v, tcp_client, fc, dataChan, diag, bwOff, ula, scan_axis, ...
     c1, c2, fsRfsoc, bw, c, estimator, alg_scan_res, mis_ang, alpha, gamma, iter, setup_v, debug, pow_claibration_intrp)
     % Inputs:
 %   - app: Application object
@@ -89,12 +89,13 @@ if isa(estimator, 'double')
         Rx_fixed = sig_final_fixed'*sig_final_fixed;    %Data covarivance matrix 
         Rx_Inv_fixed = Rx_fixed^(-1);           %Inverse of covariance matrix
         B_fixed = A_fixed'*Rx_Inv_fixed*A_fixed;
-        B = A'*Rx_Inv*A;
-        yspec(t) = 10*log10(abs(1/B)); 
+        % B = A'*Rx_Inv*A;
+        % yspec(t) = 10*log10(abs(1/B)); 
         yspec(t) = 10*log10(abs(1/B_fixed)); %% yspec_fixed
         
     end
     [~,ind] = findpeaks(yspec,"SortStr","descend");
+    ind = ind(1:num);
     estimated_angle = scan_axis(ind);
 else
     try
@@ -111,10 +112,10 @@ end
 %% Signal choice
 estimated_angle = estimated_angle(not(isnan(estimated_angle)));
 npc = sum(~isnan(estimated_angle));
-if npc > 2
-    estimated_angle = estimated_angle(1:2);
-    npc = 2;
-end
+% if npc > 2
+    
+    % npc = 2;
+% end
 % estimated_angle = [estimated_angle(ang_num) estimated_angle];
 % estimated_angle(ang_num + 1) = [];
 powbp = zeros(1,npc);
@@ -123,10 +124,11 @@ for i = 1:npc
     rawSumM = sum(rawDataAdjM, 2);
     powbp(i,:) = bandpower(rawSumM,fsRfsoc,[-bw/2 bw/2]);
 end
-[~, idx] = sort(powbp, 'ascend');
-if idx(ang_num) == 1
+[~, idx] = sort(powbp, 'descend');
+if idx(ang_num) == 2
     estimated_angle = flip(estimated_angle);
 end
+estimated_angle = estimated_angle(1:num);
 %%
 
 
