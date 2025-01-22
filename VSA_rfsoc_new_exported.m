@@ -270,7 +270,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         dacSR = 1;
         dacAmp = 2^14-1;
         dacGain = [150, 125, 82, 199];
-        adcGain = [82, 199, 175, 75]; % Calibrated with metal surface
+        adcGain = [69, 199, 119, 100]; % Calibrated with metal surface
         dacActiveCh = [1,1,1,1];
         dphase = [0,0,0,0];
         %         dphaseCorr = [0,9,-132,-18];
@@ -278,7 +278,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         dgainCorr = [199, 199, 199, 199];
         dphaseCorr = [0, 5, 21, 138];
         %         dphaseCorr = [0,15,-36,144];
-        phase = [0,104,156,139];
+        phase = [0,-67,135,12];
         % phase = [0,-68,-23,-30]; % [  0.         -68.16668724 -23.64564807 -30.27015883] [  0.         -87.57967336 -41.12039743 -49.63200857]
         %         phase = [0,13,-20,-18];
         manualControlState = "DAC phase";
@@ -408,6 +408,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             %             addpath(genpath([pwd '\iqtools_2023_10_24']))
             addpath(genpath([pwd '\Packet-Creator-VHT']))
             addpath(genpath([pwd '\Functions']))
+            addpath(genpath([pwd '\rotator']))
             pwd
             powCalc = @(x) -round(max(db(fftshift(fft(x))))/2, 1); % Power from FFT calculations
             %             load koef
@@ -456,7 +457,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                 if app.dataStream
                     try
                         [yspec, estimated_angle, bfSig, app.weights, app.rawData] = rfsocBf(app, app.vsa, app.ch, app.bf, app.off, app.gap, app.cutter, ...
-                            app.ang_num, app.data_v, app.tcp_client, app.fcAnt, app.dataChan, app.diag, app.bwOff, app.ula, app.scan_axis, ...
+                            app.ang_num, app.num, app.data_v, app.tcp_client, app.fcAnt, app.dataChan, app.diag, app.bwOff, app.ula, app.scan_axis, ...
                             app.c1, app.c2, app.fsRfsoc, app.bw, app.c, app.estimator, app.alg_scan_res, app.mis_ang, app.alpha, app.gamma, app.iter, app.setup_v, app.debug, app.pow_claibration_intrp);
                         if isnan(app.weights)
                             disp("No signal")
@@ -869,37 +870,53 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                     commandsHandler(app, ['dphase ' strjoin(arrayfun(@num2str, app.dphase*100, 'UniformOutput', false), '/');]);
                 end
                 %% RX Angles cal
+                avg_cnt = 0;
+                rawDataMean = 0;
                 while app.phase_cal
                     app.StartanglecalibrationsButton.Text = ['Set ' num2str(app.cur_ang) ' deg and press'];
                     app.Gauge.Value = app.cur_ang;
                     app.phase_cal_butt = 0;
-                    uiwait
-                    %                             app.StartanglecalibrationsButton.BackgroundColor = 'g';
+                    if ~isempty(app.stepper_app)
+                        app.stepper_app.setAngle(app.cur_ang)
+                    else
+                        uiwait
+                    end
+                    app.StartanglecalibrationsButton.BackgroundColor = 'y';
                     writeline(app.tcp_client, 'alive 1');
                     rawData = 0;
                     pow_claibration_intrp = 0;
                     rawData = tcpDataRec(app.tcp_client, (app.dataChan * 8), 8);
                     rawData = filtSig(rawData, app.fsRfsoc, app.bw);
-                    save([pwd '\phase_cal\' num2str(app.cur_ang) '.mat'], 'rawData')
-
-                    if app.cur_ang == -(app.start_ang)
-                        phase_scan_axis = -abs(app.start_ang):app.step_ang:abs(app.start_ang);
-                        list = dir([pwd '\phase_cal\*.mat']);
-                        for k=1:length(phase_scan_axis)
-                            sig_temp = load([pwd '\phase_cal\' num2str(phase_scan_axis(k)), '.mat']);
-                            sig = sig_temp.rawData;
-                            meas_mat(:,:,k) = sig;
-                        end
-                        app.StartanglecalibrationsButton.Text = 'Press to start calibrations';
-                        [steering_correction, ~, ~] = phase_pattern_generator(meas_mat,phase_scan_axis,app.scan_res,app.num_elements);
-                        pow_claibration_intrp = power_pattern_generator(meas_mat,phase_scan_axis,app.scan_res,app.num_elements);
-                        app.pow_claibration_intrp = pow_claibration_intrp;
-                        save('steering_correction.mat', 'steering_correction');
-                        save('pow_claibration_intrp.mat', 'pow_claibration_intrp');
-                        app.phase_cal = 0;
-                        app.cur_ang = 0;
+                    if avg_cnt < app.avg_factor
+                        rawDataMean = rawDataMean + rawData;
+                        % [p_manual_mean_vec, rawDataMean]  = avgData(rawData, rawDataMean);
+                        avg_cnt = avg_cnt + 1;
+                    % elseif avg_cnt == app.avg_factor
                     else
-                        app.cur_ang = app.cur_ang + app.step_ang;
+                        rawData = rawDataMean./app.avg_factor;
+                        rawDataMean = 0;
+                        avg_cnt = 0;
+                        save([pwd '\phase_cal\' num2str(app.cur_ang) '.mat'], 'rawData')
+                        if app.cur_ang == -(app.start_ang)
+                            phase_scan_axis = -abs(app.start_ang):app.step_ang:abs(app.start_ang);
+                            list = dir([pwd '\phase_cal\*.mat']);
+                            for k=1:length(phase_scan_axis)
+                                sig_temp = load([pwd '\phase_cal\' num2str(phase_scan_axis(k)), '.mat']);
+                                sig = sig_temp.rawData;
+                                meas_mat(:,:,k) = sig;
+                            end
+                            app.StartanglecalibrationsButton.Text = 'Press to start calibrations';
+                            [steering_correction, ~, ~] = phase_pattern_generator(meas_mat,phase_scan_axis,app.scan_res,app.num_elements);
+                            pow_claibration_intrp = power_pattern_generator(meas_mat,phase_scan_axis,app.scan_res,app.num_elements);
+                            app.pow_claibration_intrp = pow_claibration_intrp;
+                            save('steering_correction.mat', 'steering_correction');
+                            save('pow_claibration_intrp.mat', 'pow_claibration_intrp');
+                            app.StartanglecalibrationsButton.BackgroundColor = 'g';
+                            app.phase_cal = 0;
+                            app.cur_ang = 0;
+                        else
+                            app.cur_ang = app.cur_ang + app.step_ang;
+                        end
                     end
                 end
                 %% DAC BF

@@ -36,8 +36,15 @@ classdef stepper_exported < matlab.apps.AppBase
         end
         
         function setAngle(app, value)
+            app.angle = value;
             writeline(app.Arduino, ['o ' num2str(value)]);
-            readBack = readline(app.Arduino)
+            readBack =[];
+            while isempty(readBack)
+                readBack = readline(app.Arduino);
+                disp(readBack)
+            end
+            
+            updateFields(app);
         end
     end
 
@@ -87,7 +94,7 @@ classdef stepper_exported < matlab.apps.AppBase
             app.DegreeEditField.Value = app.angle;
 
             setAngle(app, app.angle);
-            updateFields(app);
+            % updateFields(app);
         end
 
         % Value changed function: DegreeEditField
@@ -96,7 +103,7 @@ classdef stepper_exported < matlab.apps.AppBase
             app.Knob.Value = app.angle;
 
             setAngle(app, app.angle);
-            updateFields(app);
+            % updateFields(app);
         end
 
         % Button pushed function: Reset0Button
