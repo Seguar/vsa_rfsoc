@@ -1,5 +1,5 @@
 function [yspec, estimated_angle, bfSig, weights, rawData] = rfsocBf(app, vsa, ch, bf, off, gap, cutter, ang_num, num, data_v, tcp_client, fc, dataChan, diag, bwOff, ula, scan_axis, ...
-    c1, c2, fsRfsoc, bw, c, estimator, alg_scan_res, mis_ang, alpha, gamma, iter, setup_v, debug, pow_claibration_intrp)
+    c1, c2, fsRfsoc, bw, c, estimator, alg_scan_res, mis_ang, alpha, gamma, iter, setup_v, debug, pow_claibration_intrp, coupling_matrix)
     % Inputs:
 %   - app: Application object
 %   - vsa: Flag indicating whether to perform VSA (Vector Signal Analyzer) operation
@@ -62,8 +62,15 @@ if debug
     rec_time = toc;
     disp(['rec_time ' num2str(rec_time) ' s'])
 end
+%% Coupling corrections
+if c2
+    rawData = (coupling_matrix*rawData.').';
+end
+
+
 %% Matlab MVDR DOA FUNC
 rawData = filtSig(rawData, fsRfsoc, bw);
+
 %% DOA
 Rx = rawData'*rawData;    %Data covarivance matrix 
 if isa(estimator, 'double')
@@ -187,9 +194,9 @@ rawDataAdj(:,2) = rawData(:,2)*weights(2);
 rawDataAdj(:,3) = rawData(:,3)*weights(3);
 rawDataAdj(:,4) = rawData(:,4)*weights(4);
 rawSum = sum(rawDataAdj(:,ch), 2);
-if c2
-    weights = conj(weights);
-end
+% if c2
+%     weights = conj(weights);
+% end
 weights = weights(ch);
 %% Cutter
 if (cutter)
