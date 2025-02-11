@@ -6,14 +6,13 @@ switch doa
             'DOAOutputPort',true,'NumSignals', num);
     case 'MVDRman' 
         estimator = ones(size(scan_axis))';
-    case 'MVDRman_corr' 
-        load("steering_correction.mat");
-        load("pow_claibration_intrp.mat");
+    case 'MVDRman_corr'         
+        % load("pow_claibration_intrp.mat");
         % if length(steering_correction) ~= length(scan_axis)
         %     len = abs(length(steering_correction) - length(scan_axis));
         %     steering_correction = wextend('1D','sym',steering_correction,len/2);
         % end
-        estimator = steering_correction; 
+        estimator = importdata("steering_correction.mat"); 
     case 'MUSIC'
         estimator = phased.MUSICEstimator('SensorArray',ula,...
             'OperatingFrequency',fc,'ScanAngles',scan_axis,...
