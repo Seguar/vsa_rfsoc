@@ -270,7 +270,8 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         dacSR = 1;
         dacAmp = 2^14-1;
         dacGain = [150, 125, 82, 199];
-        adcGain = [69, 199, 119, 100]; % Calibrated with metal surface
+        % adcGain = [69, 199, 119, 100]; % Calibrated with metal surface
+        adcGain = [199, 199, 199, 199]; 
         dacActiveCh = [1,1,1,1];
         dphase = [0,0,0,0];
         %         dphaseCorr = [0,9,-132,-18];
@@ -278,7 +279,8 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         dgainCorr = [199, 199, 199, 199];
         dphaseCorr = [0, 5, 21, 138];
         %         dphaseCorr = [0,15,-36,144];
-        phase = [0,-67,135,12];
+        phase = [0,0,0,0];
+        % phase = [0,-67,135,12];
         % phase = [0,-68,-23,-30]; % [  0.         -68.16668724 -23.64564807 -30.27015883] [  0.         -87.57967336 -41.12039743 -49.63200857]
         %         phase = [0,13,-20,-18];
         manualControlState = "DAC phase";
@@ -294,7 +296,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         %%
         rawData;
         %%
-
+        coupling_matrix;
     end
     properties (Access = public)
         steering_correction = [];
@@ -362,9 +364,9 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             %             app.koef = antSinglePattern(app.fc, app.scan_axis)';
             load koef
             app.koef = koef;
-            app.steering_correction = load("steering_correction.mat");
-            app.pow_claibration_intrp = load("pow_claibration_intrp.mat");
-            app.pow_claibration_intrp = app.pow_claibration_intrp.pow_claibration_intrp;
+            app.steering_correction = importdata("steering_correction.mat");
+            app.pow_claibration_intrp = importdata("pow_claibration_intrp.mat");
+            app.coupling_matrix = importdata("coupling_matrix.mat");
             app.koef = interp1(linspace(1,length(app.koef),length(app.koef))', app.koef, linspace(1,length(app.koef),length(app.scan_axis))', 'linear', 'extrap');
             app.part_reset_req = 0;
             app.ResetButton.Text = 'Reset';
@@ -458,7 +460,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                     try
                         [yspec, estimated_angle, bfSig, app.weights, app.rawData] = rfsocBf(app, app.vsa, app.ch, app.bf, app.off, app.gap, app.cutter, ...
                             app.ang_num, app.num, app.data_v, app.tcp_client, app.fcAnt, app.dataChan, app.diag, app.bwOff, app.ula, app.scan_axis, ...
-                            app.c1, app.c2, app.fsRfsoc, app.bw, app.c, app.estimator, app.alg_scan_res, app.mis_ang, app.alpha, app.gamma, app.iter, app.setup_v, app.debug, app.pow_claibration_intrp);
+                            app.c1, app.c2, app.fsRfsoc, app.bw, app.c, app.estimator, app.alg_scan_res, app.mis_ang, app.alpha, app.gamma, app.iter, app.setup_v, app.debug, app.pow_claibration_intrp, app.coupling_matrix);
                         if isnan(app.weights)
                             disp("No signal")
                             app.weights = 0;
@@ -872,12 +874,18 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                 %% RX Angles cal
                 avg_cnt = 0;
                 rawDataMean = 0;
+                move_flg = 1;
                 while app.phase_cal
+                    drawnow limitrate nocallbacks %!!!!
                     app.StartanglecalibrationsButton.Text = ['Set ' num2str(app.cur_ang) ' deg and press'];
                     app.Gauge.Value = app.cur_ang;
                     app.phase_cal_butt = 0;
                     if ~isempty(app.stepper_app)
-                        app.stepper_app.setAngle(app.cur_ang)
+                        if move_flg
+                            app.stepper_app.setAngle(app.cur_ang)
+                            pause(2)
+                            move_flg = 0;
+                        end
                     else
                         uiwait
                     end
@@ -894,6 +902,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                     % elseif avg_cnt == app.avg_factor
                     else
                         rawData = rawDataMean./app.avg_factor;
+                        move_flg = 1;
                         rawDataMean = 0;
                         avg_cnt = 0;
                         save([pwd '\phase_cal\' num2str(app.cur_ang) '.mat'], 'rawData')
@@ -901,16 +910,17 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                             phase_scan_axis = -abs(app.start_ang):app.step_ang:abs(app.start_ang);
                             list = dir([pwd '\phase_cal\*.mat']);
                             for k=1:length(phase_scan_axis)
-                                sig_temp = load([pwd '\phase_cal\' num2str(phase_scan_axis(k)), '.mat']);
-                                sig = sig_temp.rawData;
-                                meas_mat(:,:,k) = sig;
+                                meas_mat(:,:,k) = importdata([pwd '\phase_cal\' num2str(phase_scan_axis(k)), '.mat']);
                             end
                             app.StartanglecalibrationsButton.Text = 'Press to start calibrations';
-                            [steering_correction, ~, ~] = phase_pattern_generator(meas_mat,phase_scan_axis,app.scan_res,app.num_elements);
-                            pow_claibration_intrp = power_pattern_generator(meas_mat,phase_scan_axis,app.scan_res,app.num_elements);
+                            [steering_correction, angle_claibration_src, ~] = phase_pattern_generator(meas_mat,phase_scan_axis,app.scan_res,app.num_elements);
+                            [~, pow_claibration_src, pow_claibration_intrp] = power_pattern_generator(meas_mat,phase_scan_axis,app.scan_res,app.num_elements);
+                            coupling_matrix = adaptiveCouplingMatrixCalculation(meas_mat, pow_claibration_src, angle_claibration_src, phase_scan_axis, app.fcAnt, app.c, app.ula, app.num_elements, 20);
                             app.pow_claibration_intrp = pow_claibration_intrp;
+                            app.coupling_matrix = coupling_matrix;
                             save('steering_correction.mat', 'steering_correction');
                             save('pow_claibration_intrp.mat', 'pow_claibration_intrp');
+                            save('coupling_matrix.mat', 'coupling_matrix');
                             app.StartanglecalibrationsButton.BackgroundColor = 'g';
                             app.phase_cal = 0;
                             app.cur_ang = 0;
@@ -919,6 +929,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                         end
                     end
                 end
+                drawnow
                 %% DAC BF
                 if app.dacBFon
                     switch app.dacBF
