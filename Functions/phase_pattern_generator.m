@@ -29,4 +29,10 @@ function [steering_correction, angle_claibration_src, angle_claibration_intrp] =
     angle_claibration_intrp(:,3) = spline(scan_axis,angle_claibration_src(3,:), iterpulation_axis);
     angle_claibration_intrp(:,4) = spline(scan_axis,angle_claibration_src(4,:), iterpulation_axis);
     steering_correction = exp(-1j*deg2rad(angle_claibration_intrp));
+    figure
+    plot(iterpulation_axis, angle_claibration_intrp)
+    title('Phase Pattern');
+    xlabel('DOA (deg)');
+    ylabel('Phase Mismatch (Deg)');
+    legend('Ant 1','Ant 2','Ant 3','Ant 4', Location='best');
 end

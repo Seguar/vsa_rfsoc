@@ -1,4 +1,4 @@
-function pow_claibration_intrp = power_pattern_generator(meas_mat, scan_axis, interpulation_resolution, num_elements)
+function [pow_correction, pow_claibration_src, pow_claibration_intrp] = power_pattern_generator(meas_mat, scan_axis, interpulation_resolution, num_elements)
     norm_sig = zeros(num_elements, length(scan_axis));
     for k=1:length(scan_axis)
         sig = meas_mat(:,:,k);
@@ -11,6 +11,7 @@ function pow_claibration_intrp = power_pattern_generator(meas_mat, scan_axis, in
     pow_claibration_intrp(:,2) = spline(scan_axis,pow_claibration_src(2,:), iterpulation_axis);
     pow_claibration_intrp(:,3) = spline(scan_axis,pow_claibration_src(3,:), iterpulation_axis);
     pow_claibration_intrp(:,4) = spline(scan_axis,pow_claibration_src(4,:), iterpulation_axis);
+    pow_correction = db(pow_claibration_intrp)/2;
     % pow_claibration_intrp = pow_claibration_intrp/(pow_claibration_src(1,7));
     figure
     % hold on;
@@ -24,7 +25,7 @@ function pow_claibration_intrp = power_pattern_generator(meas_mat, scan_axis, in
     % set(gca, fontsize=15)
     grid on;
     figure
-    polarplot(deg2rad(iterpulation_axis), db(pow_claibration_intrp)/2);
+    polarplot(deg2rad(iterpulation_axis), pow_correction);
     ax = gca;
     ax.ThetaZeroLocation = 'top'; % Set 0 degree angle at the top
     ax.ThetaDir = 'clockwise';    % Rotate angles clockwise
