@@ -566,11 +566,11 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                         data_dc = 0;
                     end
 
-                    % --- If we haven't finished the in-phase and quadrature sweeps (0->66) ---
-                    if autocal_cnt <= 66
+                    % --- If we haven't finished the in-phase and quadrature sweeps (0->126) ---
+                    if autocal_cnt <= 126 % 63*2
 
-                        % --- If autocal_cnt == 33, reset to 'inphase_state=0' and re-init min array ---
-                        if autocal_cnt == 33
+                        % --- If autocal_cnt == 63, reset to 'inphase_state=0' and re-init min array ---
+                        if autocal_cnt == 63
                             inphase_state = 0;
                             app.rxBoardControl_app.registers = app.autocal_registers;
                             app.autocal_min_array = inf(1,4);   % [inf inf inf inf]
@@ -611,13 +611,15 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                             if inphase_state
                                 for iCh = 1:4
                                     fName = ['RX' num2str(iCh) '_DAC_I'];
-                                    app.rxBoardControl_app.registers.(fName) = autocal_cnt + 30;
+                                    % app.rxBoardControl_app.registers.(fName) = autocal_cnt + 30;
+                                    app.rxBoardControl_app.registers.(fName) = autocal_cnt;
                                 end
                             else
                                 % else we’re sweeping 'Q' values => offset by -63
                                 for iCh = 1:4
                                     fName = ['RX' num2str(iCh) '_DAC_Q'];
-                                    app.rxBoardControl_app.registers.(fName) = autocal_cnt - 33;
+                                    % app.rxBoardControl_app.registers.(fName) = autocal_cnt - 33;
+                                    app.rxBoardControl_app.registers.(fName) = autocal_cnt - 63;
                                 end
                             end
 
