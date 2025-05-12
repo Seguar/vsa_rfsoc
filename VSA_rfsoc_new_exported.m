@@ -153,6 +153,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         Property % Description
         rxBoardControl_app;
         stepper_app;
+        main_path;
         %% App fields
         vsa = 1;
         ch = 5;
@@ -411,7 +412,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             addpath(genpath([pwd '\Packet-Creator-VHT']))
             addpath(genpath([pwd '\Functions']))
             addpath(genpath([pwd '\rotator']))
-            pwd
+            app.main_path = pwd
             powCalc = @(x) -round(max(db(fftshift(fft(x))))/2, 1); % Power from FFT calculations
             %             load koef
             %             app.koef = koef;
@@ -904,6 +905,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                     % elseif avg_cnt == app.avg_factor
                     else
                         rawData = rawDataMean./app.avg_factor;
+                        meas_mat = [];
                         move_flg = 1;
                         rawDataMean = 0;
                         avg_cnt = 0;
@@ -1775,6 +1777,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         function StepperGUIButtonPushed(app, event)
             app.stepper_app = stepper;
             app.StepperGUIButton.BackgroundColor = 'g';
+            cd(app.main_path)
         end
 
         % Changes arrangement of the app based on UIFigure width
@@ -2346,6 +2349,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             % Create dataChanEditField
             app.dataChanEditField = uieditfield(app.DebugTab, 'numeric');
             app.dataChanEditField.Limits = [1024 131072];
+            app.dataChanEditField.ValueDisplayFormat = '%.0f';
             app.dataChanEditField.ValueChangedFcn = createCallbackFcn(app, @dataChanEditFieldValueChanged, true);
             app.dataChanEditField.Position = [95 295 74 22];
             app.dataChanEditField.Value = 8192;
