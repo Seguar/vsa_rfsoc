@@ -85,7 +85,6 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         TXLabel_2                      matlab.ui.control.Label
         AmplitudeAutocalStartButton    matlab.ui.control.Button
         RXLabel_2                      matlab.ui.control.Label
-        PhaseAutocalStartButton        matlab.ui.control.Button
         DCLeakageAutocalStartButton    matlab.ui.control.Button
         StepangEditField               matlab.ui.control.NumericEditField
         StepangEditFieldLabel          matlab.ui.control.Label
@@ -711,26 +710,6 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                         disp(app.adcGain);
                     end
                 end
-                %% RX Phase autocal
-                while app.autocal_rx_phase % if for on-line
-                    genCtrl(app.gen_ip, app.gen_port, 0, 5, 2e9, 0);
-                    pause(1)
-                    genCtrl(app.gen_ip, app.gen_port, 1, 5, 2e9, 0);
-                    pause(0.1)
-                    % writeline(app.tcp_client, 'alive 1');
-                    rawData = 0;
-                    rawData = tcpDataRec(app.tcp_client, (app.dataChan * 8), 8);
-                    rawData = filtSig(rawData, app.fsRfsoc, app.bw);
-
-                    phase_relation_deg = PAcheck(app, rawData);
-                    phase_relation_deg = abs(phase_relation_deg);
-                    % phase_relation_deg(phase_relation_deg > 180) = abs(phase_relation_deg(phase_relation_deg > 180) - 360);
-                    if all(phase_relation_deg < 100)
-                        app.PhaseAutocalStartButton.BackgroundColor = 'g';
-                        app.autocal_rx_phase = 0;
-                    end
-                    writeline(app.tcp_client, 'alive 1');
-                end
                 %% TX Amplitude autocal
                 cal_flag = 0;
                 min_val = inf;
@@ -1137,32 +1116,6 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.bwOff = app.BWEditField.Value;
         end
 
-        % Callback function
-        function fcGenSpinnerValueChanged(app, event)
-            app.fcInt = app.fcGenSpinner.Value*1e6;
-            %             app.fcIntSpinner.Value = app.fcGenSpinner.Value;
-            genCtrl(app.gen_ip, app.gen_port, app.stateInt, app.powInt, app.fcInt, app.modInt);
-        end
-
-        % Callback function
-        function gainGenSpinnerValueChanged(app, event)
-            app.powInt = app.gainGenSpinner.Value;
-            %             app.gainIntSpinner.Value = app.gainGenSpinner.Value;
-            genCtrl(app.gen_ip, app.gen_port, app.stateInt, app.powInt, app.fcInt, app.modInt);
-        end
-
-        % Callback function
-        function ModCheckBoxValueChanged(app, event)
-            app.modInt = app.ModCheckBox.Value;
-            genCtrl(app.gen_ip, app.gen_port, app.stateInt, app.powInt, app.fcInt, app.modInt);
-        end
-
-        % Callback function
-        function PowerCheckBoxValueChanged(app, event)
-            app.stateInt = app.PowerCheckBox.Value;
-            genCtrl(app.gen_ip, app.gen_port, app.stateInt, app.powInt, app.fcInt, app.modInt);
-        end
-
         % Value changed function: patternCorrCheckBox
         function patternCorrCheckBoxValueChanged(app, event)
             app.patternCorr = app.patternCorrCheckBox.Value;
@@ -1256,15 +1209,6 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
 
         end
 
-        % Callback function
-        function RFSoCFcSpinner_3ValueChanged(app, event)
-            %             app.fc_d1 = app.AntennaFcSpinner.Value*1e6;
-            %             commandsHandler(app, ['fc ' num2str(app.fc/1e6) '/' num2str(app.nyquistZone) '/' ...
-            %                 num2str(app.fc_d0/1e6) '/' num2str(app.nyquistZone_d0) '/' ...
-            %                 num2str(app.fc_d1/1e6) '/' num2str(app.nyquistZone_d1)]);
-
-        end
-
         % Value changed function: AngleSpinner
         function AngleSpinnerValueChanged(app, event)
             app.dacAngle = app.AngleSpinner.Value;
@@ -1278,84 +1222,6 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                 num2str(app.fc_d0/1e6) '/' num2str(app.nyquistZone_d0) '/' ...
                 num2str(app.fc_d1/1e6) '/' num2str(app.nyquistZone_d1)]);
 
-        end
-
-        % Callback function
-        function EvenNyquistZoneCheckBox_3ValueChanged(app, event)
-            app.nyquistZone_d1 = app.EvenNyquistZoneCheckBox_3.Value + 1;
-            commandsHandler(app, ['fc ' num2str(app.fc/1e6) '/' num2str(app.nyquistZone) '/' ...
-                num2str(app.fc_d0/1e6) '/' num2str(app.nyquistZone_d0) '/' ...
-                num2str(app.fc_d1/1e6) '/' num2str(app.nyquistZone_d1)]);
-
-        end
-
-        % Callback function
-        function PhaseSpinner_2ValueChanged(app, event)
-            app.dphase(3) = app.PhaseSpinner_2.Value;
-            commandsHandler(app, ['dphase ' strjoin(arrayfun(@num2str, app.dphase, 'UniformOutput', false), '/');]);
-
-        end
-
-        % Callback function
-        function LoadSignalButtonPushed(app, event)
-            [file, path] = uigetfile([pwd '.\Signals\*.mat']);
-            filename = [path file];
-            sigInt16 = sigPrepare(filename, app.fsOrig, app.fsDAC, app.bwDac);
-            commandsHandler(app, ['dac0 ' strjoin(arrayfun(@num2str, sigInt16, 'UniformOutput', false), '/');]);
-            app.part_reset_req = 1;
-        end
-
-        % Callback function
-        function LoadSignalButton_2Pushed(app, event)
-            [file, path] = uigetfile([pwd '.\Signals\*.mat']);
-            filename = [path file];
-            sigInt16 = sigPrepare(filename, app.fsOrig, app.fsDAC, app.bwDac);
-            commandsHandler(app, ['dac1 ' strjoin(arrayfun(@num2str, sigInt16, 'UniformOutput', false), '/');]);
-            app.part_reset_req = 1;
-        end
-
-        % Callback function
-        function PowerCheckBox_2ValueChanged(app, event)
-            app.dacPow(1) = app.PowerCheckBox_2.Value;
-            commandsHandler(app, ['dacPow ' strjoin(arrayfun(@num2str, app.dacPow, 'UniformOutput', false), '/');]);
-
-        end
-
-        % Callback function
-        function PowerCheckBox_3ValueChanged(app, event)
-            app.dacPow(3) = app.PowerCheckBox_3.Value;
-            commandsHandler(app, ['dacPow ' strjoin(arrayfun(@num2str, app.dacPow, 'UniformOutput', false), '/');]);
-
-        end
-
-        % Callback function
-        function ResampleCheckBoxValueChanged(app, event)
-            app.resmp = app.ResampleCheckBox.Value;
-            if app.resmp
-                app.fsOrig = app.fsOrig;
-            else
-                app.fsOrig = app.fsDAC;
-            end
-        end
-
-        % Callback function
-        function FilterCheckBoxValueChanged(app, event)
-            app.dacFilt = app.FilterCheckBox.Value;
-            if app.dacFilt
-                app.bwDac = app.bwDac;
-            else
-                app.bwDac = app.fsDAC - 1e6;
-            end
-        end
-
-        % Callback function
-        function FiltBWEditFieldValueChanged(app, event)
-            app.bwDac = app.FiltBWEditField.Value*1e6;
-        end
-
-        % Callback function
-        function OrigFSEditFieldValueChanged(app, event)
-            app.fsOrig = app.OrigFSEditField.Value*1e6;
         end
 
         % Button pushed function: StartanglecalibrationsButton
@@ -1447,14 +1313,6 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
 
         end
 
-        % Callback function
-        function SREditFieldValueChanged(app, event)
-            app.dacSR = app.SREditField.Value;
-            commandsHandler(app, ['source ' num2str(app.dacSignalType) '/' num2str(app.dacSR) '/' ...
-                num2str(app.dacFc) '/' num2str(app.dacFe) '/' num2str(app.dacAmp)]);
-
-        end
-
         % Value changed function: FeEditField
         function FeEditFieldValueChanged(app, event)
             app.dacFe = app.FeEditField.Value;
@@ -1486,13 +1344,6 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             else
                 app.dacBFon = 1;
             end
-        end
-
-        % Callback function
-        function SendButtonPushed(app, event)
-            control
-            commandsHandler(app, ['source ' num2str(app.dacSignalType) '/' num2str(app.dacSR) '/' ...
-                num2str(app.dacFc) '/' num2str(app.dacFe) '/' num2str(app.dacAmp)]);
         end
 
         % Value changed function: ChannelcontrolDropDown
@@ -1729,20 +1580,6 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                 app.autocal_rx_amp = 1;
             end
 
-        end
-
-        % Button pushed function: PhaseAutocalStartButton
-        function RXPhaseAutocalStartButtonPushed(app, event)
-            if app.autocal_rx_phase
-                app.autocal_rx_phase = 0;
-            else
-                app.PhaseAutocalStartButton.BackgroundColor = 'r';
-                app.phase = [0,0,0,0];
-                commandsHandler(app, ['phase ' strjoin(arrayfun(@num2str, app.phase, 'UniformOutput', false), '/');]);
-                writeline(app.tcp_client, app.commands);
-                app.commands = [];
-                app.autocal_rx_phase = 1;
-            end
         end
 
         % Button pushed function: AmplitudeAutocalStartButton_2
@@ -2227,12 +2064,12 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             % Create Gauge
             app.Gauge = uigauge(app.mmWaveFrontEndTab, 'semicircular');
             app.Gauge.Limits = [-90 90];
-            app.Gauge.Position = [17 330 189 102];
+            app.Gauge.Position = [17 408 189 102];
 
             % Create StartanglecalibrationsButton
             app.StartanglecalibrationsButton = uibutton(app.mmWaveFrontEndTab, 'push');
             app.StartanglecalibrationsButton.ButtonPushedFcn = createCallbackFcn(app, @StartanglecalibrationsButtonPushed, true);
-            app.StartanglecalibrationsButton.Position = [38 206 140 58];
+            app.StartanglecalibrationsButton.Position = [38 284 140 58];
             app.StartanglecalibrationsButton.Text = 'Start angle calibrations';
 
             % Create ArduinoGUIButton
@@ -2244,7 +2081,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             % Create StarrangEditFieldLabel
             app.StarrangEditFieldLabel = uilabel(app.mmWaveFrontEndTab);
             app.StarrangEditFieldLabel.HorizontalAlignment = 'right';
-            app.StarrangEditFieldLabel.Position = [18 301 54 22];
+            app.StarrangEditFieldLabel.Position = [18 379 54 22];
             app.StarrangEditFieldLabel.Text = 'Starr ang';
 
             % Create StarrangEditField
@@ -2252,20 +2089,20 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.StarrangEditField.Limits = [-90 90];
             app.StarrangEditField.RoundFractionalValues = 'on';
             app.StarrangEditField.ValueChangedFcn = createCallbackFcn(app, @StarrangEditFieldValueChanged, true);
-            app.StarrangEditField.Position = [80 301 29 22];
+            app.StarrangEditField.Position = [80 379 29 22];
             app.StarrangEditField.Value = -60;
 
             % Create StepangEditFieldLabel
             app.StepangEditFieldLabel = uilabel(app.mmWaveFrontEndTab);
             app.StepangEditFieldLabel.HorizontalAlignment = 'right';
-            app.StepangEditFieldLabel.Position = [115 301 53 22];
+            app.StepangEditFieldLabel.Position = [115 379 53 22];
             app.StepangEditFieldLabel.Text = 'Step ang';
 
             % Create StepangEditField
             app.StepangEditField = uieditfield(app.mmWaveFrontEndTab, 'numeric');
             app.StepangEditField.Limits = [0.01 50];
             app.StepangEditField.ValueChangedFcn = createCallbackFcn(app, @StepangEditFieldValueChanged, true);
-            app.StepangEditField.Position = [176 301 24 22];
+            app.StepangEditField.Position = [176 379 24 22];
             app.StepangEditField.Value = 10;
 
             % Create DCLeakageAutocalStartButton
@@ -2273,12 +2110,6 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.DCLeakageAutocalStartButton.ButtonPushedFcn = createCallbackFcn(app, @DCLeakageAutocalStartButtonPushed, true);
             app.DCLeakageAutocalStartButton.Position = [62 581 100 51];
             app.DCLeakageAutocalStartButton.Text = {'DC Leakage'; 'Autocal'; 'Start'};
-
-            % Create PhaseAutocalStartButton
-            app.PhaseAutocalStartButton = uibutton(app.mmWaveFrontEndTab, 'push');
-            app.PhaseAutocalStartButton.ButtonPushedFcn = createCallbackFcn(app, @RXPhaseAutocalStartButtonPushed, true);
-            app.PhaseAutocalStartButton.Position = [64 457 100 51];
-            app.PhaseAutocalStartButton.Text = {'Phase'; 'Autocal'; 'Start'};
 
             % Create RXLabel_2
             app.RXLabel_2 = uilabel(app.mmWaveFrontEndTab);
@@ -2297,25 +2128,25 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.TXLabel_2 = uilabel(app.mmWaveFrontEndTab);
             app.TXLabel_2.FontSize = 14;
             app.TXLabel_2.FontWeight = 'bold';
-            app.TXLabel_2.Position = [95 183 25 22];
+            app.TXLabel_2.Position = [95 261 25 22];
             app.TXLabel_2.Text = 'TX';
 
             % Create PhaseAutocalStartButton_2
             app.PhaseAutocalStartButton_2 = uibutton(app.mmWaveFrontEndTab, 'push');
             app.PhaseAutocalStartButton_2.ButtonPushedFcn = createCallbackFcn(app, @TXPhaseAutocalStartButtonPushed, true);
-            app.PhaseAutocalStartButton_2.Position = [59 49 100 51];
+            app.PhaseAutocalStartButton_2.Position = [59 127 100 51];
             app.PhaseAutocalStartButton_2.Text = {'Phase'; 'Autocal'; 'Start'};
 
             % Create AmplitudeAutocalStartButton_2
             app.AmplitudeAutocalStartButton_2 = uibutton(app.mmWaveFrontEndTab, 'push');
             app.AmplitudeAutocalStartButton_2.ButtonPushedFcn = createCallbackFcn(app, @TXAmplitudeAutocalStartButtonPushed, true);
-            app.AmplitudeAutocalStartButton_2.Position = [58 126 100 51];
+            app.AmplitudeAutocalStartButton_2.Position = [58 204 100 51];
             app.AmplitudeAutocalStartButton_2.Text = {'Amplitude'; 'Autocal'; 'Start'};
 
             % Create StepperGUIButton
             app.StepperGUIButton = uibutton(app.mmWaveFrontEndTab, 'push');
             app.StepperGUIButton.ButtonPushedFcn = createCallbackFcn(app, @StepperGUIButtonPushed, true);
-            app.StepperGUIButton.Position = [56 273 100 22];
+            app.StepperGUIButton.Position = [56 351 100 22];
             app.StepperGUIButton.Text = 'Stepper GUI';
 
             % Create DebugTab
