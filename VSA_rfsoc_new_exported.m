@@ -1592,7 +1592,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                     app.dphaseCorr(2) = app.Ch2Spinner.Value;
                     commandsHandler(app, ['dphase ' strjoin(arrayfun(@num2str, app.dphaseCorr*100, 'UniformOutput', false), '/');]);
                 case "DAC I phase"
-                    app.d_iq_phase(2) = app.Ch1Spinner.Value;
+                    app.d_iq_phase(2) = app.Ch2Spinner.Value;
                     commandsHandler(app, ['diqphase ' strjoin(arrayfun(@num2str, app.d_iq_phase*100, 'UniformOutput', false), '/');]);                       
                 case "ADC gain"
                     app.adcGain(2) = app.Ch2Spinner.Value;
@@ -1601,7 +1601,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                     app.phase(2) = app.Ch2Spinner.Value;
                     commandsHandler(app, ['phase ' strjoin(arrayfun(@num2str, app.phase*100, 'UniformOutput', false), '/');]);
                 case "ADC I phase"
-                    app.a_iq_phase(2) = app.Ch1Spinner.Value;
+                    app.a_iq_phase(2) = app.Ch2Spinner.Value;
                     commandsHandler(app, ['aiqphase ' strjoin(arrayfun(@num2str, app.a_iq_phase*100, 'UniformOutput', false), '/');]);                       
             end
         end
@@ -1616,7 +1616,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                     app.dphaseCorr(3) = app.Ch3Spinner.Value;
                     commandsHandler(app, ['dphase ' strjoin(arrayfun(@num2str, app.dphaseCorr*100, 'UniformOutput', false), '/');]);
                 case "DAC I phase"
-                    app.d_iq_phase(3) = app.Ch1Spinner.Value;
+                    app.d_iq_phase(3) = app.Ch3Spinner.Value;
                     commandsHandler(app, ['diqphase ' strjoin(arrayfun(@num2str, app.d_iq_phase*100, 'UniformOutput', false), '/');]);   
                 case "ADC gain"
                     app.adcGain(3) = app.Ch3Spinner.Value;
@@ -1625,7 +1625,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                     app.phase(3) = app.Ch3Spinner.Value;
                     commandsHandler(app, ['phase ' strjoin(arrayfun(@num2str, app.phase*100, 'UniformOutput', false), '/');]);
                 case "ADC I phase"
-                    app.a_iq_phase(3) = app.Ch1Spinner.Value;
+                    app.a_iq_phase(3) = app.Ch3Spinner.Value;
                     commandsHandler(app, ['aiqphase ' strjoin(arrayfun(@num2str, app.a_iq_phase*100, 'UniformOutput', false), '/');]);                       
             end
         end
@@ -1640,7 +1640,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                     app.dphaseCorr(4) = app.Ch4Spinner.Value;
                     commandsHandler(app, ['dphase ' strjoin(arrayfun(@num2str, app.dphaseCorr*100, 'UniformOutput', false), '/');]);
                 case "DAC I phase"
-                    app.d_iq_phase(4) = app.Ch1Spinner.Value;
+                    app.d_iq_phase(4) = app.Ch4Spinner.Value;
                     commandsHandler(app, ['diqphase ' strjoin(arrayfun(@num2str, app.d_iq_phase*100, 'UniformOutput', false), '/');]);                       
                 case "ADC gain"
                     app.adcGain(4) = app.Ch4Spinner.Value;
@@ -1649,7 +1649,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                     app.phase(4) = app.Ch4Spinner.Value;
                     commandsHandler(app, ['phase ' strjoin(arrayfun(@num2str, app.phase*100, 'UniformOutput', false), '/');]);
                 case "ADC I phase"
-                    app.a_iq_phase(4) = app.Ch1Spinner.Value;
+                    app.a_iq_phase(4) = app.Ch4Spinner.Value;
                     commandsHandler(app, ['aiqphase ' strjoin(arrayfun(@num2str, app.a_iq_phase*100, 'UniformOutput', false), '/');]);                       
             end
         end
