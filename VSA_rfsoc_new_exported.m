@@ -879,6 +879,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                 %% RX Angles cal
                 avg_cnt = 0;
                 rawDataMean = 0;
+                rawDataAll = [];
                 move_flg = 1;
                 while app.phase_cal
                     drawnow limitrate nocallbacks %!!!!
@@ -902,8 +903,9 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                     rawData = filtSig(rawData, app.fsRfsoc, app.bw);
                     if avg_cnt < app.avg_factor
                         rawDataMean = rawDataMean + rawData;
-                        % [p_manual_mean_vec, rawDataMean]  = avgData(rawData, rawDataMean);
+                        % [p_manual_mean_vec, rawDataMean]  = avgData(rawData, rawDataMean);                        
                         avg_cnt = avg_cnt + 1;
+                        rawDataAll(avg_cnt).raw = rawData;
                     % elseif avg_cnt == app.avg_factor
                     else
                         rawData = rawDataMean./app.avg_factor;
@@ -912,6 +914,8 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                         rawDataMean = 0;
                         avg_cnt = 0;
                         save([pwd '\phase_cal\' num2str(app.cur_ang) '.mat'], 'rawData')
+                        save([pwd '\phase_cal_all\' num2str(app.cur_ang) '_' num2str(app.avg_factor) '.mat'], 'rawDataAll')
+                        rawDataAll = [];
                         if app.cur_ang == -(app.start_ang)
                             phase_scan_axis = -abs(app.start_ang):app.step_ang:abs(app.start_ang);
                             list = dir([pwd '\phase_cal\*.mat']);
@@ -1367,8 +1371,10 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             else
                 if exist('phase_cal', 'dir')
                     rmdir('phase_cal', 's')
+                    rmdir('phase_cal_all', 's')
                 end
                 mkdir('phase_cal')
+                mkdir('phase_cal_all')
                 app.cur_ang = app.start_ang;
                 %                 [baseFileName, folder] = uiputfile([pwd 'steering_correction_' num2str(app.start_ang) '_' num2str(app.step_ang) 'deg_res.mat']);
                 %                 app.saveName = fullfile(folder, baseFileName);
