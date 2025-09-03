@@ -4,7 +4,11 @@ function tcp_client = rfsocConnect(server_ip, server_port, commands)
 try
     tcp_client = tcpclient(server_ip, server_port, "ConnectTimeout", 1);
 catch
-    tcp_client = tcpclient('192.168.3.1', server_port, "ConnectTimeout", 1); % USB connection
+    try
+        tcp_client = tcpclient('192.168.3.1', server_port, "ConnectTimeout", 1); % USB connection
+    catch
+        tcp_client = tcpclient('192.168.2.99', server_port, "ConnectTimeout", 1); % Direct connection
+    end
 end
 flush(tcp_client,"output")
 writeline(tcp_client, commands);
