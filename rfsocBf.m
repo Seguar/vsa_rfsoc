@@ -1,4 +1,4 @@
-function [yspec, estimated_angle, bfSig, weights, rawData] = rfsocBf(app, vsa, ch, bf, off, gap, cutter, ang_num, num, data_v, tcp_client, fc, dataChan, diag, bwOff, ula, scan_axis, ...
+function [yspec, estimated_angle, bfSig, weights, rawData, vsa_time] = rfsocBf(app, vsa, ch, bf, off, gap, cutter, ang_num, num, data_v, tcp_client, fc, dataChan, diag, bwOff, ula, scan_axis, ...
     c1, c2, fsRfsoc, bw, c, estimator, alg_scan_res, mis_ang, alpha, gamma, iter, setup_v, debug, pow_claibration_intrp, coupling_matrix)
     % Inputs:
 %   - app: Application object
@@ -59,8 +59,8 @@ data_size = dataChan * 8;
 channels = 8;
 rawData = tcpDataRec(tcp_client, data_size, channels);
 if debug
-    rec_time = toc;
-    disp(['rec_time ' num2str(rec_time) ' s'])
+    rx_time = toc;
+    disp(['rx time ' num2str(rx_time*1000) ' ms'])
 end
 %% Coupling corrections
 if c2
@@ -229,11 +229,20 @@ else cutInds = 1:dataChan;
 end
 
 bfSig = rawSum(cutInds);
-
+if debug
+    bf_time = toc;
+    disp(['bf time ' num2str((bf_time - rx_time)*1000) ' ms'])
+end
 %% VSA
 if (vsa)
     buff = zeros(size(rawSum));
     buff(cutInds) = bfSig/2^16; % VSA normalization
     vsaSendData(buff, data_v)
     %     vsaSendData(bfSig, data_v)
+    if debug
+        vsa_time = toc;
+        disp(['vsa time ' num2str((vsa_time - bf_time)*1000) ' ms'])
+    else 
+        vsa_time = 0;
+    end
 end

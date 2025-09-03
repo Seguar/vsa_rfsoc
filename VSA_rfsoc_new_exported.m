@@ -456,12 +456,15 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                     partReset(app);
                 end
                 if app.debug
+                    disp(['tx to rx time ' num2str((toc - full_time)*1000) ' ms'])
                     disp('New data')
                     tic
+                else 
+                    full_time = 0;
                 end
                 if app.dataStream
                     try
-                        [yspec, estimated_angle, bfSig, app.weights, app.rawData] = rfsocBf(app, app.vsa, app.ch, app.bf, app.off, app.gap, app.cutter, ...
+                        [yspec, estimated_angle, bfSig, app.weights, app.rawData, vsa_time] = rfsocBf(app, app.vsa, app.ch, app.bf, app.off, app.gap, app.cutter, ...
                             app.ang_num, app.num, app.data_v, app.tcp_client, app.fcAnt, app.dataChan, app.diag, app.bwOff, app.ula, app.scan_axis, ...
                             app.c1, app.c2, app.fsRfsoc, app.bw, app.c, app.estimator, app.alg_scan_res, app.mis_ang, app.alpha, app.gamma, app.iter, app.setup_v, app.debug, app.pow_claibration_intrp, app.coupling_matrix);
                         if isnan(app.weights)
@@ -482,10 +485,10 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                         end
                         continue
                     end
-                    if app.debug
-                        bf_time = toc;
-                        disp(['bf time ' num2str(bf_time) ' s'])
-                    end
+                    % if app.debug
+                    %     bf_time = toc;
+                    %     disp(['bf time ' num2str(bf_time) ' s'])
+                    % end
                 end
                 %                     disp('___')
                 %                     toc
@@ -548,6 +551,12 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                         else
                             count = count + 1;
                         end
+                    end
+                    if app.debug
+                        plot_time = toc;
+                        disp(['plot time ' num2str((plot_time - vsa_time)*1000) ' ms'])
+                    else
+                        plot_time = 0;
                     end
                 end
                 %% Raw Data save
@@ -975,6 +984,10 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                     commandsHandler(app, ['dphase ' strjoin(arrayfun(@num2str, app.dphase*100, 'UniformOutput', false), '/');]);
                 end
                 %% TCP/IP tx
+                if app.debug
+                    before_tx_time = toc;
+                    disp(['before tx time ' num2str((full_time - plot_time)*1000) ' ms'])
+                end
                 if not(isempty(app.commands))
                     oldComs = app.commands;
                     writeline(app.tcp_client, app.commands);
@@ -986,7 +999,8 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                 end
                 if app.debug
                     full_time = toc;
-                    disp(['Full time ' num2str(full_time) ' s'])
+                    disp(['tx time ' num2str((full_time - before_tx_time)*1000) ' ms'])
+                    disp(['full time ' num2str((full_time)*1000) ' ms'])
                     disp('--------------------------------')
                 end
                 %                 end
