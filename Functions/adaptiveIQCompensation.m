@@ -18,7 +18,7 @@ function [y, w_opt, w_opt_vec] = adaptiveIQCompensation(x, M, w)
     
     % Adaptive compensation loop
     for n = N:length(x)
-        n
+        % n
         % Input vector including the conjugate term
         x_vec = x(n:-1:n-N+1).';
         

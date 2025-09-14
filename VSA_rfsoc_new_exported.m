@@ -5,6 +5,11 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         RFSoCBeamformerUIFigure        matlab.ui.Figure
         GridLayout                     matlab.ui.container.GridLayout
         LeftPanel                      matlab.ui.container.Panel
+        AdaptiveIQcompCheckBox         matlab.ui.control.CheckBox
+        CouplingcompCheckBox           matlab.ui.control.CheckBox
+        PowercompCheckBox              matlab.ui.control.CheckBox
+        PhasecompCheckBox              matlab.ui.control.CheckBox
+        IQCompCheckBox                 matlab.ui.control.CheckBox
         MirrorCheckBox_3               matlab.ui.control.CheckBox
         SignalpriorityButtonGroup      matlab.ui.container.ButtonGroup
         LessPowerfullButton            matlab.ui.control.RadioButton
@@ -12,8 +17,6 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         ChannelselectListBox           matlab.ui.control.ListBox
         ChannelselectListBoxLabel      matlab.ui.control.Label
         PlotCheckBox                   matlab.ui.control.CheckBox
-        CustomCommandTextArea          matlab.ui.control.TextArea
-        CustomCommandTextAreaLabel     matlab.ui.control.Label
         VSACheckBox                    matlab.ui.control.CheckBox
         AvgSpinner                     matlab.ui.control.Spinner
         AvgSpinnerLabel                matlab.ui.control.Label
@@ -94,6 +97,13 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         StartanglecalibrationsButton   matlab.ui.control.Button
         Gauge                          matlab.ui.control.SemicircularGauge
         DebugTab                       matlab.ui.container.Tab
+        MUstepEditField                matlab.ui.control.NumericEditField
+        MUstepEditFieldLabel           matlab.ui.control.Label
+        LsizeEditField                 matlab.ui.control.NumericEditField
+        LsizeEditFieldLabel            matlab.ui.control.Label
+        IQcompLabel                    matlab.ui.control.Label
+        CustomCommandTextArea          matlab.ui.control.TextArea
+        CustomCommandTextAreaLabel     matlab.ui.control.Label
         SaveButton                     matlab.ui.control.Button
         NumberofsavedfilesEditField    matlab.ui.control.NumericEditField
         NumberofsavedfilesLabel        matlab.ui.control.Label
@@ -175,6 +185,15 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         updrate = 10;
         c1 = 0;
         c2 = 0;
+        IQcomp = 0;
+        adIQcomp = 0;
+        phComp = 0;
+        powComp = 0;
+        coupComp = 0;
+        sizeL = 4;
+        stepMU = 1e-16;
+        adReset = 1;
+
         patternCorr = 0;
         numFiles = 1;
         saveFlg = 0;
@@ -199,9 +218,10 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         setupFile = [fileparts(mfilename('fullpath')) '\Settings\ofdm_iq_100_16.setx'];
 
         server_ip = 'pynq'; % Use the appropriate IP address or hostname http://192.168.3.1/lab
-        %         server_ip = '132.68.138.226'; % Use the appropriate IP address or hostname http://192.168.3.1/lab
+        % server_ip = '192.168.3.1'; 
+                % server_ip = '132.68.138.214'; % Use the appropriate IP address or hostname http://192.168.3.1/lab
 
-        %         server_ip = '132.68.138.226'; % Use the appropriate IP address or hostname http://192.168.3.1/lab
+                
         server_port = 4000; % Use the same port number used in the Python server
 
 
@@ -433,6 +453,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             data = [];
             data_dc = [];
             fileCnt = 1;
+            before_tx_time = 0;
             am = [];
             bs = [];
             cs = [];
@@ -464,9 +485,10 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                 end
                 if app.dataStream
                     try
-                        [yspec, estimated_angle, bfSig, app.weights, app.rawData, vsa_time] = rfsocBf(app, app.vsa, app.ch, app.bf, app.off, app.gap, app.cutter, ...
+                        [yspec, estimated_angle, bfSig, app.weights, app.rawData, vsa_time, app.adReset] = rfsocBf(app, app.vsa, app.ch, app.bf, app.off, app.gap, app.cutter, ...
                             app.ang_num, app.num, app.data_v, app.tcp_client, app.fcAnt, app.dataChan, app.diag, app.bwOff, app.ula, app.scan_axis, ...
-                            app.c1, app.c2, app.fsRfsoc, app.bw, app.c, app.estimator, app.alg_scan_res, app.mis_ang, app.alpha, app.gamma, app.iter, app.setup_v, app.debug, app.pow_claibration_intrp, app.coupling_matrix);
+                            app.c1, app.c2, app.fsRfsoc, app.bw, app.c, app.estimator, app.alg_scan_res, app.mis_ang, app.alpha, app.gamma, app.iter, app.setup_v, app.debug, app.pow_claibration_intrp, app.coupling_matrix, ...
+                            app.IQcomp, app.adIQcomp, app.phComp, app.powComp, app.coupComp, app.sizeL, app.stepMU, app.adReset, app.steering_correction);
                         if isnan(app.weights)
                             disp("No signal")
                             app.weights = 0;
@@ -1213,7 +1235,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.iter = app.iterEditField.Value;
         end
 
-        % Value changed function: CustomCommandTextArea
+        % Callback function: not associated with a component
         function CustomCommandTextAreaValueChanged(app, event)
             commandsHandler(app, string(app.CustomCommandTextArea.Value));
             disp(app.commands)
@@ -1842,6 +1864,50 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.stepper_app = stepper;
             app.StepperGUIButton.BackgroundColor = 'g';
             cd(app.main_path)
+        end
+
+        % Value changed function: IQCompCheckBox
+        function IQCompCheckBoxValueChanged(app, event)
+            app.IQcomp = app.IQCompCheckBox.Value;
+            
+        end
+
+        % Value changed function: AdaptiveIQcompCheckBox
+        function AdaptiveIQcompCheckBoxValueChanged(app, event)
+            app.adIQcomp = app.AdaptiveIQcompCheckBox.Value;
+            
+        end
+
+        % Value changed function: PhasecompCheckBox
+        function PhasecompCheckBoxValueChanged(app, event)
+            app.phComp = app.PhasecompCheckBox.Value;
+            app.powComp = app.PhasecompCheckBox.Value;
+            app.PowercompCheckBox.Value = app.PhasecompCheckBox.Value;
+        end
+
+        % Value changed function: PowercompCheckBox
+        function PowercompCheckBoxValueChanged(app, event)
+            app.phComp = app.PowercompCheckBox.Value;
+            app.powComp = app.PowercompCheckBox.Value;
+            app.PhasecompCheckBox.Value = app.PowercompCheckBox.Value;            
+        end
+
+        % Value changed function: CouplingcompCheckBox
+        function CouplingcompCheckBoxValueChanged(app, event)
+            app.coupComp = app.CouplingcompCheckBox.Value;
+            
+        end
+
+        % Value changed function: LsizeEditField
+        function LsizeEditFieldValueChanged(app, event)
+            app.sizeL = app.LsizeEditField.Value;
+            app.adReset = 1;
+        end
+
+        % Value changed function: MUstepEditField
+        function MUstepEditFieldValueChanged(app, event)
+            app.stepMU = app.MUstepEditField.Value;
+            
         end
 
         % Changes arrangement of the app based on UIFigure width
@@ -2575,6 +2641,48 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.SaveButton.Position = [82 132 100 22];
             app.SaveButton.Text = 'Save';
 
+            % Create CustomCommandTextAreaLabel
+            app.CustomCommandTextAreaLabel = uilabel(app.DebugTab);
+            app.CustomCommandTextAreaLabel.HorizontalAlignment = 'right';
+            app.CustomCommandTextAreaLabel.Position = [-5 9 60 27];
+            app.CustomCommandTextAreaLabel.Text = {'Custom'; 'Command'};
+
+            % Create CustomCommandTextArea
+            app.CustomCommandTextArea = uitextarea(app.DebugTab);
+            app.CustomCommandTextArea.Position = [70 14 146 24];
+
+            % Create IQcompLabel
+            app.IQcompLabel = uilabel(app.DebugTab);
+            app.IQcompLabel.FontWeight = 'bold';
+            app.IQcompLabel.Position = [99 111 53 22];
+            app.IQcompLabel.Text = 'IQ comp';
+
+            % Create LsizeEditFieldLabel
+            app.LsizeEditFieldLabel = uilabel(app.DebugTab);
+            app.LsizeEditFieldLabel.HorizontalAlignment = 'right';
+            app.LsizeEditFieldLabel.Position = [29 90 36 22];
+            app.LsizeEditFieldLabel.Text = 'L size';
+
+            % Create LsizeEditField
+            app.LsizeEditField = uieditfield(app.DebugTab, 'numeric');
+            app.LsizeEditField.Limits = [1 50];
+            app.LsizeEditField.ValueChangedFcn = createCallbackFcn(app, @LsizeEditFieldValueChanged, true);
+            app.LsizeEditField.Position = [80 90 100 22];
+            app.LsizeEditField.Value = 4;
+
+            % Create MUstepEditFieldLabel
+            app.MUstepEditFieldLabel = uilabel(app.DebugTab);
+            app.MUstepEditFieldLabel.HorizontalAlignment = 'right';
+            app.MUstepEditFieldLabel.Position = [28 59 50 22];
+            app.MUstepEditFieldLabel.Text = 'MU step';
+
+            % Create MUstepEditField
+            app.MUstepEditField = uieditfield(app.DebugTab, 'numeric');
+            app.MUstepEditField.Limits = [1e-31 1];
+            app.MUstepEditField.ValueChangedFcn = createCallbackFcn(app, @MUstepEditFieldValueChanged, true);
+            app.MUstepEditField.Position = [81 59 100 22];
+            app.MUstepEditField.Value = 1e-16;
+
             % Create DevicesTab
             app.DevicesTab = uitab(app.TabGroup);
             app.DevicesTab.Title = 'Devices';
@@ -2662,17 +2770,6 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.VSACheckBox.Position = [126 180 46 22];
             app.VSACheckBox.Value = true;
 
-            % Create CustomCommandTextAreaLabel
-            app.CustomCommandTextAreaLabel = uilabel(app.LeftPanel);
-            app.CustomCommandTextAreaLabel.HorizontalAlignment = 'right';
-            app.CustomCommandTextAreaLabel.Position = [6 38 60 27];
-            app.CustomCommandTextAreaLabel.Text = {'Custom'; 'Command'};
-
-            % Create CustomCommandTextArea
-            app.CustomCommandTextArea = uitextarea(app.LeftPanel);
-            app.CustomCommandTextArea.ValueChangedFcn = createCallbackFcn(app, @CustomCommandTextAreaValueChanged, true);
-            app.CustomCommandTextArea.Position = [81 43 146 24];
-
             % Create PlotCheckBox
             app.PlotCheckBox = uicheckbox(app.LeftPanel);
             app.PlotCheckBox.ValueChangedFcn = createCallbackFcn(app, @PlotCheckBoxValueChanged, true);
@@ -2717,6 +2814,36 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.MirrorCheckBox_3.ValueChangedFcn = createCallbackFcn(app, @MirrorCheckBox_3ValueChanged, true);
             app.MirrorCheckBox_3.Text = 'Mirror';
             app.MirrorCheckBox_3.Position = [4 3 52 22];
+
+            % Create IQCompCheckBox
+            app.IQCompCheckBox = uicheckbox(app.LeftPanel);
+            app.IQCompCheckBox.ValueChangedFcn = createCallbackFcn(app, @IQCompCheckBoxValueChanged, true);
+            app.IQCompCheckBox.Text = 'IQ Comp';
+            app.IQCompCheckBox.Position = [5 58 69 22];
+
+            % Create PhasecompCheckBox
+            app.PhasecompCheckBox = uicheckbox(app.LeftPanel);
+            app.PhasecompCheckBox.ValueChangedFcn = createCallbackFcn(app, @PhasecompCheckBoxValueChanged, true);
+            app.PhasecompCheckBox.Text = 'Phase comp';
+            app.PhasecompCheckBox.Position = [86 59 88 22];
+
+            % Create PowercompCheckBox
+            app.PowercompCheckBox = uicheckbox(app.LeftPanel);
+            app.PowercompCheckBox.ValueChangedFcn = createCallbackFcn(app, @PowercompCheckBoxValueChanged, true);
+            app.PowercompCheckBox.Text = 'Power comp';
+            app.PowercompCheckBox.Position = [123 38 88 22];
+
+            % Create CouplingcompCheckBox
+            app.CouplingcompCheckBox = uicheckbox(app.LeftPanel);
+            app.CouplingcompCheckBox.ValueChangedFcn = createCallbackFcn(app, @CouplingcompCheckBoxValueChanged, true);
+            app.CouplingcompCheckBox.Text = 'Coupling comp';
+            app.CouplingcompCheckBox.Position = [5 19 101 22];
+
+            % Create AdaptiveIQcompCheckBox
+            app.AdaptiveIQcompCheckBox = uicheckbox(app.LeftPanel);
+            app.AdaptiveIQcompCheckBox.ValueChangedFcn = createCallbackFcn(app, @AdaptiveIQcompCheckBoxValueChanged, true);
+            app.AdaptiveIQcompCheckBox.Text = 'Adaptive IQ comp';
+            app.AdaptiveIQcompCheckBox.Position = [4 38 117 22];
 
             % Create RightPanel
             app.RightPanel = uipanel(app.GridLayout);

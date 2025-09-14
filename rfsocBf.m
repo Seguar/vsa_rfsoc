@@ -1,5 +1,5 @@
-function [yspec, estimated_angle, bfSig, weights, rawData, vsa_time] = rfsocBf(app, vsa, ch, bf, off, gap, cutter, ang_num, num, data_v, tcp_client, fc, dataChan, diag, bwOff, ula, scan_axis, ...
-    c1, c2, fsRfsoc, bw, c, estimator, alg_scan_res, mis_ang, alpha, gamma, iter, setup_v, debug, pow_claibration_intrp, coupling_matrix)
+function [yspec, estimated_angle, bfSig, weights, rawData, vsa_time, adReset] = rfsocBf(app, vsa, ch, bf, off, gap, cutter, ang_num, num, data_v, tcp_client, fc, dataChan, diag, bwOff, ula, scan_axis, ...
+    c1, c2, fsRfsoc, bw, c, estimator, alg_scan_res, mis_ang, alpha, gamma, iter, setup_v, debug, pow_claibration_intrp, coupling_matrix, IQcomp, adIQcomp, phComp, powComp, coupComp, sizeL, stepMU, adReset, steering_correction)
     % Inputs:
 %   - app: Application object
 %   - vsa: Flag indicating whether to perform VSA (Vector Signal Analyzer) operation
@@ -62,8 +62,30 @@ if debug
     rx_time = toc;
     disp(['rx time ' num2str(rx_time*1000) ' ms'])
 end
+%% Adaptive IQ compensation
+if (adReset)
+    correct_filter = zeros(sizeL, 4);
+end
+if adIQcomp
+    stepSizeMat = diag(ones(size(correct_filter)));
+    [~, w_opt, ~] = adaptiveIQCompensation(rawData(:,1), stepSizeMat*stepMU, correct_filter(:,1));
+    correct_filter(:,1) = w_opt;
+    [~, w_opt, ~] = adaptiveIQCompensation(rawData(:,2), stepSizeMat*stepMU, correct_filter(:,2));
+    correct_filter(:,2) = w_opt;
+    [~, w_opt, ~] = adaptiveIQCompensation(rawData(:,3), stepSizeMat*stepMU, correct_filter(:,3));
+    correct_filter(:,3) = w_opt;
+    [~, w_opt, ~] = adaptiveIQCompensation(rawData(:,4), stepSizeMat*stepMU, correct_filter(:,4));
+    correct_filter(:,4) = w_opt;
+end
+%% IQ compensation application
+if IQcomp
+    rawData(:,1) = rawData(:,1) + conv(conj(rawData(:,1)), correct_filter(:,1), 'same');
+    rawData(:,2) = rawData(:,2) + conv(conj(rawData(:,2)), correct_filter(:,2), 'same');
+    rawData(:,3) = rawData(:,3) + conv(conj(rawData(:,3)), correct_filter(:,3), 'same');
+    rawData(:,4) = rawData(:,4) + conv(conj(rawData(:,4)), correct_filter(:,4), 'same');
+end
 %% Coupling corrections
-if c2
+if coupComp
     rawData = (coupling_matrix*rawData.').';
 end
 
@@ -136,13 +158,15 @@ if idx(ang_num) == 2
     estimated_angle = flip(estimated_angle);
 end
 estimated_angle = estimated_angle(1:num);
-%%
-
-
-if c1
-    ang_idx = find(scan_axis == estimated_angle(1));
-    % sig_final = conj(estimator(ang_idx,:)).*sig_final_tmp./pow_correction;
-    sig_correction = estimator(ang_idx,:);
+%% Power and Phase corrections
+ang_idx = find(scan_axis == estimated_angle(1));
+if phComp
+    try
+        sig_correction = estimator(ang_idx,:);
+    catch
+        sig_correction = steering_correction(ang_idx,:);
+    end
+    
     pow_correction = pow_claibration_intrp(ang_idx,:).^0.5;
     rawData = conj(sig_correction).*rawData./pow_correction;
 end
