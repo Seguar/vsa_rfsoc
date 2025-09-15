@@ -467,6 +467,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                 num2str(app.fc_d0/1e6) '/' num2str(app.nyquistZone_d0) '/' ...
                 num2str(app.fc_d1/1e6) '/' num2str(app.nyquistZone_d1) ...
                 '# dataChan ' num2str(app.dataChan*8)];
+            correct_filter = zeros(app.sizeL, 4);
 
 
             warning('off','all')
@@ -485,10 +486,10 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                 end
                 if app.dataStream
                     try
-                        [yspec, estimated_angle, bfSig, app.weights, app.rawData, vsa_time, app.adReset] = rfsocBf(app, app.vsa, app.ch, app.bf, app.off, app.gap, app.cutter, ...
+                        [yspec, estimated_angle, bfSig, app.weights, app.rawData, vsa_time, app.adReset, correct_filter] = rfsocBf(app, app.vsa, app.ch, app.bf, app.off, app.gap, app.cutter, ...
                             app.ang_num, app.num, app.data_v, app.tcp_client, app.fcAnt, app.dataChan, app.diag, app.bwOff, app.ula, app.scan_axis, ...
                             app.c1, app.c2, app.fsRfsoc, app.bw, app.c, app.estimator, app.alg_scan_res, app.mis_ang, app.alpha, app.gamma, app.iter, app.setup_v, app.debug, app.pow_claibration_intrp, app.coupling_matrix, ...
-                            app.IQcomp, app.adIQcomp, app.phComp, app.powComp, app.coupComp, app.sizeL, app.stepMU, app.adReset, app.steering_correction);
+                            app.IQcomp, app.adIQcomp, app.phComp, app.powComp, app.coupComp, app.sizeL, app.stepMU, app.adReset, app.steering_correction, correct_filter);
                         if isnan(app.weights)
                             disp("No signal")
                             app.weights = 0;
@@ -1235,7 +1236,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.iter = app.iterEditField.Value;
         end
 
-        % Callback function: not associated with a component
+        % Callback function
         function CustomCommandTextAreaValueChanged(app, event)
             commandsHandler(app, string(app.CustomCommandTextArea.Value));
             disp(app.commands)

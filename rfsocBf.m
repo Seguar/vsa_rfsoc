@@ -1,5 +1,5 @@
-function [yspec, estimated_angle, bfSig, weights, rawData, vsa_time, adReset] = rfsocBf(app, vsa, ch, bf, off, gap, cutter, ang_num, num, data_v, tcp_client, fc, dataChan, diag, bwOff, ula, scan_axis, ...
-    c1, c2, fsRfsoc, bw, c, estimator, alg_scan_res, mis_ang, alpha, gamma, iter, setup_v, debug, pow_claibration_intrp, coupling_matrix, IQcomp, adIQcomp, phComp, powComp, coupComp, sizeL, stepMU, adReset, steering_correction)
+function [yspec, estimated_angle, bfSig, weights, rawData, vsa_time, adReset, correct_filter] = rfsocBf(app, vsa, ch, bf, off, gap, cutter, ang_num, num, data_v, tcp_client, fc, dataChan, diagM, bwOff, ula, scan_axis, ...
+    c1, c2, fsRfsoc, bw, c, estimator, alg_scan_res, mis_ang, alpha, gamma, iter, setup_v, debug, pow_claibration_intrp, coupling_matrix, IQcomp, adIQcomp, phComp, powComp, coupComp, sizeL, stepMU, adReset, steering_correction, correct_filter)
     % Inputs:
 %   - app: Application object
 %   - vsa: Flag indicating whether to perform VSA (Vector Signal Analyzer) operation
@@ -65,17 +65,17 @@ end
 %% Adaptive IQ compensation
 if (adReset)
     correct_filter = zeros(sizeL, 4);
+    adReset = 0;
 end
 if adIQcomp
-    stepSizeMat = diag(ones(size(correct_filter)));
-    [~, w_opt, ~] = adaptiveIQCompensation(rawData(:,1), stepSizeMat*stepMU, correct_filter(:,1));
-    correct_filter(:,1) = w_opt;
-    [~, w_opt, ~] = adaptiveIQCompensation(rawData(:,2), stepSizeMat*stepMU, correct_filter(:,2));
-    correct_filter(:,2) = w_opt;
-    [~, w_opt, ~] = adaptiveIQCompensation(rawData(:,3), stepSizeMat*stepMU, correct_filter(:,3));
-    correct_filter(:,3) = w_opt;
-    [~, w_opt, ~] = adaptiveIQCompensation(rawData(:,4), stepSizeMat*stepMU, correct_filter(:,4));
-    correct_filter(:,4) = w_opt;
+    stepSizeMat = diag(ones(sizeL,1));
+    [rawData(:,1), correct_filter(:,1), ~] = adaptiveIQCompensation(rawData(:,1), stepSizeMat*stepMU, correct_filter(:,1));
+    [rawData(:,2), correct_filter(:,2), ~] = adaptiveIQCompensation(rawData(:,2), stepSizeMat*stepMU, correct_filter(:,2));
+    [rawData(:,3), correct_filter(:,3), ~] = adaptiveIQCompensation(rawData(:,3), stepSizeMat*stepMU, correct_filter(:,3));
+    [rawData(:,4), correct_filter(:,4), wopt_vec] = adaptiveIQCompensation(rawData(:,4), stepSizeMat*stepMU, correct_filter(:,4));
+    if debug
+        plot(real(wopt_vec.'))
+    end
 end
 %% IQ compensation application
 if IQcomp
@@ -175,7 +175,7 @@ switch bf
     case 'Steering'
         [rawDataAdj, weights] = steerBf(rawData, estimated_angle(1), ula, fc);
     case 'MVDR'
-        [rawDataAdj, weights] = mvdrBf(rawData, estimated_angle(1), diag, ula, fc, c);
+        [rawDataAdj, weights] = mvdrBf(rawData, estimated_angle(1), diagM, ula, fc, c);
         weights = conj(weights);
     case 'DMR'
         [rawDataAdj, weights] = dmr_beamformer(rawData, npc, ula, estimated_angle(1));
@@ -192,13 +192,13 @@ switch bf
         [rawDataAdj, weights] = rvl_beamformer(rawData, gamma, ula, estimated_angle(1));
         weights = conj(weights);
     case 'RAB PC'
-        [rawDataAdj, weights] = rab_pc_beamformer(rawData, npc, ula, estimated_angle(1), diag);
+        [rawDataAdj, weights] = rab_pc_beamformer(rawData, npc, ula, estimated_angle(1), diagM);
 %         weights = conj(weights);
     case 'DL MVDR'
 %         [rawDataAdj, weights] = dl_mvdr_beamformer(rawData, ula, estimated_angle(1));
 % %         weights = conj(weights);
-        diag = mean(var(rawData))*diag;
-        [rawDataAdj, weights] = mvdrBf(rawData, estimated_angle(1), diag, ula, fc, c);
+        diagM = mean(var(rawData))*diagM;
+        [rawDataAdj, weights] = mvdrBf(rawData, estimated_angle(1), diagM, ula, fc, c);
     case 'DL ITER MVDR'
         [rawDataAdj, weights] = dl_mvdr_beamformer(rawData, ula, estimated_angle(1));
 %         weights = conj(weights);
