@@ -1,5 +1,5 @@
-function [yspec, estimated_angle, bfSig, weights, rawData, vsa_time, adReset, correct_filter] = rfsocBf(app, vsa, ch, bf, off, gap, cutter, ang_num, num, data_v, tcp_client, fc, dataChan, diagM, bwOff, ula, scan_axis, ...
-    c1, c2, fsRfsoc, bw, c, estimator, alg_scan_res, mis_ang, alpha, gamma, iter, setup_v, debug, pow_claibration_intrp, coupling_matrix, IQcomp, adIQcomp, phComp, powComp, coupComp, sizeL, stepMU, adReset, steering_correction, correct_filter)
+function [yspec, estimated_angle, bfSig, weights, rawData, vsa_time, correct_filter] = rfsocBf(app, vsa, ch, bf, off, gap, cutter, ang_num, num, data_v, tcp_client, fc, dataChan, diagM, bwOff, ula, scan_axis, ...
+    c1, c2, fsRfsoc, bw, c, estimator, alg_scan_res, mis_ang, alpha, gamma, iter, setup_v, debug, pow_claibration_intrp, coupling_matrix, IQcomp, adIQcomp, phComp, powComp, coupComp, sizeL, stepMU, steering_correction, correct_filter)
     % Inputs:
 %   - app: Application object
 %   - vsa: Flag indicating whether to perform VSA (Vector Signal Analyzer) operation
@@ -63,10 +63,6 @@ if debug
     disp(['rx time ' num2str(rx_time*1000) ' ms'])
 end
 %% Adaptive IQ compensation
-if (adReset)
-    correct_filter = zeros(sizeL, 4);
-    adReset = 0;
-end
 if adIQcomp
     stepSizeMat = diag(ones(sizeL,1));
     [rawData(:,1), correct_filter(:,1), ~] = adaptiveIQCompensation(rawData(:,1), stepSizeMat*stepMU, correct_filter(:,1));

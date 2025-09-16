@@ -191,6 +191,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         powComp = 0;
         coupComp = 0;
         sizeL = 4;
+        correct_filter = 0;
         stepMU = 1e-16;
         adReset = 1;
 
@@ -467,7 +468,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                 num2str(app.fc_d0/1e6) '/' num2str(app.nyquistZone_d0) '/' ...
                 num2str(app.fc_d1/1e6) '/' num2str(app.nyquistZone_d1) ...
                 '# dataChan ' num2str(app.dataChan*8)];
-            correct_filter = zeros(app.sizeL, 4);
+            app.correct_filter = zeros(app.sizeL, 4);
 
 
             warning('off','all')
@@ -486,10 +487,10 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                 end
                 if app.dataStream
                     try
-                        [yspec, estimated_angle, bfSig, app.weights, app.rawData, vsa_time, app.adReset, correct_filter] = rfsocBf(app, app.vsa, app.ch, app.bf, app.off, app.gap, app.cutter, ...
+                        [yspec, estimated_angle, bfSig, app.weights, app.rawData, vsa_time, app.adReset, app.correct_filter] = rfsocBf(app, app.vsa, app.ch, app.bf, app.off, app.gap, app.cutter, ...
                             app.ang_num, app.num, app.data_v, app.tcp_client, app.fcAnt, app.dataChan, app.diag, app.bwOff, app.ula, app.scan_axis, ...
                             app.c1, app.c2, app.fsRfsoc, app.bw, app.c, app.estimator, app.alg_scan_res, app.mis_ang, app.alpha, app.gamma, app.iter, app.setup_v, app.debug, app.pow_claibration_intrp, app.coupling_matrix, ...
-                            app.IQcomp, app.adIQcomp, app.phComp, app.powComp, app.coupComp, app.sizeL, app.stepMU, app.adReset, app.steering_correction, correct_filter);
+                            app.IQcomp, app.adIQcomp, app.phComp, app.powComp, app.coupComp, app.sizeL, app.stepMU, app.steering_correction, app.correct_filter);
                         if isnan(app.weights)
                             disp("No signal")
                             app.weights = 0;
@@ -1902,7 +1903,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         % Value changed function: LsizeEditField
         function LsizeEditFieldValueChanged(app, event)
             app.sizeL = app.LsizeEditField.Value;
-            app.adReset = 1;
+            app.correct_filter = zeros(app.sizeL, 4);
         end
 
         % Value changed function: MUstepEditField
