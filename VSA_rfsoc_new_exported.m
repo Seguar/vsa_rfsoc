@@ -193,7 +193,6 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         sizeL = 4;
         correct_filter = 0;
         stepMU = 1e-16;
-        adReset = 1;
 
         patternCorr = 0;
         numFiles = 1;
@@ -487,7 +486,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                 end
                 if app.dataStream
                     try
-                        [yspec, estimated_angle, bfSig, app.weights, app.rawData, vsa_time, app.adReset, app.correct_filter] = rfsocBf(app, app.vsa, app.ch, app.bf, app.off, app.gap, app.cutter, ...
+                        [yspec, estimated_angle, bfSig, app.weights, app.rawData, vsa_time, app.correct_filter] = rfsocBf(app, app.vsa, app.ch, app.bf, app.off, app.gap, app.cutter, ...
                             app.ang_num, app.num, app.data_v, app.tcp_client, app.fcAnt, app.dataChan, app.diag, app.bwOff, app.ula, app.scan_axis, ...
                             app.c1, app.c2, app.fsRfsoc, app.bw, app.c, app.estimator, app.alg_scan_res, app.mis_ang, app.alpha, app.gamma, app.iter, app.setup_v, app.debug, app.pow_claibration_intrp, app.coupling_matrix, ...
                             app.IQcomp, app.adIQcomp, app.phComp, app.powComp, app.coupComp, app.sizeL, app.stepMU, app.steering_correction, app.correct_filter);

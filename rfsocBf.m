@@ -93,32 +93,28 @@ rawData = filtSig(rawData, fsRfsoc, bw);
 Rx = rawData'*rawData;    %Data covarivance matrix 
 if isa(estimator, 'double')
     num_elements = 4;
-    A = zeros(num_elements,1); 
+    % yspec = zeros(1, length(scan_axis));
+    % A = zeros(num_elements,1); 
     % rawData = normalize(rawData);
     
-    Rx_Inv = Rx^(-1);           %Inverse of covariance matrix
-    lambda = c/fc;
-    d = lambda/2;
-%     for t=1:length(scan_axis) 
-%         A = exp(-1j*2*pi*d*(0:num_elements-1).'*sind(scan_axis(t))/lambda);
-%         A_fixed = A.*estimator(t,:)';
-%         B_fixed = A_fixed'*Rx_Inv*A_fixed;
-% %         yspec(t) = 10*log10(abs(1/B_fixed)); 
-%         yspec(t) = abs(1/B_fixed); 
-%     end
-    for t=1:length(scan_axis)
-        A = exp(-1j*pi*(0:num_elements-1)'*sind(scan_axis(t)));
-        A_fixed = A.*estimator(t,:)';
-        % A_fixed = A.*estimator(t,:).';
-        sig_final_fixed = rawData./(pow_claibration_intrp(t, :).^0.5);
-        Rx_fixed = sig_final_fixed'*sig_final_fixed;    %Data covarivance matrix 
-        Rx_Inv_fixed = Rx_fixed^(-1);           %Inverse of covariance matrix
-        B_fixed = A_fixed'*Rx_Inv_fixed*A_fixed;
-        % B = A'*Rx_Inv*A;
-        % yspec(t) = 10*log10(abs(1/B)); 
-        yspec(t) = 10*log10(abs(1/B_fixed)); %% yspec_fixed
-        
-    end
+    % Rx_Inv = Rx^(-1);           %Inverse of covariance matrix
+    % lambda = c/fc;
+    % d = lambda/2;
+
+    % for t=1:length(scan_axis)
+    %     A = exp(-1j*pi*(0:num_elements-1)'*sind(scan_axis(t)));
+    %     A_fixed = A.*estimator(t,:)';
+    %     % A_fixed = A.*estimator(t,:).';
+    %     sig_final_fixed = rawData./(pow_claibration_intrp(t, :).^0.5);
+    %     Rx_fixed = sig_final_fixed'*sig_final_fixed;    %Data covarivance matrix 
+    %     Rx_Inv_fixed = Rx_fixed^(-1);           %Inverse of covariance matrix
+    %     B_fixed = A_fixed'*Rx_Inv_fixed*A_fixed;
+    %     % B = A'*Rx_Inv*A;
+    %     % yspec(t) = 10*log10(abs(1/B)); 
+    %     yspec(t) = 10*log10(abs(1/B_fixed)); %% yspec_fixed
+    % 
+    % end
+    yspec = m_mvdr(rawData, scan_axis, num_elements, estimator, pow_claibration_intrp);
     [~,ind] = findpeaks(yspec,"SortStr","descend");
     ind = ind(1:num);
     estimated_angle = scan_axis(ind);
