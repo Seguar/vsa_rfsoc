@@ -1,4 +1,4 @@
-function vsaSetup(setupFile)
+function pcvsa = vsaSetup(setupFile)
 if not(isempty(instrfind))
     delete(instrfind)
 end

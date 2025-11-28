@@ -254,6 +254,7 @@ if (vsa)
     buff = zeros(size(rawSum));
     buff(cutInds) = bfSig/2^16; % VSA normalization
     vsaSendData(buff, data_v)
+    % vsaSendData_m(rawDataAdj/2^16, data_v, 4) 
     %     vsaSendData(bfSig, data_v)
     if debug
         vsa_time = toc;

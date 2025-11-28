@@ -1,4 +1,4 @@
-function [data_v, setup_v] = vsaDdc(fc_v, sr_v, bw_v, dataLen, channelCount)
+function [data_v, setup_v, vsaMeas] = vsaDdc(fc_v, sr_v, bw_v, dataLen, channelCount)
 %% 1. Connect to VSA
 vsa_path = dir('C:\Program Files\Keysight\89600 Software 202*');
 vsa_path = vsa_path(end)

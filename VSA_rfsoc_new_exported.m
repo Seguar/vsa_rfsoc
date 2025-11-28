@@ -5,9 +5,10 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         RFSoCBeamformerUIFigure        matlab.ui.Figure
         GridLayout                     matlab.ui.container.GridLayout
         LeftPanel                      matlab.ui.container.Panel
+        coupTestButton                 matlab.ui.control.Button
+        EVMCheckBox                    matlab.ui.control.CheckBox
         AdaptiveIQcompCheckBox         matlab.ui.control.CheckBox
         CouplingcompCheckBox           matlab.ui.control.CheckBox
-        PowercompCheckBox              matlab.ui.control.CheckBox
         PhasecompCheckBox              matlab.ui.control.CheckBox
         IQCompCheckBox                 matlab.ui.control.CheckBox
         MirrorCheckBox_3               matlab.ui.control.CheckBox
@@ -256,6 +257,8 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         %% Upconverter
         autocal_tx_amp = 0;
         autocal_tx_phase = 0;
+        %% Coupling
+        coupTest = 0;
         %% Flags
         reset_req = 1;
         part_reset_req = 1;
@@ -289,7 +292,8 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         dacFe = 50;
         dacSR = 1;
         dacAmp = 2^14-1;
-        dacGain = [150, 125, 82, 199];
+        % dacGain = [150, 125, 82, 199];
+        dacGain = [75, 75, 75, 65];
         % adcGain = [69, 199, 119, 100]; % Calibrated with metal surface
         adcGain = [199, 199, 199, 199]; 
         dacActiveCh = [1,1,1,1];
@@ -298,7 +302,12 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         %         dphaseCorr = [0,9,-132,-18];
         %         dphaseCorr = [0,-22,-37,-162];
         dgainCorr = [199, 199, 199, 199];
-        dphaseCorr = [0, 5, 21, 138];
+        % dphaseCorr = [0, 5, 21, 138];
+        dphaseCorr = [0, -20, -80, 160];
+        dgainCoup = [0,0,0,0];
+        dphaseCoup = [0,0,0,0];
+
+
         %         dphaseCorr = [0,15,-36,144];
         phase = [0,0,0,0];
         % phase = [0,-67,135,12];
@@ -313,6 +322,12 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         %% Reset vars
         data_v
         setup_v
+        meas_v
+        %% SCPI EVM
+        pcvsa
+        EVM_check = 0;
+        evm_data
+
         %% Part reset vars
         p_manual_mean, yspec_mean, plot_handle, tcp_client
 
@@ -359,8 +374,8 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.ResetButton.Text = 'Reseting...';
             app.ResetButton.BackgroundColor = 'r';
             drawnow%!!!!
-            [app.data_v, app.setup_v] = vsaDdc(0, app.fsRfsoc, app.fsRfsoc, app.dataChan, 1);
-            vsaSetup(app.setupFile)
+            [app.data_v, app.setup_v, app.meas_v] = vsaDdc(0, app.fsRfsoc, app.fsRfsoc, app.dataChan, 4);
+            app.pcvsa = vsaSetup(app.setupFile);
             commandsHandler(app, ['da ' num2str(app.da)]);
             commandsHandler(app, ['dataStream ' num2str(app.dataStream)]);
             disp(app.commands)
@@ -463,6 +478,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             cs2 = [];
             adac2 = [];
             saveFile = [];
+            evm_data = 0;
             app.commands = ['fc ' num2str(app.fc/1e6) '/' num2str(app.nyquistZone) '/' ...
                 num2str(app.fc_d0/1e6) '/' num2str(app.nyquistZone_d0) '/' ...
                 num2str(app.fc_d1/1e6) '/' num2str(app.nyquistZone_d1) ...
@@ -515,6 +531,23 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                 end
                 %                     disp('___')
                 %                     toc
+                %% EVM
+                if app.EVM_check
+                    fields = { ...
+                        "Ch1EVM", "Ch1EVMPeak", "Ch1PilotEVM", "Ch1DataEVM", "Ch1PmblEVM", ...
+                        "Ch1FreqErr", "Ch1SymClkErr", "Ch1CPE", "Ch1SyncCorr" ...
+                        };
+                    results = struct();
+
+                    for k = 1:length(fields)
+                        cmd = sprintf(':TRACe4:DATA:TABLe? "%s"', fields{k});
+                        fprintf(app.pcvsa, cmd);
+                        results.(fields{k}) = str2double(fscanf(app.pcvsa));
+                    end
+                    app.evm_data = db(results.(fields{1})/100);
+                else
+                    app.evm_data = 'None';
+                end
                 %% Pattern calc
                 if app.plotUpd
                     app.weights = conj(app.weights);
@@ -535,7 +568,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                         app.dacAngle = -1*app.dacAngle;
                     end
 
-                    app.UIAxes.Title.String = (['Direction of Arrival:' newline  'Estimated Angles = ' num2str(estimated_angle) newline 'DAC Angles = ' num2str(app.dacAngle)]);
+                    app.UIAxes.Title.String = (['Direction of Arrival:' newline  'Estimated Angles = ' num2str(estimated_angle) newline 'DAC Angles = ' num2str(app.dacAngle) ' EVM = ' num2str(app.evm_data)]);
 
                     set(app.plot_handle, 'YData', (yspec_mean_vec/max(yspec_mean_vec)), 'LineWidth', 4.5);
                     plot(app.UIAxes2, app.scan_axis,p_manual_mean_db, 'LineWidth', 4.5);
@@ -972,6 +1005,78 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                     end
                 end
                 drawnow
+                %% Mmwave coupling with TX scanning
+                while app.coupTest
+                    results = struct();
+                    % results.position = [];
+                    % results.phase = [];
+                    % results.gain = [];
+                    % results.evm_meas_ch1 = [];
+                    % results.evm_meas_ch2 = [];
+                    % results.evm_meas_ch3 = [];
+                    % results.evm_meas_ch4 = [];
+                    % results.evm_meas_sum = [];
+                    for pos = 1:length(app.scan_axis)
+                        
+                        app.dacAngle = app.scan_axis(pos);
+                        disp(app.dacAngle)
+                        beamforming = phased.SteeringVector('SensorArray',app.ula);
+                        weight = beamforming(app.fcAnt, app.dacAngle);
+                        app.dphase = angle(weight).';
+                        app.dphase = round(rad2deg(app.dphase), 2);
+                        app.dphase = app.dphase + app.dphaseCorr + app.dphaseCoup;
+                        % Find the indices where the absolute value of dphase exceeds phaseMax
+                        indices = abs(app.dphase) > app.phaseMax;
+                        app.dphase(indices) = -(app.dphase(indices) - min(max(app.dphase(indices), app.phaseMin), app.phaseMax));
+
+                        commandsHandler(app, ['dphase ' strjoin(arrayfun(@num2str, app.dphase*100, 'UniformOutput', false), '/');]);
+
+                        app.dacGain = app.dacGain.*app.dacActiveCh + app.dgainCoup;
+                        commandsHandler(app, ['dgain ' strjoin(arrayfun(@num2str, app.dacGain, 'UniformOutput', false), '/');]);
+                        writeline(app.tcp_client, app.commands);
+                        app.commands = [];
+                        position_data = struct();
+                        position_data.angle = app.dacAngle;
+                        position_data.phase = app.dphase;
+                        position_data.gain = app.dacGain;
+
+
+                        % Initialize the EVM measurements storage for each channel
+                        evm_meas_chan = [];
+                        evm_sum = [];  % Sum of all channels' EVM
+                        for cnt = 1:app.avg_factor
+                            if cnt > 1
+                                writeline(app.tcp_client, 'alive 1');
+                            end
+                            rawData = 0;
+                            rawData = tcpDataRec(app.tcp_client, (app.dataChan * 8), 8);
+                            rawData = filtSig(rawData, app.fsRfsoc, app.bw);
+                            for chan = 1:4
+                                vsaSendData(rawData(:,chan)/2^16, app.data_v)
+                                fprintf(app.pcvsa, sprintf(':TRACe4:DATA:TABLe? "%s"', "Ch1EVM"));
+                                evm_meas = db(str2double(fscanf(app.pcvsa))/100);
+                                evm_meas_chan = [evm_meas_chan, evm_meas];
+                            end
+                            rawSum = sum(rawData(:,1:4), 2);
+                            vsaSendData(rawSum/2^16, app.data_v)
+                            fprintf(app.pcvsa, sprintf(':TRACe4:DATA:TABLe? "%s"', "Ch1EVM"));
+                            evm_meas_sum = db(str2double(fscanf(app.pcvsa))/100);
+                            evm_sum = [evm_sum, evm_meas_sum];
+
+                            position_data.cnt(cnt).ch1_evm = evm_meas_chan(1*cnt);
+                            position_data.cnt(cnt).ch2_evm = evm_meas_chan(2*cnt);
+                            position_data.cnt(cnt).ch3_evm = evm_meas_chan(3*cnt);
+                            position_data.cnt(cnt).ch4_evm = evm_meas_chan(4*cnt);
+                            position_data.cnt(cnt).chSum_evm = evm_sum(cnt);
+
+
+                        end
+                        results.position(pos) = position_data;
+
+                    end
+                    app.coupTest = 0;
+                    save('scan_results.mat', 'results');
+                end
                 %% DAC BF
                 if app.dacBFon
                     switch app.dacBF
@@ -996,7 +1101,6 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                     end
                     beamforming = phased.SteeringVector('SensorArray',app.ula);
                     weight = beamforming(app.fcAnt, app.dacAngle);
-                    %                     weight = weight/norm(weight)*2;
                     app.dphase = angle(weight).';
                     app.dphase = round(rad2deg(app.dphase), 2);
                     app.dphase = app.dphase + app.dphaseCorr;
@@ -1886,7 +1990,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.PowercompCheckBox.Value = app.PhasecompCheckBox.Value;
         end
 
-        % Value changed function: PowercompCheckBox
+        % Callback function: not associated with a component
         function PowercompCheckBoxValueChanged(app, event)
             app.phComp = app.PowercompCheckBox.Value;
             app.powComp = app.PowercompCheckBox.Value;
@@ -1909,6 +2013,17 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         function MUstepEditFieldValueChanged(app, event)
             app.stepMU = app.MUstepEditField.Value;
             
+        end
+
+        % Value changed function: EVMCheckBox
+        function EVMCheckBoxValueChanged(app, event)
+            app.EVM_check = app.EVMCheckBox.Value;
+            
+        end
+
+        % Button pushed function: coupTestButton
+        function coupTestButtonPushed(app, event)
+            app.coupTest = 1;
         end
 
         % Changes arrangement of the app based on UIFigure width
@@ -2828,12 +2943,6 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.PhasecompCheckBox.Text = 'Phase comp';
             app.PhasecompCheckBox.Position = [86 59 88 22];
 
-            % Create PowercompCheckBox
-            app.PowercompCheckBox = uicheckbox(app.LeftPanel);
-            app.PowercompCheckBox.ValueChangedFcn = createCallbackFcn(app, @PowercompCheckBoxValueChanged, true);
-            app.PowercompCheckBox.Text = 'Power comp';
-            app.PowercompCheckBox.Position = [123 38 88 22];
-
             % Create CouplingcompCheckBox
             app.CouplingcompCheckBox = uicheckbox(app.LeftPanel);
             app.CouplingcompCheckBox.ValueChangedFcn = createCallbackFcn(app, @CouplingcompCheckBoxValueChanged, true);
@@ -2845,6 +2954,18 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.AdaptiveIQcompCheckBox.ValueChangedFcn = createCallbackFcn(app, @AdaptiveIQcompCheckBoxValueChanged, true);
             app.AdaptiveIQcompCheckBox.Text = 'Adaptive IQ comp';
             app.AdaptiveIQcompCheckBox.Position = [4 38 117 22];
+
+            % Create EVMCheckBox
+            app.EVMCheckBox = uicheckbox(app.LeftPanel);
+            app.EVMCheckBox.ValueChangedFcn = createCallbackFcn(app, @EVMCheckBoxValueChanged, true);
+            app.EVMCheckBox.Text = 'EVM';
+            app.EVMCheckBox.Position = [125 162 47 22];
+
+            % Create coupTestButton
+            app.coupTestButton = uibutton(app.LeftPanel, 'push');
+            app.coupTestButton.ButtonPushedFcn = createCallbackFcn(app, @coupTestButtonPushed, true);
+            app.coupTestButton.Position = [133 38 100 22];
+            app.coupTestButton.Text = 'coupTest';
 
             % Create RightPanel
             app.RightPanel = uipanel(app.GridLayout);
