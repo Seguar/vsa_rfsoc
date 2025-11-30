@@ -5,6 +5,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         RFSoCBeamformerUIFigure        matlab.ui.Figure
         GridLayout                     matlab.ui.container.GridLayout
         LeftPanel                      matlab.ui.container.Panel
+        coupCorrCheckBox               matlab.ui.control.CheckBox
         coupTestButton                 matlab.ui.control.Button
         EVMCheckBox                    matlab.ui.control.CheckBox
         AdaptiveIQcompCheckBox         matlab.ui.control.CheckBox
@@ -36,6 +37,10 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         DOAresolutionEditField         matlab.ui.control.NumericEditField
         DOAresolutionEditField_3Label  matlab.ui.control.Label
         SystemTab                      matlab.ui.container.Tab
+        CheckBox_4                     matlab.ui.control.CheckBox
+        CheckBox_3                     matlab.ui.control.CheckBox
+        CheckBox_2                     matlab.ui.control.CheckBox
+        CheckBox                       matlab.ui.control.CheckBox
         PrintphasemissmatchButton      matlab.ui.control.Button
         Ch4SpinnerLabel                matlab.ui.control.Label
         Ch4Spinner                     matlab.ui.control.Spinner
@@ -303,7 +308,8 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         %         dphaseCorr = [0,-22,-37,-162];
         dgainCorr = [199, 199, 199, 199];
         % dphaseCorr = [0, 5, 21, 138];
-        dphaseCorr = [0, -20, -80, 160];
+        % dphaseCorr = [0, -20, -80, 160];
+        dphaseCorr = [0, 0, -6, 123];
         dgainCoup = [0,0,0,0];
         dphaseCoup = [0,0,0,0];
 
@@ -314,7 +320,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         % phase = [0,-68,-23,-30]; % [  0.         -68.16668724 -23.64564807 -30.27015883] [  0.         -87.57967336 -41.12039743 -49.63200857]
         %         phase = [0,13,-20,-18];
         a_iq_phase = [0,0,0,0];
-
+        coupCorr = 0;
         manualControlState = "DAC phase";
 
         phaseMax = 179; %RFSoC limits
@@ -1008,14 +1014,12 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                 %% Mmwave coupling with TX scanning
                 while app.coupTest
                     results = struct();
-                    % results.position = [];
-                    % results.phase = [];
-                    % results.gain = [];
-                    % results.evm_meas_ch1 = [];
-                    % results.evm_meas_ch2 = [];
-                    % results.evm_meas_ch3 = [];
-                    % results.evm_meas_ch4 = [];
-                    % results.evm_meas_sum = [];
+                    load w_mat_cal
+                    app.dphaseCoup = round(w_mat_phase, 2);
+                    % app.dphaseCoup = -(round(w_mat_phase, 2));
+
+                    app.dgainCoup = round(w_mat_gain);
+            
                     for pos = 1:length(app.scan_axis)
                         
                         app.dacAngle = app.scan_axis(pos);
@@ -1024,14 +1028,22 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                         weight = beamforming(app.fcAnt, app.dacAngle);
                         app.dphase = angle(weight).';
                         app.dphase = round(rad2deg(app.dphase), 2);
-                        app.dphase = app.dphase + app.dphaseCorr + app.dphaseCoup;
-                        % Find the indices where the absolute value of dphase exceeds phaseMax
+                        app.dphase = app.dphase + app.dphaseCorr + app.dphaseCoup(:,pos).'*app.coupCorr;
+                        
                         indices = abs(app.dphase) > app.phaseMax;
-                        app.dphase(indices) = -(app.dphase(indices) - min(max(app.dphase(indices), app.phaseMin), app.phaseMax));
+                        app.dphase(indices) = mod(app.dphase(indices), 180);
 
                         commandsHandler(app, ['dphase ' strjoin(arrayfun(@num2str, app.dphase*100, 'UniformOutput', false), '/');]);
+                        
+                        if app.coupCorr
+                            app.dacGain = app.dgainCoup(:,pos);
+                        else
+                            app.dacGain = [75, 75, 75, 65];
+                            % app.dacGain = [75, 100, 133, 100];
+                        end
+                        % app.dacGain = min(app.dacGain.*app.dacActiveCh + app.dgainCoup(:,pos).'*app.coupCorr, 199);
 
-                        app.dacGain = app.dacGain.*app.dacActiveCh + app.dgainCoup;
+
                         commandsHandler(app, ['dgain ' strjoin(arrayfun(@num2str, app.dacGain, 'UniformOutput', false), '/');]);
                         writeline(app.tcp_client, app.commands);
                         app.commands = [];
@@ -1043,7 +1055,10 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
 
                         % Initialize the EVM measurements storage for each channel
                         evm_meas_chan = [];
-                        evm_sum = [];  % Sum of all channels' EVM
+                        evm_sum = [];  
+                        pow_meas_chan = [];
+                        pow_sum = [];  
+
                         for cnt = 1:app.avg_factor
                             if cnt > 1
                                 writeline(app.tcp_client, 'alive 1');
@@ -1053,15 +1068,21 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                             rawData = filtSig(rawData, app.fsRfsoc, app.bw);
                             for chan = 1:4
                                 vsaSendData(rawData(:,chan)/2^16, app.data_v)
-                                fprintf(app.pcvsa, sprintf(':TRACe4:DATA:TABLe? "%s"', "Ch1EVM"));
+                                fprintf(app.pcvsa, sprintf(':TRACe4:DATA:TABLe? "%s"', "Ch1EVM"));                                
                                 evm_meas = db(str2double(fscanf(app.pcvsa))/100);
+                                fprintf(app.pcvsa, sprintf(':TRACe4:DATA:TABLe? "%s"', "Power"));
+                                pow_meas = str2double(fscanf(app.pcvsa));
                                 evm_meas_chan = [evm_meas_chan, evm_meas];
+                                pow_meas_chan = [pow_meas_chan, pow_meas];
                             end
                             rawSum = sum(rawData(:,1:4), 2);
                             vsaSendData(rawSum/2^16, app.data_v)
                             fprintf(app.pcvsa, sprintf(':TRACe4:DATA:TABLe? "%s"', "Ch1EVM"));
                             evm_meas_sum = db(str2double(fscanf(app.pcvsa))/100);
+                            fprintf(app.pcvsa, sprintf(':TRACe4:DATA:TABLe? "%s"', "Power"));
+                            pow_meas = str2double(fscanf(app.pcvsa));
                             evm_sum = [evm_sum, evm_meas_sum];
+                            pow_sum = [pow_sum, pow_meas_sum];
 
                             position_data.cnt(cnt).ch1_evm = evm_meas_chan(1*cnt);
                             position_data.cnt(cnt).ch2_evm = evm_meas_chan(2*cnt);
@@ -1069,6 +1090,11 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                             position_data.cnt(cnt).ch4_evm = evm_meas_chan(4*cnt);
                             position_data.cnt(cnt).chSum_evm = evm_sum(cnt);
 
+                            position_data.cnt(cnt).ch1_pow = pow_meas_chan(1*cnt);
+                            position_data.cnt(cnt).ch2_pow = pow_meas_chan(2*cnt);
+                            position_data.cnt(cnt).ch3_pow = pow_meas_chan(3*cnt);
+                            position_data.cnt(cnt).ch4_pow = pow_meas_chan(4*cnt);
+                            position_data.cnt(cnt).chSum_pow = pow_sum(cnt);
 
                         end
                         results.position(pos) = position_data;
@@ -1647,6 +1673,10 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         % Value changed function: ChannelcontrolDropDown
         function ChannelcontrolDropDownValueChanged(app, event)
             app.manualControlState = app.ChannelcontrolDropDown.Value;
+            app.CheckBox.Visible = 0;
+            app.CheckBox_2.Visible = 0;
+            app.CheckBox_3.Visible = 0;
+            app.CheckBox_4.Visible = 0;
             switch app.manualControlState
                 case "DAC gain"
                     app.Ch1Spinner.Limits = [0, 199];
@@ -1657,6 +1687,14 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                     app.Ch2Spinner.Value = app.dacGain(2);
                     app.Ch3Spinner.Value = app.dacGain(3);
                     app.Ch4Spinner.Value = app.dacGain(4);
+                    app.CheckBox.Visible = 1;
+                    app.CheckBox_2.Visible = 1;
+                    app.CheckBox_3.Visible = 1;
+                    app.CheckBox_4.Visible = 1;
+                    app.CheckBox.Value = app.dacActiveCh(1);
+                    app.CheckBox_2.Value = app.dacActiveCh(2);
+                    app.CheckBox_3.Value = app.dacActiveCh(3);
+                    app.CheckBox_4.Value = app.dacActiveCh(4);
                 case "DAC phase"
                     app.Ch1Spinner.Limits = [-179, 179];
                     app.Ch2Spinner.Limits = [-179, 179];
@@ -1701,7 +1739,16 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                     app.Ch1Spinner.Value = app.a_iq_phase(1);
                     app.Ch2Spinner.Value = app.a_iq_phase(2);
                     app.Ch3Spinner.Value = app.a_iq_phase(3);
-                    app.Ch4Spinner.Value = app.a_iq_phase(4);   
+                    app.Ch4Spinner.Value = app.a_iq_phase(4);
+                case "DAC phase corr"
+                    app.Ch1Spinner.Limits = [-179, 179];
+                    app.Ch2Spinner.Limits = [-179, 179];
+                    app.Ch3Spinner.Limits = [-179, 179];
+                    app.Ch4Spinner.Limits = [-179, 179];
+                    app.Ch1Spinner.Value = app.dphaseCorr(1);
+                    app.Ch2Spinner.Value = app.dphaseCorr(2);
+                    app.Ch3Spinner.Value = app.dphaseCorr(3);
+                    app.Ch4Spinner.Value = app.dphaseCorr(4);
             end
         end
 
@@ -1710,10 +1757,11 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             switch app.manualControlState
                 case "DAC gain"
                     app.dacGain(1) = app.Ch1Spinner.Value;
-                    commandsHandler(app, ['dgain ' strjoin(arrayfun(@num2str, app.dacGain, 'UniformOutput', false), '/');]);
+                    app.dacActiveCh = [app.CheckBox.Value, app.CheckBox_2.Value, app.CheckBox_3.Value, app.CheckBox_4.Value];
+                    commandsHandler(app, ['dgain ' strjoin(arrayfun(@num2str, app.dacGain.*app.dacActiveCh, 'UniformOutput', false), '/');]);
                 case "DAC phase"
-                    app.dphaseCorr(1) = app.Ch1Spinner.Value;
-                    commandsHandler(app, ['dphase ' strjoin(arrayfun(@num2str, app.dphaseCorr*100, 'UniformOutput', false), '/');]);
+                    app.dphase(1) = app.Ch1Spinner.Value;
+                    commandsHandler(app, ['dphase ' strjoin(arrayfun(@num2str, app.dphase*100, 'UniformOutput', false), '/');]);
                 case "DAC I phase"
                     app.d_iq_phase(1) = app.Ch1Spinner.Value;
                     commandsHandler(app, ['diqphase ' strjoin(arrayfun(@num2str, app.d_iq_phase*100, 'UniformOutput', false), '/');]);    
@@ -1725,7 +1773,10 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                     commandsHandler(app, ['phase ' strjoin(arrayfun(@num2str, app.phase*100, 'UniformOutput', false), '/');]);
                 case "ADC I phase"
                     app.a_iq_phase(1) = app.Ch1Spinner.Value;
-                    commandsHandler(app, ['aiqphase ' strjoin(arrayfun(@num2str, app.a_iq_phase*100, 'UniformOutput', false), '/');]);    
+                    commandsHandler(app, ['aiqphase ' strjoin(arrayfun(@num2str, app.a_iq_phase*100, 'UniformOutput', false), '/');]);
+                case "DAC phase corr"
+                    app.dphaseCorr(1) = app.Ch1Spinner.Value;
+                    commandsHandler(app, ['dphase ' strjoin(arrayfun(@num2str, app.dphaseCorr*100, 'UniformOutput', false), '/');]);
             end
         end
 
@@ -1734,10 +1785,11 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             switch app.manualControlState
                 case "DAC gain"
                     app.dacGain(2) = app.Ch2Spinner.Value;
-                    commandsHandler(app, ['dgain ' strjoin(arrayfun(@num2str, app.dacGain, 'UniformOutput', false), '/');]);
+                    app.dacActiveCh = [app.CheckBox.Value, app.CheckBox_2.Value, app.CheckBox_3.Value, app.CheckBox_4.Value];
+                    commandsHandler(app, ['dgain ' strjoin(arrayfun(@num2str, app.dacGain.*app.dacActiveCh, 'UniformOutput', false), '/');]);
                 case "DAC phase"
-                    app.dphaseCorr(2) = app.Ch2Spinner.Value;
-                    commandsHandler(app, ['dphase ' strjoin(arrayfun(@num2str, app.dphaseCorr*100, 'UniformOutput', false), '/');]);
+                    app.dphase(2) = app.Ch2Spinner.Value;
+                    commandsHandler(app, ['dphase ' strjoin(arrayfun(@num2str, app.dphase*100, 'UniformOutput', false), '/');]);
                 case "DAC I phase"
                     app.d_iq_phase(2) = app.Ch2Spinner.Value;
                     commandsHandler(app, ['diqphase ' strjoin(arrayfun(@num2str, app.d_iq_phase*100, 'UniformOutput', false), '/');]);                       
@@ -1749,7 +1801,10 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                     commandsHandler(app, ['phase ' strjoin(arrayfun(@num2str, app.phase*100, 'UniformOutput', false), '/');]);
                 case "ADC I phase"
                     app.a_iq_phase(2) = app.Ch2Spinner.Value;
-                    commandsHandler(app, ['aiqphase ' strjoin(arrayfun(@num2str, app.a_iq_phase*100, 'UniformOutput', false), '/');]);                       
+                    commandsHandler(app, ['aiqphase ' strjoin(arrayfun(@num2str, app.a_iq_phase*100, 'UniformOutput', false), '/');]);
+                case "DAC phase corr"
+                    app.dphaseCorr(2) = app.Ch2Spinner.Value;
+                    commandsHandler(app, ['dphase ' strjoin(arrayfun(@num2str, app.dphaseCorr*100, 'UniformOutput', false), '/');]);
             end
         end
 
@@ -1758,10 +1813,11 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             switch app.manualControlState
                 case "DAC gain"
                     app.dacGain(3) = app.Ch3Spinner.Value;
-                    commandsHandler(app, ['dgain ' strjoin(arrayfun(@num2str, app.dacGain, 'UniformOutput', false), '/');]);
+                    app.dacActiveCh = [app.CheckBox.Value, app.CheckBox_2.Value, app.CheckBox_3.Value, app.CheckBox_4.Value];
+                    commandsHandler(app, ['dgain ' strjoin(arrayfun(@num2str, app.dacGain.*app.dacActiveCh, 'UniformOutput', false), '/');]);
                 case "DAC phase"
-                    app.dphaseCorr(3) = app.Ch3Spinner.Value;
-                    commandsHandler(app, ['dphase ' strjoin(arrayfun(@num2str, app.dphaseCorr*100, 'UniformOutput', false), '/');]);
+                    app.dphase(3) = app.Ch3Spinner.Value;
+                    commandsHandler(app, ['dphase ' strjoin(arrayfun(@num2str, app.dphase*100, 'UniformOutput', false), '/');]);
                 case "DAC I phase"
                     app.d_iq_phase(3) = app.Ch3Spinner.Value;
                     commandsHandler(app, ['diqphase ' strjoin(arrayfun(@num2str, app.d_iq_phase*100, 'UniformOutput', false), '/');]);   
@@ -1773,7 +1829,10 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                     commandsHandler(app, ['phase ' strjoin(arrayfun(@num2str, app.phase*100, 'UniformOutput', false), '/');]);
                 case "ADC I phase"
                     app.a_iq_phase(3) = app.Ch3Spinner.Value;
-                    commandsHandler(app, ['aiqphase ' strjoin(arrayfun(@num2str, app.a_iq_phase*100, 'UniformOutput', false), '/');]);                       
+                    commandsHandler(app, ['aiqphase ' strjoin(arrayfun(@num2str, app.a_iq_phase*100, 'UniformOutput', false), '/');]);
+                case "DAC phase"
+                    app.dphaseCorr(3) = app.Ch3Spinner.Value;
+                    commandsHandler(app, ['dphase ' strjoin(arrayfun(@num2str, app.dphaseCorr*100, 'UniformOutput', false), '/');]);
             end
         end
 
@@ -1782,10 +1841,11 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             switch app.manualControlState
                 case "DAC gain"
                     app.dacGain(4) = app.Ch4Spinner.Value;
-                    commandsHandler(app, ['dgain ' strjoin(arrayfun(@num2str, app.dacGain, 'UniformOutput', false), '/');]);
+                    app.dacActiveCh = [app.CheckBox.Value, app.CheckBox_2.Value, app.CheckBox_3.Value, app.CheckBox_4.Value];
+                    commandsHandler(app, ['dgain ' strjoin(arrayfun(@num2str, app.dacGain.*app.dacActiveCh, 'UniformOutput', false), '/');]);
                 case "DAC phase"
-                    app.dphaseCorr(4) = app.Ch4Spinner.Value;
-                    commandsHandler(app, ['dphase ' strjoin(arrayfun(@num2str, app.dphaseCorr*100, 'UniformOutput', false), '/');]);
+                    app.dphase(4) = app.Ch4Spinner.Value;
+                    commandsHandler(app, ['dphase ' strjoin(arrayfun(@num2str, app.dphase*100, 'UniformOutput', false), '/');]);
                 case "DAC I phase"
                     app.d_iq_phase(4) = app.Ch4Spinner.Value;
                     commandsHandler(app, ['diqphase ' strjoin(arrayfun(@num2str, app.d_iq_phase*100, 'UniformOutput', false), '/');]);                       
@@ -1797,7 +1857,10 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                     commandsHandler(app, ['phase ' strjoin(arrayfun(@num2str, app.phase*100, 'UniformOutput', false), '/');]);
                 case "ADC I phase"
                     app.a_iq_phase(4) = app.Ch4Spinner.Value;
-                    commandsHandler(app, ['aiqphase ' strjoin(arrayfun(@num2str, app.a_iq_phase*100, 'UniformOutput', false), '/');]);                       
+                    commandsHandler(app, ['aiqphase ' strjoin(arrayfun(@num2str, app.a_iq_phase*100, 'UniformOutput', false), '/');]);
+                case "DAC phase corr"
+                    app.dphaseCorr(4) = app.Ch4Spinner.Value;
+                    commandsHandler(app, ['dphase ' strjoin(arrayfun(@num2str, app.dphaseCorr*100, 'UniformOutput', false), '/');]);
             end
         end
 
@@ -2024,6 +2087,21 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         % Button pushed function: coupTestButton
         function coupTestButtonPushed(app, event)
             app.coupTest = 1;
+        end
+
+        % Value changed function: coupCorrCheckBox
+        function coupCorrCheckBoxValueChanged(app, event)
+            app.coupCorr = app.coupCorrCheckBox.Value;
+            
+        end
+
+        % Value changed function: CheckBox, CheckBox_2, CheckBox_3, 
+        % ...and 1 other component
+        function CheckBoxValueChanged(app, event)
+            app.dacGain = [app.Ch1Spinner.Value, app.Ch2Spinner.Value, app.Ch3Spinner.Value, app.Ch4Spinner.Value];
+            app.dacActiveCh = [app.CheckBox.Value, app.CheckBox_2.Value, app.CheckBox_3.Value, app.CheckBox_4.Value];
+            commandsHandler(app, ['dgain ' strjoin(arrayfun(@num2str, app.dacGain.*app.dacActiveCh, 'UniformOutput', false), '/');]);
+
         end
 
         % Changes arrangement of the app based on UIFigure width
@@ -2403,7 +2481,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
 
             % Create ChannelcontrolDropDown
             app.ChannelcontrolDropDown = uidropdown(app.SystemTab);
-            app.ChannelcontrolDropDown.Items = {'DAC gain', 'DAC phase', 'DAC I phase', 'ADC gain', 'ADC phase', 'ADC I phase'};
+            app.ChannelcontrolDropDown.Items = {'DAC gain', 'DAC phase', 'DAC I phase', 'ADC gain', 'ADC phase', 'ADC I phase', 'DAC phase corr'};
             app.ChannelcontrolDropDown.ValueChangedFcn = createCallbackFcn(app, @ChannelcontrolDropDownValueChanged, true);
             app.ChannelcontrolDropDown.Position = [76 268 119 22];
             app.ChannelcontrolDropDown.Value = 'DAC phase';
@@ -2465,6 +2543,38 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.PrintphasemissmatchButton.ButtonPushedFcn = createCallbackFcn(app, @PrintphasemissmatchButtonPushed, true);
             app.PrintphasemissmatchButton.Position = [52 491 136 22];
             app.PrintphasemissmatchButton.Text = 'Print phase missmatch';
+
+            % Create CheckBox
+            app.CheckBox = uicheckbox(app.SystemTab);
+            app.CheckBox.ValueChangedFcn = createCallbackFcn(app, @CheckBoxValueChanged, true);
+            app.CheckBox.Visible = 'off';
+            app.CheckBox.Text = '';
+            app.CheckBox.Position = [24 231 25 22];
+            app.CheckBox.Value = true;
+
+            % Create CheckBox_2
+            app.CheckBox_2 = uicheckbox(app.SystemTab);
+            app.CheckBox_2.ValueChangedFcn = createCallbackFcn(app, @CheckBoxValueChanged, true);
+            app.CheckBox_2.Visible = 'off';
+            app.CheckBox_2.Text = '';
+            app.CheckBox_2.Position = [186 233 25 22];
+            app.CheckBox_2.Value = true;
+
+            % Create CheckBox_3
+            app.CheckBox_3 = uicheckbox(app.SystemTab);
+            app.CheckBox_3.ValueChangedFcn = createCallbackFcn(app, @CheckBoxValueChanged, true);
+            app.CheckBox_3.Visible = 'off';
+            app.CheckBox_3.Text = '';
+            app.CheckBox_3.Position = [24 195 25 22];
+            app.CheckBox_3.Value = true;
+
+            % Create CheckBox_4
+            app.CheckBox_4 = uicheckbox(app.SystemTab);
+            app.CheckBox_4.ValueChangedFcn = createCallbackFcn(app, @CheckBoxValueChanged, true);
+            app.CheckBox_4.Visible = 'off';
+            app.CheckBox_4.Text = '';
+            app.CheckBox_4.Position = [185 199 25 22];
+            app.CheckBox_4.Value = true;
 
             % Create mmWaveFrontEndTab
             app.mmWaveFrontEndTab = uitab(app.TabGroup);
@@ -2966,6 +3076,12 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.coupTestButton.ButtonPushedFcn = createCallbackFcn(app, @coupTestButtonPushed, true);
             app.coupTestButton.Position = [133 38 100 22];
             app.coupTestButton.Text = 'coupTest';
+
+            % Create coupCorrCheckBox
+            app.coupCorrCheckBox = uicheckbox(app.LeftPanel);
+            app.coupCorrCheckBox.ValueChangedFcn = createCallbackFcn(app, @coupCorrCheckBoxValueChanged, true);
+            app.coupCorrCheckBox.Text = 'coupCorr';
+            app.coupCorrCheckBox.Position = [117 24 71 22];
 
             % Create RightPanel
             app.RightPanel = uipanel(app.GridLayout);
