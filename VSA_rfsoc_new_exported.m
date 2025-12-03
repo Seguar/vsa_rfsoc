@@ -142,6 +142,9 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         CutoffsetEditFieldLabel        matlab.ui.control.Label
         GetPatternButton               matlab.ui.control.StateButton
         DevicesTab                     matlab.ui.container.Tab
+        powStepEditField               matlab.ui.control.NumericEditField
+        powStepEditFieldLabel          matlab.ui.control.Label
+        txpowTestButton                matlab.ui.control.Button
         IPEditField                    matlab.ui.control.EditField
         IPEditFieldLabel               matlab.ui.control.Label
         ModulationCheckBox             matlab.ui.control.CheckBox
@@ -152,6 +155,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         FrequencySpinnerLabel          matlab.ui.control.Label
         DevicecontrolDropDown          matlab.ui.control.DropDown
         DevicecontrolDropDownLabel     matlab.ui.control.Label
+        Tab                            matlab.ui.container.Tab
         ResetButton                    matlab.ui.control.StateButton
         RightPanel                     matlab.ui.container.Panel
         GridLayout2                    matlab.ui.container.GridLayout
@@ -264,6 +268,8 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         autocal_tx_phase = 0;
         %% Coupling
         coupTest = 0;
+        %%
+        txpowTest = 0;
         %% Flags
         reset_req = 1;
         part_reset_req = 1;
@@ -322,7 +328,9 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         a_iq_phase = [0,0,0,0];
         coupCorr = 0;
         manualControlState = "DAC phase";
-
+        powStep = 1;
+        powerMax = 199;
+        powerMin = 1;
         phaseMax = 179; %RFSoC limits
         phaseMin = -179; %RFSoC limits
         %% Reset vars
@@ -1013,37 +1021,44 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                 drawnow
                 %% Mmwave coupling with TX scanning
                 while app.coupTest
+                    dgain_bac = app.dacGain;
+                    dphase_bac = app.dphaseCorr;
                     results = struct();
                     load w_mat_cal
                     app.dphaseCoup = round(w_mat_phase, 2);
                     % app.dphaseCoup = -(round(w_mat_phase, 2));
 
                     app.dgainCoup = round(w_mat_gain);
-            
+
                     for pos = 1:length(app.scan_axis)
-                        
+
                         app.dacAngle = app.scan_axis(pos);
+                        adac = guiXline(adac, app.UIAxes, dacmain, app.dacAngle, 'left');
+                        adac2 = guiXline(adac2, app.UIAxes2, dacmain, app.dacAngle, 'left');
                         disp(app.dacAngle)
                         beamforming = phased.SteeringVector('SensorArray',app.ula);
                         weight = beamforming(app.fcAnt, app.dacAngle);
                         app.dphase = angle(weight).';
                         app.dphase = round(rad2deg(app.dphase), 2);
-                        app.dphase = app.dphase + app.dphaseCorr + app.dphaseCoup(:,pos).'*app.coupCorr;
-                        
-                        indices = abs(app.dphase) > app.phaseMax;
-                        app.dphase(indices) = mod(app.dphase(indices), 180);
 
-                        commandsHandler(app, ['dphase ' strjoin(arrayfun(@num2str, app.dphase*100, 'UniformOutput', false), '/');]);
+                        % app.dphase(indices) = mod(app.dphase(indices), 180);
+
                         
+
                         if app.coupCorr
                             app.dacGain = app.dgainCoup(:,pos);
+                            app.dphase = app.dphaseCorr + app.dphaseCoup(:,pos).'*app.coupCorr;
                         else
-                            app.dacGain = [75, 75, 75, 65];
+                            app.dacGain = dgain_bac;
                             % app.dacGain = [75, 100, 133, 100];
+                            app.dphase = app.dphase + app.dphaseCorr + app.dphaseCoup(:,pos).'*app.coupCorr;
                         end
+                        
+
+                        app.dphase = mod(app.dphase + 180, 360) - 180;
                         % app.dacGain = min(app.dacGain.*app.dacActiveCh + app.dgainCoup(:,pos).'*app.coupCorr, 199);
 
-
+                        commandsHandler(app, ['dphase ' strjoin(arrayfun(@num2str, app.dphase*100, 'UniformOutput', false), '/');]);
                         commandsHandler(app, ['dgain ' strjoin(arrayfun(@num2str, app.dacGain, 'UniformOutput', false), '/');]);
                         writeline(app.tcp_client, app.commands);
                         app.commands = [];
@@ -1054,10 +1069,10 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
 
 
                         % Initialize the EVM measurements storage for each channel
-                        evm_meas_chan = [];
-                        evm_sum = [];  
-                        pow_meas_chan = [];
-                        pow_sum = [];  
+                        evm_meas_chan = zeros(4, app.avg_factor);
+                        pow_meas_chan = zeros(4, app.avg_factor);
+                        evm_sum       = zeros(1, app.avg_factor);
+                        pow_sum       = zeros(1, app.avg_factor);
 
                         for cnt = 1:app.avg_factor
                             if cnt > 1
@@ -1068,32 +1083,36 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                             rawData = filtSig(rawData, app.fsRfsoc, app.bw);
                             for chan = 1:4
                                 vsaSendData(rawData(:,chan)/2^16, app.data_v)
-                                fprintf(app.pcvsa, sprintf(':TRACe4:DATA:TABLe? "%s"', "Ch1EVM"));                                
+                                % pause(0.03)
+                                pause(0.05)
+                                fprintf(app.pcvsa, sprintf(':TRACe4:DATA:TABLe? "%s"', "Ch1EVM"));
                                 evm_meas = db(str2double(fscanf(app.pcvsa))/100);
                                 fprintf(app.pcvsa, sprintf(':TRACe4:DATA:TABLe? "%s"', "Power"));
                                 pow_meas = str2double(fscanf(app.pcvsa));
-                                evm_meas_chan = [evm_meas_chan, evm_meas];
-                                pow_meas_chan = [pow_meas_chan, pow_meas];
+                                evm_meas_chan(chan, cnt) = evm_meas;
+                                pow_meas_chan(chan, cnt) = pow_meas;
                             end
                             rawSum = sum(rawData(:,1:4), 2);
                             vsaSendData(rawSum/2^16, app.data_v)
+                            % pause(0.03)
+                            pause(0.05)
                             fprintf(app.pcvsa, sprintf(':TRACe4:DATA:TABLe? "%s"', "Ch1EVM"));
                             evm_meas_sum = db(str2double(fscanf(app.pcvsa))/100);
                             fprintf(app.pcvsa, sprintf(':TRACe4:DATA:TABLe? "%s"', "Power"));
-                            pow_meas = str2double(fscanf(app.pcvsa));
-                            evm_sum = [evm_sum, evm_meas_sum];
-                            pow_sum = [pow_sum, pow_meas_sum];
+                            pow_meas_sum = str2double(fscanf(app.pcvsa));
+                            evm_sum(cnt) = evm_meas_sum;
+                            pow_sum(cnt) = pow_meas_sum;
 
-                            position_data.cnt(cnt).ch1_evm = evm_meas_chan(1*cnt);
-                            position_data.cnt(cnt).ch2_evm = evm_meas_chan(2*cnt);
-                            position_data.cnt(cnt).ch3_evm = evm_meas_chan(3*cnt);
-                            position_data.cnt(cnt).ch4_evm = evm_meas_chan(4*cnt);
+                            position_data.cnt(cnt).ch1_evm   = evm_meas_chan(1,cnt);
+                            position_data.cnt(cnt).ch2_evm   = evm_meas_chan(2,cnt);
+                            position_data.cnt(cnt).ch3_evm   = evm_meas_chan(3,cnt);
+                            position_data.cnt(cnt).ch4_evm   = evm_meas_chan(4,cnt);
                             position_data.cnt(cnt).chSum_evm = evm_sum(cnt);
 
-                            position_data.cnt(cnt).ch1_pow = pow_meas_chan(1*cnt);
-                            position_data.cnt(cnt).ch2_pow = pow_meas_chan(2*cnt);
-                            position_data.cnt(cnt).ch3_pow = pow_meas_chan(3*cnt);
-                            position_data.cnt(cnt).ch4_pow = pow_meas_chan(4*cnt);
+                            position_data.cnt(cnt).ch1_pow   = pow_meas_chan(1,cnt);
+                            position_data.cnt(cnt).ch2_pow   = pow_meas_chan(2,cnt);
+                            position_data.cnt(cnt).ch3_pow   = pow_meas_chan(3,cnt);
+                            position_data.cnt(cnt).ch4_pow   = pow_meas_chan(4,cnt);
                             position_data.cnt(cnt).chSum_pow = pow_sum(cnt);
 
                         end
@@ -1102,7 +1121,108 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                     end
                     app.coupTest = 0;
                     save('scan_results.mat', 'results');
+                    app.dphase = dphase_bac;
+                    app.dacGain = dgain_bac;
+                    commandsHandler(app, ['dphase ' strjoin(arrayfun(@num2str, app.dphase*100, 'UniformOutput', false), '/');]);
+                    commandsHandler(app, ['dgain ' strjoin(arrayfun(@num2str, app.dacGain, 'UniformOutput', false), '/');]);
                 end
+                %% Mmwave TX power test
+                while app.txpowTest
+
+                    % Backup current settings
+                    dgain_bac  = app.dacGain;
+                    dphase_bac = app.dphase + app.dphaseCorr;
+
+                    % Power sweep vector
+                    powerVec = app.powerMin:app.powStep:app.powerMax;
+                    nPow     = numel(powerVec);
+
+                    % Results struct
+                    results = struct();
+
+                    % === Loop over TX channels ===
+                    for chan = 1:4
+
+                        % Activate only the current channel
+                        app.dacActiveCh = zeros(1,4);
+                        app.dacActiveCh(chan) = 1;
+
+                        chan_data = struct();
+                        chan_data.channel     = chan;
+                        chan_data.dacActiveCh = app.dacActiveCh;
+
+                        % === Loop over power positions ===
+                        for pIdx = 1:nPow
+                            pos = powerVec(pIdx);
+
+                            % Set gain for the active channel
+                            app.dacGain = pos;
+                            gainVec     = app.dacGain .* app.dacActiveCh;
+
+                            commandsHandler(app, ['dgain ' ...
+                                strjoin(arrayfun(@num2str, gainVec, 'UniformOutput', false), '/');]);
+                            writeline(app.tcp_client, app.commands);
+                            app.commands = [];
+
+                            % Initialize per-position data
+                            position_data = struct();
+                            position_data.channel = chan;     % link to current channel
+                            position_data.power   = pos;      % link to current power
+                            position_data.angle   = app.dacAngle;
+                            position_data.phase   = app.dphase;
+                            position_data.gain    = app.dacGain;
+
+                            % Preallocate storage for measurements
+                            position_data.evm       = zeros(1, app.avg_factor);
+                            position_data.power_meas = zeros(1, app.avg_factor);
+
+                            % === Averaging loop ===
+                            for cnt = 1:app.avg_factor
+
+                                if cnt > 1
+                                    writeline(app.tcp_client, 'alive 1');
+                                end
+
+                                % Receive and filter data
+                                rawData = tcpDataRec(app.tcp_client, (app.dataChan * 8), 8);
+                                % rawData = filtSig(rawData, app.fsRfsoc, app.bw);
+                                % 
+                                % rawSum = sum(rawData(:,1:4), 2); %#ok<NASGU>
+                                % If needed: vsaSendData(rawSum/2^16, app.data_v)
+
+                                % Query VSA for EVM and Power (sum)
+                                fprintf(app.pcvsa, ':TRACe4:DATA:TABLe? "Ch1EVM"');
+                                evm_meas_sum = db(str2double(fscanf(app.pcvsa)) / 100);
+
+                                fprintf(app.pcvsa, ':TRACe4:DATA:TABLe? "Power"');
+                                pow_meas_sum = str2double(fscanf(app.pcvsa));
+
+                                % Store per-count measurements
+                                position_data.evm(cnt)        = evm_meas_sum;
+                                position_data.power_meas(cnt) = pow_meas_sum;
+
+                                % If you prefer per-count structs instead of arrays:
+                                % position_data.cnt(cnt).evm   = evm_meas_sum;
+                                % position_data.cnt(cnt).power = pow_meas_sum;
+                            end
+
+                            % Store this power position into the channel data
+                            chan_data.position(pIdx) = position_data;
+                        end
+
+                        % Store channel data into results
+                        results.channel(chan) = chan_data;
+                    end
+
+                    % === Wrap up, restore settings, and save ===
+                    app.txpowTest = 0;
+                    save('pow_scan_results.mat', 'results');
+
+                    app.dacGain = dgain_bac;
+                    commandsHandler(app, ['dgain ' ...
+                        strjoin(arrayfun(@num2str, app.dacGain, 'UniformOutput', false), '/');]);
+                end
+
                 %% DAC BF
                 if app.dacBFon
                     switch app.dacBF
@@ -1830,7 +1950,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                 case "ADC I phase"
                     app.a_iq_phase(3) = app.Ch3Spinner.Value;
                     commandsHandler(app, ['aiqphase ' strjoin(arrayfun(@num2str, app.a_iq_phase*100, 'UniformOutput', false), '/');]);
-                case "DAC phase"
+                case "DAC phase corr"
                     app.dphaseCorr(3) = app.Ch3Spinner.Value;
                     commandsHandler(app, ['dphase ' strjoin(arrayfun(@num2str, app.dphaseCorr*100, 'UniformOutput', false), '/');]);
             end
@@ -2053,7 +2173,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.PowercompCheckBox.Value = app.PhasecompCheckBox.Value;
         end
 
-        % Callback function: not associated with a component
+        % Callback function
         function PowercompCheckBoxValueChanged(app, event)
             app.phComp = app.PowercompCheckBox.Value;
             app.powComp = app.PowercompCheckBox.Value;
@@ -2102,6 +2222,17 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.dacActiveCh = [app.CheckBox.Value, app.CheckBox_2.Value, app.CheckBox_3.Value, app.CheckBox_4.Value];
             commandsHandler(app, ['dgain ' strjoin(arrayfun(@num2str, app.dacGain.*app.dacActiveCh, 'UniformOutput', false), '/');]);
 
+        end
+
+        % Value changed function: powStepEditField
+        function powStepEditFieldValueChanged(app, event)
+            app.powStep = app.powStepEditField.Value;
+            
+        end
+
+        % Button pushed function: txpowTestButton
+        function txpowTestButtonPushed(app, event)
+            app.txpowTest = 1;
         end
 
         % Changes arrangement of the app based on UIFigure width
@@ -2975,6 +3106,28 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.IPEditField.ValueChangedFcn = createCallbackFcn(app, @IPEditFieldValueChanged, true);
             app.IPEditField.Position = [88 630 100 22];
             app.IPEditField.Value = '132.68.138.1';
+
+            % Create txpowTestButton
+            app.txpowTestButton = uibutton(app.DevicesTab, 'push');
+            app.txpowTestButton.ButtonPushedFcn = createCallbackFcn(app, @txpowTestButtonPushed, true);
+            app.txpowTestButton.Position = [63 410 100 22];
+            app.txpowTestButton.Text = 'txpowTest';
+
+            % Create powStepEditFieldLabel
+            app.powStepEditFieldLabel = uilabel(app.DevicesTab);
+            app.powStepEditFieldLabel.HorizontalAlignment = 'right';
+            app.powStepEditFieldLabel.Position = [7 448 52 22];
+            app.powStepEditFieldLabel.Text = 'powStep';
+
+            % Create powStepEditField
+            app.powStepEditField = uieditfield(app.DevicesTab, 'numeric');
+            app.powStepEditField.ValueChangedFcn = createCallbackFcn(app, @powStepEditFieldValueChanged, true);
+            app.powStepEditField.Position = [74 448 100 22];
+            app.powStepEditField.Value = 1;
+
+            % Create Tab
+            app.Tab = uitab(app.TabGroup);
+            app.Tab.Title = 'Tab';
 
             % Create AvgSpinnerLabel
             app.AvgSpinnerLabel = uilabel(app.LeftPanel);
