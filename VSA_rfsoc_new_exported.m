@@ -1537,7 +1537,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         % Value changed function: SYNCDropDown
         function SYNCDropDownValueChanged(app, event)
             app.da = app.SYNCDropDown.Value;
-
+            commandsHandler(app, ['da ' num2str(app.da)]);
         end
 
         % Value changed function: RFSoCFcSpinner_2
