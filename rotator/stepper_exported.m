@@ -82,7 +82,7 @@ classdef stepper_exported < matlab.apps.AppBase
             end
         end
 
-        % Value changed function: PortListDropDown
+        % Callback function: PortListDropDown, PortListDropDown
         function PortListDropDownValueChanged(app, event)
             app.port = app.PortListDropDown.Value;
         end
@@ -207,6 +207,7 @@ classdef stepper_exported < matlab.apps.AppBase
             app.PortListDropDown = uidropdown(app.UIFigure);
             app.PortListDropDown.DropDownOpeningFcn = createCallbackFcn(app, @PortListDropDownOpening, true);
             app.PortListDropDown.ValueChangedFcn = createCallbackFcn(app, @PortListDropDownValueChanged, true);
+            app.PortListDropDown.ClickedFcn = createCallbackFcn(app, @PortListDropDownValueChanged, true);
             app.PortListDropDown.Position = [163 659 100 22];
 
             % Create ChoseportandpressthebuttonButton
