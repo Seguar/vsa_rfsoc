@@ -4,13 +4,26 @@ vsa_path = dir('C:\Program Files\Keysight\89600 Software 202*');
 vsa_path = vsa_path(end)
 try
     asmPath = strcat(vsa_path.folder, '\', vsa_path.name, '\89600 VSA Software\Examples\DotNET\Interfaces\');
-catch
-    disp('Please check the path to the VSA software')
-end
-addpath(asmPath)
+    % asmPath = strcat(vsa_path.folder, '\', vsa_path.name, '\89600 VSA Software\Interfaces\');
+    addpath(asmPath)
 
-asmName = 'Agilent.SA.Vsa.Interfaces.dll';
-asm = NET.addAssembly(strcat(asmPath, asmName));
+    asmName = 'Agilent.SA.Vsa.Interfaces.dll';
+    asm = NET.addAssembly(strcat(asmPath, asmName));
+catch
+    try
+        asmPath = strcat(vsa_path.folder, '\', vsa_path.name, '\89600 VSA Software\Interfaces\');
+        addpath(asmPath)
+
+        asmName = 'Agilent.SA.Vsa.Interfaces.dll';
+        asm = NET.addAssembly(strcat(asmPath, asmName));
+    catch
+        disp('Please check the path to the VSA software')
+    end
+end
+% addpath(asmPath)
+% 
+% asmName = 'Agilent.SA.Vsa.Interfaces.dll';
+% asm = NET.addAssembly(strcat(asmPath, asmName));
 import Agilent.SA.Vsa.*;
 
 vsaApp = ApplicationFactory.Create();
