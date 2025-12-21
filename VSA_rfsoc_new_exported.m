@@ -1530,7 +1530,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         % Button pushed function: SaveButton
         function SaveButtonPushed(app, event)
             app.saveFlg = 1;
-            [baseFileName, folder] = uiputfile([pwd ['.\Signals\'  num2str(app.numFiles - 1) '_RawSavesFromRfsoc.mat']]);
+            [baseFileName, folder] = uiputfile([pwd ['\Signals\'  num2str(app.numFiles - 1) '_RawSavesFromRfsoc.mat']]);
             app.saveName = fullfile(folder, baseFileName);
         end
 
