@@ -1,0 +1,197 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Session Name="Session" AppVersion="" FileVersion="" xmlns="AnalogDevices/Csa/Configuration/Schemas/Session.xsd">
+  <Elements>
+    <Element Id="Scripts">
+      <ScriptManager xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="AnalogDevices/Csa/Scripting/Sessions/ScriptManagerSessionElement.Schema.xsd">
+        <Scripts />
+      </ScriptManager>
+    </Element>
+    <Element Id="EvalSystem">
+      <System xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Name="System" xmlns="AnalogDevices/Csa/Evaluation/Sessions/EvalSystemSessionElement.Schema.xsd">
+        <Subsystems>
+          <Subsystem Name="Subsystem_1">
+            <Components>
+              <Component ComponentId="SDPS" Name="SDP-S">
+                <Info Name="SDP-S" Description="Serial Only SDP using a USB to Serial Converter. This provides a subset of the SDP-B capabilites" />
+                <SavedState>
+                  <Board Id="SDPS" Version="1.2023.43100" xmlns="">
+                    <Parameter Id="sdp-con-a" Value="0" Type="System.Numerics.BigInteger" />
+                    <Parameter Id="gpio-0-direction-sdp-con-a" Value="false" Type="System.Boolean" />
+                    <Parameter Id="gpio-0-data-sdp-con-a" Value="false" Type="System.Boolean" />
+                    <Parameter Id="gpio-1-direction-sdp-con-a" Value="false" Type="System.Boolean" />
+                    <Parameter Id="gpio-1-data-sdp-con-a" Value="false" Type="System.Boolean" />
+                    <Parameter Id="gpio-2-direction-sdp-con-a" Value="false" Type="System.Boolean" />
+                    <Parameter Id="gpio-2-data-sdp-con-a" Value="false" Type="System.Boolean" />
+                    <Parameter Id="gpio-3-direction-sdp-con-a" Value="false" Type="System.Boolean" />
+                    <Parameter Id="gpio-3-data-sdp-con-a" Value="false" Type="System.Boolean" />
+                    <Parameter Id="gpio-4-direction-sdp-con-a" Value="false" Type="System.Boolean" />
+                    <Parameter Id="gpio-4-data-sdp-con-a" Value="false" Type="System.Boolean" />
+                    <Parameter Id="gpio-5-direction-sdp-con-a" Value="false" Type="System.Boolean" />
+                    <Parameter Id="gpio-5-data-sdp-con-a" Value="false" Type="System.Boolean" />
+                    <Parameter Id="gpio-6-direction-sdp-con-a" Value="false" Type="System.Boolean" />
+                    <Parameter Id="gpio-6-data-sdp-con-a" Value="false" Type="System.Boolean" />
+                    <Parameter Id="gpio-7-direction-sdp-con-a" Value="false" Type="System.Boolean" />
+                    <Parameter Id="gpio-7-data-sdp-con-a" Value="false" Type="System.Boolean" />
+                    <Parameter Id="virtual-parameter-wasdeserialized" Value="true" Type="System.Boolean" />
+                    <Chips />
+                    <StateControls AllowStatePolling="true" />
+                  </Board>
+                </SavedState>
+              </Component>
+              <Component ComponentId="ADF4371Board" Name="ADF4371 Board">
+                <Info Name="ADF4371 Board" Description="ADF4371 Board" />
+                <SavedState>
+                  <Board Id="ADF4371Board" Version="1.2022.3300" xmlns="">
+                    <Parameter Id="virtual-parameter-wasdeserialized" Value="true" Type="System.Boolean" />
+                    <Chips>
+                      <Chip Id="Chip.ADF4371.ADF4371" InstanceName="ADF4371" Version="1.2022.24300">
+                        <Parameter Id="virtual-parameter-RefFreq" Value="100000000" Type="System.Decimal" />
+                        <Parameter Id="virtual-parameter-PFDFreq" Value="100000000" Type="System.Decimal" />
+                        <Parameter Id="virtual-parameter-RFoutFreq16" Value="0" Type="System.Decimal" />
+                        <Parameter Id="virtual-parameter-RFoutFreq32" Value="33200000000.0" Type="System.Decimal" />
+                        <Parameter Id="virtual-parameter-RFoutFreq8" Value="8300000000.0" Type="System.Decimal" />
+                        <Parameter Id="virtual-parameter-AuxRFoutFreq8" Value="0" Type="System.Decimal" />
+                        <Parameter Id="virtual-parameter-VCOfreq" Value="8300000000.0" Type="System.Decimal" />
+                        <Parameter Id="virtual-parameter-N" Value="83" Type="System.Decimal" />
+                        <Parameter Id="virtual-parameter-PFDFreqFlag" Value="false" Type="System.Boolean" />
+                        <Parameter Id="virtual-parameter-TRB_Visibility" Value="false" Type="System.Boolean" />
+                        <Parameter Id="virtual-parameter-Mode" Value="1" Type="System.Decimal" />
+                        <Parameter Id="virtual-parameter-Box" Value="1" Type="System.Decimal" />
+                        <Parameter Id="virtual-parameter-ADCAutoEn" Value="1" Type="System.Decimal" />
+                        <Parameter Id="virtual-parameter-TotCalTime" Value="3321.28" Type="System.Double" />
+                        <Parameter Id="virtual-parameter-ResyncTimeout" Value="1" Type="System.Decimal" />
+                        <Parameter Id="virtual-parameter-R10Data" Value="83" Type="System.Int32" />
+                        <Parameter Id="virtual-parameter-TempDegC" Value="60.5" Type="System.Decimal" />
+                        <Parameter Id="virtual-parameter-LockStatusCheck" Value="1" Type="System.Decimal" />
+                        <Parameter Id="virtual-parameter-VCOstartfreq" Value="5000000000" Type="System.Decimal" />
+                        <Parameter Id="virtual-parameter-VCOstopfreq" Value="5100000000" Type="System.Decimal" />
+                        <Parameter Id="virtual-parameter-SweepTimeDelay" Value="100" Type="System.Int32" />
+                        <Parameter Id="virtual-parameter-SweepCurrFreq" Value="5000000000" Type="System.Decimal" />
+                        <Parameter Id="virtual-parameter-SweepFreqSpacing" Value="1000000" Type="System.Decimal" />
+                        <Parameter Id="virtual-parameter-BypassStartFreq" Value="5000000000" Type="System.Decimal" />
+                        <Parameter Id="virtual-parameter-BypassStopFreq" Value="5100000000" Type="System.Decimal" />
+                        <Parameter Id="virtual-parameter-BypassStepSize" Value="1000000" Type="System.Decimal" />
+                        <Parameter Id="virtual-parameter-BypassSteps" Value="50" Type="System.Decimal" />
+                        <Parameter Id="virtual-parameter-Core" Value="1" Type="System.Decimal" />
+                        <Parameter Id="virtual-parameter-AutoReadback" Value="0" Type="System.Decimal" />
+                        <Parameter Id="virtual-parameter-CalCurrIt" Value="0" Type="System.Int32" />
+                        <Parameter Id="table-data" Value="" Type="System.String" />
+                        <Parameter Id="virtual-parameter-VCOFreqTable" Value="5000000000" Type="System.Decimal" />
+                        <Parameter Id="virtual-parameter-VCOCoreTable" Value="2" Type="System.Decimal" />
+                        <Parameter Id="virtual-parameter-VCOBandTable" Value="130" Type="System.Decimal" />
+                        <Parameter Id="virtual-parameter-VCOBiasTable" Value="5" Type="System.Decimal" />
+                        <Parameter Id="virtual-parameter-ColumnIndex" Value="0" Type="System.Int32" />
+                        <Parameter Id="virtual-parameter-ColumnData" Value="0" Type="System.Decimal" />
+                        <Parameter Id="virtual-parameter-NumbOfBands" Value="2" Type="System.Decimal" />
+                        <Parameter Id="virtual-parameter-FreqCountCurrIt" Value="0" Type="System.Int32" />
+                        <Parameter Id="virtual-parameter-wasdeserialized" Value="true" Type="System.Boolean" />
+                        <RegisterMap UniqueId="0.RegMap1" Address="0" Count="72">
+                          <Register Address="0" Value="18" />
+                          <Register Address="1" Value="0" />
+                          <Register Address="3" Value="0" />
+                          <Register Address="4" Value="0" />
+                          <Register Address="5" Value="0" />
+                          <Register Address="6" Value="0A" />
+                          <Register Address="C" Value="0" />
+                          <Register Address="D" Value="0" />
+                          <Register Address="10" Value="53" />
+                          <Register Address="11" Value="0" />
+                          <Register Address="12" Value="40" />
+                          <Register Address="14" Value="0" />
+                          <Register Address="15" Value="0" />
+                          <Register Address="16" Value="0" />
+                          <Register Address="17" Value="0" />
+                          <Register Address="18" Value="0" />
+                          <Register Address="19" Value="1" />
+                          <Register Address="1A" Value="0" />
+                          <Register Address="1B" Value="0" />
+                          <Register Address="1C" Value="0" />
+                          <Register Address="1D" Value="0" />
+                          <Register Address="1E" Value="48" />
+                          <Register Address="1F" Value="1" />
+                          <Register Address="20" Value="14" />
+                          <Register Address="21" Value="0" />
+                          <Register Address="22" Value="0" />
+                          <Register Address="23" Value="0" />
+                          <Register Address="24" Value="080" />
+                          <Register Address="25" Value="17" />
+                          <Register Address="26" Value="16" />
+                          <Register Address="27" Value="0E5" />
+                          <Register Address="28" Value="083" />
+                          <Register Address="2A" Value="0" />
+                          <Register Address="2B" Value="1" />
+                          <Register Address="2C" Value="44" />
+                          <Register Address="2D" Value="11" />
+                          <Register Address="2E" Value="10" />
+                          <Register Address="2F" Value="092" />
+                          <Register Address="30" Value="2A" />
+                          <Register Address="31" Value="2" />
+                          <Register Address="32" Value="08" />
+                          <Register Address="33" Value="0A2" />
+                          <Register Address="34" Value="085" />
+                          <Register Address="35" Value="0FA" />
+                          <Register Address="36" Value="30" />
+                          <Register Address="37" Value="0" />
+                          <Register Address="38" Value="0" />
+                          <Register Address="39" Value="7" />
+                          <Register Address="3A" Value="55" />
+                          <Register Address="3D" Value="0" />
+                          <Register Address="3E" Value="0C" />
+                          <Register Address="3F" Value="080" />
+                          <Register Address="40" Value="50" />
+                          <Register Address="41" Value="28" />
+                          <Register Address="42" Value="0" />
+                          <Register Address="43" Value="0" />
+                          <Register Address="44" Value="0" />
+                          <Register Address="45" Value="0" />
+                          <Register Address="46" Value="0" />
+                          <Register Address="47" Value="0C0" />
+                          <Register Address="52" Value="0F4" />
+                          <Register Address="6C" Value="0" />
+                          <Register Address="6E" Value="090" />
+                          <Register Address="6F" Value="0" />
+                          <Register Address="70" Value="0" />
+                          <Register Address="71" Value="1" />
+                          <Register Address="72" Value="32" />
+                          <Register Address="73" Value="0" />
+                          <Register Address="79" Value="0" />
+                          <Register Address="7A" Value="0" />
+                          <Register Address="7B" Value="0" />
+                          <Register Address="7C" Value="1" />
+                        </RegisterMap>
+                        <Children>
+                          <SubDevice Name="Sweep and Hop" />
+                        </Children>
+                      </Chip>
+                    </Chips>
+                    <StateControls AllowStatePolling="true" />
+                  </Board>
+                </SavedState>
+              </Component>
+            </Components>
+            <Connections>
+              <Connection>
+                <Source ComponentName="SDP-S" ConnectorName="A" />
+                <Target ComponentName="ADF4371 Board" ConnectorName="ConnectorA" />
+              </Connection>
+            </Connections>
+          </Subsystem>
+        </Subsystems>
+      </System>
+    </Element>
+    <Element Id="Controllers">
+      <Controller Name="SDP-S" HardwareID="456&amp;B660&amp;98435" Path="Root::System.Subsystem_1.SDP-S" xmlns="" />
+    </Element>
+    <Element Id="Macros">
+      <MacroManager xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="AnalogDevices/Csa/Evaluation/UI/Models/Sessions/MacroManagerSessionElement.Schema.xsd">
+        <Macros />
+      </MacroManager>
+    </Element>
+    <Element Id="Views" ActiveWorkspaceElement="Root::System.Subsystem_1.ADF4371 Board.ADF4371" WorkspaceElements="Root::,Root::System,Root::System.Subsystem_1.ADF4371 Board,Root::System.Subsystem_1.ADF4371 Board.ADF4371" />
+    <Element Id="VectorGenerator">
+      <VectorGenerator xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Name="VectorGenerator" xmlns="AnalogDevices/Csa/VectorGenerator/Sessions/VectorGeneratorSessionElement.Schema.xsd">
+        <Vectors />
+      </VectorGenerator>
+    </Element>
+  </Elements>
+</Session>
