@@ -5,6 +5,8 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         RFSoCBeamformerUIFigure        matlab.ui.Figure
         GridLayout                     matlab.ui.container.GridLayout
         LeftPanel                      matlab.ui.container.Panel
+        dataChanEditField              matlab.ui.control.NumericEditField
+        dataChanEditFieldLabel         matlab.ui.control.Label
         EVMCheckBox                    matlab.ui.control.CheckBox
         AdaptiveIQcompCheckBox         matlab.ui.control.CheckBox
         CouplingcompCheckBox           matlab.ui.control.CheckBox
@@ -134,8 +136,6 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         MatlabPatternCheckBox          matlab.ui.control.CheckBox
         c2CheckBox                     matlab.ui.control.CheckBox
         c1CheckBox                     matlab.ui.control.CheckBox
-        dataChanEditField              matlab.ui.control.NumericEditField
-        dataChanEditFieldLabel         matlab.ui.control.Label
         CutoffsetEditField             matlab.ui.control.NumericEditField
         CutoffsetEditFieldLabel        matlab.ui.control.Label
         GetPatternButton               matlab.ui.control.StateButton
@@ -2906,20 +2906,6 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.CutoffsetEditField.Position = [131 305 38 22];
             app.CutoffsetEditField.Value = 500;
 
-            % Create dataChanEditFieldLabel
-            app.dataChanEditFieldLabel = uilabel(app.DebugTab);
-            app.dataChanEditFieldLabel.HorizontalAlignment = 'right';
-            app.dataChanEditFieldLabel.Position = [23 332 58 22];
-            app.dataChanEditFieldLabel.Text = 'dataChan';
-
-            % Create dataChanEditField
-            app.dataChanEditField = uieditfield(app.DebugTab, 'numeric');
-            app.dataChanEditField.Limits = [1024 131072];
-            app.dataChanEditField.ValueDisplayFormat = '%.0f';
-            app.dataChanEditField.ValueChangedFcn = createCallbackFcn(app, @dataChanEditFieldValueChanged, true);
-            app.dataChanEditField.Position = [95 332 74 22];
-            app.dataChanEditField.Value = 8192;
-
             % Create c1CheckBox
             app.c1CheckBox = uicheckbox(app.DebugTab);
             app.c1CheckBox.ValueChangedFcn = createCallbackFcn(app, @c1CheckBoxValueChanged, true);
@@ -3295,37 +3281,51 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.MirrorCheckBox_3 = uicheckbox(app.LeftPanel);
             app.MirrorCheckBox_3.ValueChangedFcn = createCallbackFcn(app, @MirrorCheckBox_3ValueChanged, true);
             app.MirrorCheckBox_3.Text = 'Mirror';
-            app.MirrorCheckBox_3.Position = [71 3 52 22];
+            app.MirrorCheckBox_3.Position = [14 159 52 22];
 
             % Create IQCompCheckBox
             app.IQCompCheckBox = uicheckbox(app.LeftPanel);
             app.IQCompCheckBox.ValueChangedFcn = createCallbackFcn(app, @IQCompCheckBoxValueChanged, true);
             app.IQCompCheckBox.Text = 'IQ Comp';
-            app.IQCompCheckBox.Position = [72 58 69 22];
+            app.IQCompCheckBox.Position = [133 23 69 22];
 
             % Create PhasecompCheckBox
             app.PhasecompCheckBox = uicheckbox(app.LeftPanel);
             app.PhasecompCheckBox.ValueChangedFcn = createCallbackFcn(app, @PhasecompCheckBoxValueChanged, true);
             app.PhasecompCheckBox.Text = 'Phase comp';
-            app.PhasecompCheckBox.Position = [199 37 88 22];
+            app.PhasecompCheckBox.Position = [112 3 88 22];
 
             % Create CouplingcompCheckBox
             app.CouplingcompCheckBox = uicheckbox(app.LeftPanel);
             app.CouplingcompCheckBox.ValueChangedFcn = createCallbackFcn(app, @CouplingcompCheckBoxValueChanged, true);
             app.CouplingcompCheckBox.Text = 'Coupling comp';
-            app.CouplingcompCheckBox.Position = [72 19 101 22];
+            app.CouplingcompCheckBox.Position = [8 2 101 22];
 
             % Create AdaptiveIQcompCheckBox
             app.AdaptiveIQcompCheckBox = uicheckbox(app.LeftPanel);
             app.AdaptiveIQcompCheckBox.ValueChangedFcn = createCallbackFcn(app, @AdaptiveIQcompCheckBoxValueChanged, true);
             app.AdaptiveIQcompCheckBox.Text = 'Adaptive IQ comp';
-            app.AdaptiveIQcompCheckBox.Position = [71 38 117 22];
+            app.AdaptiveIQcompCheckBox.Position = [8 23 117 22];
 
             % Create EVMCheckBox
             app.EVMCheckBox = uicheckbox(app.LeftPanel);
             app.EVMCheckBox.ValueChangedFcn = createCallbackFcn(app, @EVMCheckBoxValueChanged, true);
             app.EVMCheckBox.Text = 'EVM';
             app.EVMCheckBox.Position = [137 180 47 22];
+
+            % Create dataChanEditFieldLabel
+            app.dataChanEditFieldLabel = uilabel(app.LeftPanel);
+            app.dataChanEditFieldLabel.HorizontalAlignment = 'right';
+            app.dataChanEditFieldLabel.Position = [10 50 58 22];
+            app.dataChanEditFieldLabel.Text = 'dataChan';
+
+            % Create dataChanEditField
+            app.dataChanEditField = uieditfield(app.LeftPanel, 'numeric');
+            app.dataChanEditField.Limits = [1024 131072];
+            app.dataChanEditField.ValueDisplayFormat = '%.0f';
+            app.dataChanEditField.ValueChangedFcn = createCallbackFcn(app, @dataChanEditFieldValueChanged, true);
+            app.dataChanEditField.Position = [82 50 74 22];
+            app.dataChanEditField.Value = 8192;
 
             % Create RightPanel
             app.RightPanel = uipanel(app.GridLayout);
