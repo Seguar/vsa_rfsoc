@@ -151,6 +151,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         DevicecontrolDropDown          matlab.ui.control.DropDown
         DevicecontrolDropDownLabel     matlab.ui.control.Label
         MeasTab                        matlab.ui.container.Tab
+        vsaTestButton                  matlab.ui.control.Button
         leakTestButton                 matlab.ui.control.Button
         powStepEditField               matlab.ui.control.NumericEditField
         powStepEditFieldLabel          matlab.ui.control.Label
@@ -272,6 +273,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         %%
         txpowTest = 0;
         leakTest = 0;
+        vsaTest = 0;
         %% Flags
         reset_req = 1;
         part_reset_req = 1;
@@ -1087,6 +1089,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                     commandsHandler(app, ['dgain ' ...
                         strjoin(arrayfun(@num2str, app.dacGain, 'UniformOutput', false), '/');]);
                 end
+
                 %% Mmwave coupling with TX scanning
                 while app.coupTest
                     dgain_bac = app.dacGain;
@@ -1204,7 +1207,103 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                     app.dacGain = dgain_bac;
                     commandsHandler(app, ['dphase ' strjoin(arrayfun(@num2str, app.dphase*100, 'UniformOutput', false), '/');]);
                     commandsHandler(app, ['dgain ' strjoin(arrayfun(@num2str, app.dacGain, 'UniformOutput', false), '/');]);
+                    adac = guiXline(adac, app.UIAxes, dacmain, 0, 'left');
+                    adac2 = guiXline(adac2, app.UIAxes2, dacmain, 0, 'left');                    
                 end
+                %% Mmwave TX scanning from VSA
+                while app.vsaTest
+                    dgain_bac = app.dacGain;
+                    dphase_bac = app.dphaseCorr;
+                    results = struct();
+                    load w_mat_cal
+                    app.dphaseCoup = round(w_mat_phase, 2);
+                    % app.dphaseCoup = -(round(w_mat_phase, 2));
+
+                    app.dgainCoup = round(w_mat_gain);
+                    curDate = char(datetime('now','Format','yyyy-MM-dd_HH-mm-ss'));
+                    if app.coupCorr
+                        savePathCoupName = 'scan_w_';
+                    else
+                        savePathCoupName = 'scan_wo_';
+                    end
+                    savePathCoupFull = ['.\measurements\' savePathCoupName curDate];
+                    mkdir([pwd savePathCoupFull])
+
+                    for pos = 1:length(app.scan_axis)
+
+                        app.dacAngle = app.scan_axis(pos);
+                        adac = guiXline(adac, app.UIAxes, dacmain, app.dacAngle, 'left');
+                        adac2 = guiXline(adac2, app.UIAxes2, dacmain, app.dacAngle, 'left');
+                        disp(app.dacAngle)
+                        beamforming = phased.SteeringVector('SensorArray',app.ula);
+                        weight = beamforming(app.fcAnt, app.dacAngle);
+                        app.dphase = angle(weight).';
+                        app.dphase = round(rad2deg(app.dphase), 2);
+
+                        % app.dphase(indices) = mod(app.dphase(indices), 180);
+
+
+
+                        if app.coupCorr
+                            app.dacGain = app.dgainCoup(:,pos);
+                            app.dphase = app.dphaseCorr + app.dphaseCoup(:,pos).'*app.coupCorr;
+                        else
+                            app.dacGain = dgain_bac;
+                            % app.dacGain = [75, 100, 133, 100];
+                            app.dphase = app.dphase + app.dphaseCorr + app.dphaseCoup(:,pos).'*app.coupCorr;
+                        end
+
+
+                        app.dphase = mod(app.dphase + 180, 360) - 180;
+                        % app.dacGain = min(app.dacGain.*app.dacActiveCh + app.dgainCoup(:,pos).'*app.coupCorr, 199);
+
+                        commandsHandler(app, ['dphase ' strjoin(arrayfun(@num2str, app.dphase*100, 'UniformOutput', false), '/');]);
+                        commandsHandler(app, ['dgain ' strjoin(arrayfun(@num2str, app.dacGain, 'UniformOutput', false), '/');]);
+                        writeline(app.tcp_client, app.commands);
+                        app.commands = [];
+                        position_data = struct();
+                        position_data.angle = app.dacAngle;
+                        position_data.phase = app.dphase;
+                        position_data.gain = app.dacGain;
+
+
+                        % Initialize the EVM measurements storage for each channel
+                        evm_meas_chan = zeros(4, app.avg_factor);
+                        pow_meas_chan = zeros(4, app.avg_factor);
+                        evm_sum       = zeros(1, app.avg_factor);
+                        pow_sum       = zeros(1, app.avg_factor);
+
+                        for cnt = 1:app.avg_factor
+                            if cnt > 1
+                                writeline(app.tcp_client, 'alive 1');
+                            end
+                            rawData = 0;
+                            rawData = tcpDataRec(app.tcp_client, (app.dataChan * 8), 8);
+                            fprintf(app.pcvsa, sprintf(':TRACe4:DATA:TABLe? "%s"', "Ch1EVM"));
+                            evm_meas_sum = db(str2double(fscanf(app.pcvsa))/100);
+                            fprintf(app.pcvsa, sprintf(':TRACe4:DATA:TABLe? "%s"', "Power"));
+                            pow_meas_sum = str2double(fscanf(app.pcvsa));
+                            evm_sum(cnt) = evm_meas_sum;
+                            pow_sum(cnt) = pow_meas_sum;
+
+                            position_data.cnt(cnt).chSum_evm = evm_sum(cnt);
+
+                            position_data.cnt(cnt).chSum_pow = pow_sum(cnt);
+
+                        end
+                        save([savePathCoupFull '\' num2str(app.dacAngle) '.mat'], 'saveFile')
+                        results.position(pos) = position_data;
+
+                    end
+                    app.vsaTest = 0;
+                    save([savePathCoupFull '\scan_results.mat'], 'results');
+                    app.dphase = dphase_bac;
+                    app.dacGain = dgain_bac;
+                    commandsHandler(app, ['dphase ' strjoin(arrayfun(@num2str, app.dphase*100, 'UniformOutput', false), '/');]);
+                    commandsHandler(app, ['dgain ' strjoin(arrayfun(@num2str, app.dacGain, 'UniformOutput', false), '/');]);
+                    adac = guiXline(adac, app.UIAxes, dacmain, 0, 'left');
+                    adac2 = guiXline(adac2, app.UIAxes2, dacmain, 0, 'left');                        
+                end                
                 %% Mmwave TX power test
                 while app.txpowTest
 
@@ -2319,6 +2418,11 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.leakTest = 1;
         end
 
+        % Button pushed function: vsaTestButton
+        function vsaTestButtonPushed(app, event)
+            app.vsaTest = 1';
+        end
+
         % Changes arrangement of the app based on UIFigure width
         function updateAppLayout(app, event)
             currentFigureWidth = app.RFSoCBeamformerUIFigure.Position(3);
@@ -3217,6 +3321,12 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.leakTestButton.ButtonPushedFcn = createCallbackFcn(app, @leakTestButtonPushed, true);
             app.leakTestButton.Position = [36 290 100 23];
             app.leakTestButton.Text = 'leakTest';
+
+            % Create vsaTestButton
+            app.vsaTestButton = uibutton(app.MeasTab, 'push');
+            app.vsaTestButton.ButtonPushedFcn = createCallbackFcn(app, @vsaTestButtonPushed, true);
+            app.vsaTestButton.Position = [14 17 100 23];
+            app.vsaTestButton.Text = 'vsaTest';
 
             % Create AvgSpinnerLabel
             app.AvgSpinnerLabel = uilabel(app.LeftPanel);
