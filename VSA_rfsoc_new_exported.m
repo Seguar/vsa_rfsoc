@@ -24,6 +24,8 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         AvgSpinnerLabel                matlab.ui.control.Label
         TabGroup                       matlab.ui.container.TabGroup
         MainTab                        matlab.ui.container.Tab
+        RFSOCBFmodeListBox             matlab.ui.control.ListBox
+        RFSOCBFmodeListBoxLabel        matlab.ui.control.Label
         TXLabel                        matlab.ui.control.Label
         RXLabel                        matlab.ui.control.Label
         DACBFmodeListBox               matlab.ui.control.ListBox
@@ -190,7 +192,11 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
 
         dataChan = 2^13;
         scan_res = 1;
+
         debug = 0;
+        debugPrintEvery = 10;     % Print compact timing every N frames when debug is enabled.
+        debugFrameCounter = 0;    % Internal debug counter.
+
         plotUpd = 1;
         MatlabPattern = 0;
         avg_factor = 1;
@@ -302,6 +308,10 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
 
         dacBF = 'Off';
         dacBFon = 0;
+    
+        rfsocBF = 'Off';
+        notebookDacBF = 0;
+
         dacTestArray;
         dacFc = 0;
         dacFe = 50;
@@ -347,7 +357,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         evm_data
 
         %% Part reset vars
-        p_manual_mean, yspec_mean, plot_handle, tcp_client
+        p_manual_mean, yspec_mean, plot_handle, plot_handle2, tcp_client
         %% RFSoC TCP streaming
         streamBurstLength = 8;       % Normal mode: request this many frames per command.
         streamFramesPending = 0;     % Frames already requested from the RFSoC and not yet read.
@@ -395,7 +405,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.ResetButton.Text = 'Reseting...';
             app.ResetButton.BackgroundColor = 'r';
             drawnow%!!!!
-            [app.data_v, app.setup_v, app.meas_v] = vsaDdc(0, app.fsRfsoc, app.fsRfsoc, app.dataChan, 4);
+Jvy            [app.data_v, app.setup_v, app.meas_v] = vsaDdc(0, app.fsRfsoc, app.fsRfsoc, app.dataChan, 4);
             app.pcvsa = vsaSetup(app.setupFile);
             commandsHandler(app, ['da ' num2str(app.da)]);
             commandsHandler(app, ['dataStream ' num2str(app.dataStream)]);
@@ -575,11 +585,19 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             adac2 = [];
             saveFile = [];
             evm_data = 0;
+            debugTxToRxMs = NaN;
+            debugPlotMs = NaN;
+            debugPreTxMs = NaN;
+            debugTxMs = NaN;
+            debugFullMs = NaN;
+            app.debugFrameCounter = 0;
             app.commands = ['fc ' num2str(app.fc/1e6) '/' num2str(app.nyquistZone) '/' ...
                 num2str(app.fc_d0/1e6) '/' num2str(app.nyquistZone_d0) '/' ...
                 num2str(app.fc_d1/1e6) '/' num2str(app.nyquistZone_d1) ...
                 '# dataChan ' num2str(app.dataChan*8)];
             app.correct_filter = zeros(app.sizeL, 4);
+            full_time = toc;
+            plot_time = 0;
 
 
             warning('off','all')
@@ -590,10 +608,11 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                     partReset(app);
                 end
                 if app.debug
-                    disp(['tx to rx time ' num2str((toc - full_time)*1000) ' ms'])
-                    disp('New data')
+                    app.debugFrameCounter = app.debugFrameCounter + 1;
+                    debugTxToRxMs = (toc - full_time)*1000;
                     tic
                 else 
+                    debugTxToRxMs = NaN;
                     full_time = 0;
                 end
                 if app.dataStream
@@ -664,8 +683,11 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                     app.UIAxes.Title.String = (['Direction of Arrival:' newline  'Estimated Angles = ' num2str(estimated_angle) newline 'DAC Angles = ' num2str(app.dacAngle) ' EVM = ' num2str(app.evm_data)]);
 
                     set(app.plot_handle, 'YData', (yspec_mean_vec/max(yspec_mean_vec)), 'LineWidth', 4.5);
-                    plot(app.UIAxes2, app.scan_axis,p_manual_mean_db, 'LineWidth', 4.5);
-                    % Xlines
+                    if isempty(app.plot_handle2) || ~isvalid(app.plot_handle2)
+                        app.plot_handle2 = plot(app.UIAxes2, app.scan_axis, p_manual_mean_db, 'LineWidth', 4.5);
+                    else
+                        set(app.plot_handle2, 'YData', p_manual_mean_db);
+                    end                    % Xlines
                     estimated_angle = [estimated_angle NaN NaN]; % To prevent errors in xlines indexing
                     am = guiXline(am, app.UIAxes, main, estimated_angle(1), 'right');
                     am2 = guiXline(am2, app.UIAxes2, main, estimated_angle(1), 'right');
@@ -703,9 +725,10 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                     end
                     if app.debug
                         plot_time = toc;
-                        disp(['plot time ' num2str((plot_time - vsa_time)*1000) ' ms'])
+                        debugPlotMs = (plot_time - vsa_time)*1000;
                     else
                         plot_time = 0;
+                        debugPlotMs = NaN;
                     end
                 end
                 %% Raw Data save
@@ -1477,7 +1500,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                 end
 
                 %% DAC BF
-                if app.dacBFon
+                if app.dacBFon && ~app.notebookDacBF
                     switch app.dacBF
                         case 'Random'
                             app.dacAngle = randi([-app.scan_bw/2,app.scan_bw/2],1);
@@ -1512,17 +1535,20 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                 %% TCP/IP tx
                 if app.debug
                     before_tx_time = toc;
-                    disp(['before tx time ' num2str((before_tx_time - plot_time)*1000) ' ms'])
+                    debugPreTxMs = (before_tx_time - plot_time)*1000;
                 end
                 sendRfsocRequest(app);
                 if app.debug
                     full_time = toc;
-                    disp(['tx time ' num2str((full_time - before_tx_time)*1000) ' ms'])
-                    disp(['queued frames ' num2str(app.streamFramesPending)])
-                    disp(['full time ' num2str((full_time)*1000) ' ms'])
-                    disp('--------------------------------')
+                    debugTxMs = (full_time - before_tx_time)*1000;
+                    debugFullMs = full_time*1000;
+                    if mod(app.debugFrameCounter, app.debugPrintEvery) == 0
+                        fprintf(['frame=%d txrx=%.2fms plot=%.2fms pretx=%.2fms ' ...
+                                 'tx=%.2fms pending=%d total=%.2fms\n'], ...
+                            app.debugFrameCounter, debugTxToRxMs, debugPlotMs, ...
+                            debugPreTxMs, debugTxMs, app.streamFramesPending, debugFullMs);
+                    end
                 end
-                %                 end
             end
         end
 
@@ -2142,7 +2168,11 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                     commandsHandler(app, ['aiqphase ' strjoin(arrayfun(@num2str, app.a_iq_phase*100, 'UniformOutput', false), '/');]);
                 case "DAC phase corr"
                     app.dphaseCorr(1) = app.Ch1Spinner.Value;
-                    commandsHandler(app, ['dphase ' strjoin(arrayfun(@num2str, app.dphaseCorr*100, 'UniformOutput', false), '/');]);
+                    if app.notebookDacBF
+                        commandsHandler(app, ['dacbfcorr ' strjoin(arrayfun(@num2str, app.dphaseCorr*100, 'UniformOutput', false), '/')]);
+                    else
+                        commandsHandler(app, ['dphase ' strjoin(arrayfun(@num2str, app.dphaseCorr*100, 'UniformOutput', false), '/');]);
+                    end            
             end
         end
 
@@ -2170,7 +2200,11 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                     commandsHandler(app, ['aiqphase ' strjoin(arrayfun(@num2str, app.a_iq_phase*100, 'UniformOutput', false), '/');]);
                 case "DAC phase corr"
                     app.dphaseCorr(2) = app.Ch2Spinner.Value;
-                    commandsHandler(app, ['dphase ' strjoin(arrayfun(@num2str, app.dphaseCorr*100, 'UniformOutput', false), '/');]);
+                    if app.notebookDacBF
+                        commandsHandler(app, ['dacbfcorr ' strjoin(arrayfun(@num2str, app.dphaseCorr*100, 'UniformOutput', false), '/')]);
+                    else
+                        commandsHandler(app, ['dphase ' strjoin(arrayfun(@num2str, app.dphaseCorr*100, 'UniformOutput', false), '/');]);
+                    end
             end
         end
 
@@ -2198,7 +2232,11 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                     commandsHandler(app, ['aiqphase ' strjoin(arrayfun(@num2str, app.a_iq_phase*100, 'UniformOutput', false), '/');]);
                 case "DAC phase corr"
                     app.dphaseCorr(3) = app.Ch3Spinner.Value;
-                    commandsHandler(app, ['dphase ' strjoin(arrayfun(@num2str, app.dphaseCorr*100, 'UniformOutput', false), '/');]);
+                    if app.notebookDacBF
+                        commandsHandler(app, ['dacbfcorr ' strjoin(arrayfun(@num2str, app.dphaseCorr*100, 'UniformOutput', false), '/')]);
+                    else
+                        commandsHandler(app, ['dphase ' strjoin(arrayfun(@num2str, app.dphaseCorr*100, 'UniformOutput', false), '/');]);
+                    end
             end
         end
 
@@ -2226,7 +2264,11 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
                     commandsHandler(app, ['aiqphase ' strjoin(arrayfun(@num2str, app.a_iq_phase*100, 'UniformOutput', false), '/');]);
                 case "DAC phase corr"
                     app.dphaseCorr(4) = app.Ch4Spinner.Value;
-                    commandsHandler(app, ['dphase ' strjoin(arrayfun(@num2str, app.dphaseCorr*100, 'UniformOutput', false), '/');]);
+                    if app.notebookDacBF
+                        commandsHandler(app, ['dacbfcorr ' strjoin(arrayfun(@num2str, app.dphaseCorr*100, 'UniformOutput', false), '/')]);
+                    else
+                        commandsHandler(app, ['dphase ' strjoin(arrayfun(@num2str, app.dphaseCorr*100, 'UniformOutput', false), '/');]);
+                    end
             end
         end
 
@@ -2491,6 +2533,38 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.vsaTest = 1';
         end
 
+        % Value changed function: RFSOCBFmodeListBox
+        function RFSOCBFmodeListBoxValueChanged(app, event)
+            app.rfsocBF = app.RFSOCBFmodeListBox.Value;
+
+            % Notebook DAC beamforming control, same command style as SYNCDropDownValueChanged:
+            % UI value -> app state -> commandsHandler(app, '<command>').
+            switch string(app.rfsocBF)
+                case "Off"
+                    % app.dacBFon = 0;
+                    app.notebookDacBF = 0;
+                    commandsHandler(app, 'dacbf off');
+
+                case "Tracking"
+                    % app.dacBFon = 1;
+                    app.notebookDacBF = 1;
+                    commandsHandler(app, ['dacbfcorr ' strjoin(arrayfun(@num2str, app.dphaseCorr*100, 'UniformOutput', false), '/')]);
+                    commandsHandler(app, 'dacbf tracking');
+
+                case "Retracking"
+                    % app.dacBFon = 1;
+                    app.notebookDacBF = 1;
+                    commandsHandler(app, ['dacbfcorr ' strjoin(arrayfun(@num2str, app.dphaseCorr*100, 'UniformOutput', false), '/')]);
+                    commandsHandler(app, 'dacbf retracking');
+
+                otherwise
+                    % GUI / Random / Scaning / Rescaning / Tr_s / Retr_s are still MATLAB-controlled.
+                    % app.dacBFon = 1;
+                    app.notebookDacBF = 0;
+                    commandsHandler(app, 'dacbf off');
+            end
+        end
+
         % Changes arrangement of the app based on UIFigure width
         function updateAppLayout(app, event)
             currentFigureWidth = app.RFSoCBeamformerUIFigure.Position(3);
@@ -2535,7 +2609,6 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.GridLayout.RowSpacing = 0;
             app.GridLayout.Padding = [0 0 0 0];
             app.GridLayout.Scrollable = 'on';
-            app.GridLayout.BackgroundColor = [0.96078431372549 0.96078431372549 0.96078431372549];
 
             % Create LeftPanel
             app.LeftPanel = uipanel(app.GridLayout);
@@ -2546,8 +2619,6 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.ResetButton = uibutton(app.LeftPanel, 'state');
             app.ResetButton.ValueChangedFcn = createCallbackFcn(app, @ResetButtonValueChanged, true);
             app.ResetButton.Text = 'Reset';
-            app.ResetButton.BackgroundColor = [0.96078431372549 0.96078431372549 0.96078431372549];
-            app.ResetButton.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.ResetButton.Position = [200 3 100 22];
 
             % Create TabGroup
@@ -2562,7 +2633,6 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             % Create DOAresolutionEditField_3Label
             app.DOAresolutionEditField_3Label = uilabel(app.MainTab);
             app.DOAresolutionEditField_3Label.HorizontalAlignment = 'right';
-            app.DOAresolutionEditField_3Label.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.DOAresolutionEditField_3Label.Position = [23 694 58 28];
             app.DOAresolutionEditField_3Label.Text = {'DOA'; 'resolution'};
 
@@ -2570,14 +2640,12 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.DOAresolutionEditField = uieditfield(app.MainTab, 'numeric');
             app.DOAresolutionEditField.Limits = [0.0001 Inf];
             app.DOAresolutionEditField.ValueChangedFcn = createCallbackFcn(app, @DOAresolutionEditFieldValueChanged, true);
-            app.DOAresolutionEditField.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.DOAresolutionEditField.Position = [96 700 77 22];
             app.DOAresolutionEditField.Value = 1;
 
             % Create DOAtypeListBoxLabel
             app.DOAtypeListBoxLabel = uilabel(app.MainTab);
             app.DOAtypeListBoxLabel.HorizontalAlignment = 'right';
-            app.DOAtypeListBoxLabel.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.DOAtypeListBoxLabel.Position = [-9 624 79 43];
             app.DOAtypeListBoxLabel.Text = {'DOA'; 'type'};
 
@@ -2585,14 +2653,12 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.DOAtypeListBox = uilistbox(app.MainTab);
             app.DOAtypeListBox.Items = {'MVDR', 'MVDRman', 'MVDRman_corr', 'MUSIC', 'Beamscan', 'MUSICR', 'ESPRITE', 'ESPRITEBS', 'WSFR'};
             app.DOAtypeListBox.ValueChangedFcn = createCallbackFcn(app, @DOAtypeListBoxValueChanged, true);
-            app.DOAtypeListBox.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.DOAtypeListBox.Position = [74 495 113 174];
             app.DOAtypeListBox.Value = 'MVDR';
 
             % Create BFtypeListBoxLabel
             app.BFtypeListBoxLabel = uilabel(app.MainTab);
             app.BFtypeListBoxLabel.HorizontalAlignment = 'right';
-            app.BFtypeListBoxLabel.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.BFtypeListBoxLabel.Position = [-8 450 79 43];
             app.BFtypeListBoxLabel.Text = {'BF'; 'type'};
 
@@ -2600,14 +2666,12 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.BFtypeListBox = uilistbox(app.MainTab);
             app.BFtypeListBox.Items = {'Without', 'Steering', 'MVDR', 'DMR', 'PC', 'PC_corr', 'LCMV', 'RVL', 'RAB PC', 'DL MVDR', 'DL ITER MVDR', 'QCB'};
             app.BFtypeListBox.ValueChangedFcn = createCallbackFcn(app, @BFtypeListBoxValueChanged, true);
-            app.BFtypeListBox.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.BFtypeListBox.Position = [75 262 112 233];
             app.BFtypeListBox.Value = 'Steering';
 
             % Create AngleSpinnerLabel
             app.AngleSpinnerLabel = uilabel(app.MainTab);
             app.AngleSpinnerLabel.HorizontalAlignment = 'right';
-            app.AngleSpinnerLabel.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.AngleSpinnerLabel.Position = [39 216 36 22];
             app.AngleSpinnerLabel.Text = 'Angle';
 
@@ -2615,22 +2679,19 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.AngleSpinner = uispinner(app.MainTab);
             app.AngleSpinner.Limits = [-90 90];
             app.AngleSpinner.ValueChangedFcn = createCallbackFcn(app, @AngleSpinnerValueChanged, true);
-            app.AngleSpinner.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.AngleSpinner.Position = [90 216 77 22];
 
             % Create DACBFmodeListBoxLabel
             app.DACBFmodeListBoxLabel = uilabel(app.MainTab);
             app.DACBFmodeListBoxLabel.HorizontalAlignment = 'right';
-            app.DACBFmodeListBoxLabel.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.DACBFmodeListBoxLabel.Position = [10 183 54 27];
             app.DACBFmodeListBoxLabel.Text = {'DAC'; 'BF mode'};
 
             % Create DACBFmodeListBox
             app.DACBFmodeListBox = uilistbox(app.MainTab);
-            app.DACBFmodeListBox.Items = {'GUI', 'Random', 'Scaning', 'Rescaning', 'Tracking', 'Retracking', 'Tr_s', 'Retr_s', 'Off'};
+            app.DACBFmodeListBox.Items = {'GUI', 'Random', 'Scaning', 'Rescaning', 'Tracking', 'Retracking', 'Off'};
             app.DACBFmodeListBox.ValueChangedFcn = createCallbackFcn(app, @DACBFmodeListBoxValueChanged, true);
-            app.DACBFmodeListBox.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
-            app.DACBFmodeListBox.Position = [80 38 89 172];
+            app.DACBFmodeListBox.Position = [80 80 89 130];
             app.DACBFmodeListBox.Value = 'Off';
 
             % Create RXLabel
@@ -2638,7 +2699,6 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.RXLabel.WordWrap = 'on';
             app.RXLabel.FontSize = 16;
             app.RXLabel.FontWeight = 'bold';
-            app.RXLabel.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.RXLabel.Position = [94 674 25 22];
             app.RXLabel.Text = 'RX';
 
@@ -2646,9 +2706,21 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.TXLabel = uilabel(app.MainTab);
             app.TXLabel.FontSize = 16;
             app.TXLabel.FontWeight = 'bold';
-            app.TXLabel.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.TXLabel.Position = [94 238 26 22];
             app.TXLabel.Text = 'TX';
+
+            % Create RFSOCBFmodeListBoxLabel
+            app.RFSOCBFmodeListBoxLabel = uilabel(app.MainTab);
+            app.RFSOCBFmodeListBoxLabel.HorizontalAlignment = 'right';
+            app.RFSOCBFmodeListBoxLabel.Position = [9 40 54 30];
+            app.RFSOCBFmodeListBoxLabel.Text = {'RFSOC'; 'BF mode'};
+
+            % Create RFSOCBFmodeListBox
+            app.RFSOCBFmodeListBox = uilistbox(app.MainTab);
+            app.RFSOCBFmodeListBox.Items = {'Tracking', 'Retracking', 'Off'};
+            app.RFSOCBFmodeListBox.ValueChangedFcn = createCallbackFcn(app, @RFSOCBFmodeListBoxValueChanged, true);
+            app.RFSOCBFmodeListBox.Position = [79 15 89 55];
+            app.RFSOCBFmodeListBox.Value = 'Off';
 
             % Create SystemTab
             app.SystemTab = uitab(app.TabGroup);
@@ -2657,7 +2729,6 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             % Create RFSoCFcSpinnerLabel
             app.RFSoCFcSpinnerLabel = uilabel(app.SystemTab);
             app.RFSoCFcSpinnerLabel.HorizontalAlignment = 'right';
-            app.RFSoCFcSpinnerLabel.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.RFSoCFcSpinnerLabel.Position = [17 642 44 27];
             app.RFSoCFcSpinnerLabel.Text = {'RFSoC'; 'Fc'};
 
@@ -2665,14 +2736,12 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.RFSoCFcSpinner = uispinner(app.SystemTab);
             app.RFSoCFcSpinner.Limits = [1 10000];
             app.RFSoCFcSpinner.ValueChangedFcn = createCallbackFcn(app, @RFSoCFcSpinnerValueChanged, true);
-            app.RFSoCFcSpinner.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.RFSoCFcSpinner.Position = [76 647 77 22];
             app.RFSoCFcSpinner.Value = 1000;
 
             % Create RFSoCFsSpinnerLabel
             app.RFSoCFsSpinnerLabel = uilabel(app.SystemTab);
             app.RFSoCFsSpinnerLabel.HorizontalAlignment = 'right';
-            app.RFSoCFsSpinnerLabel.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.RFSoCFsSpinnerLabel.Position = [17 609 44 27];
             app.RFSoCFsSpinnerLabel.Text = {'RFSoC'; 'Fs'};
 
@@ -2681,14 +2750,12 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.RFSoCFsSpinner.Limits = [1 500];
             app.RFSoCFsSpinner.ValueDisplayFormat = '%.0f';
             app.RFSoCFsSpinner.ValueChangedFcn = createCallbackFcn(app, @RFSoCFsSpinnerValueChanged, true);
-            app.RFSoCFsSpinner.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.RFSoCFsSpinner.Position = [76 614 77 22];
             app.RFSoCFsSpinner.Value = 250;
 
             % Create MaxSignalsSpinnerLabel
             app.MaxSignalsSpinnerLabel = uilabel(app.SystemTab);
             app.MaxSignalsSpinnerLabel.HorizontalAlignment = 'right';
-            app.MaxSignalsSpinnerLabel.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.MaxSignalsSpinnerLabel.Position = [48 86 71 22];
             app.MaxSignalsSpinnerLabel.Text = 'Max Signals';
 
@@ -2697,14 +2764,12 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.MaxSignalsSpinner.Limits = [1 5];
             app.MaxSignalsSpinner.ValueDisplayFormat = '%.0f';
             app.MaxSignalsSpinner.ValueChangedFcn = createCallbackFcn(app, @MaxSignalsSpinnerValueChanged, true);
-            app.MaxSignalsSpinner.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.MaxSignalsSpinner.Position = [134 86 45 22];
             app.MaxSignalsSpinner.Value = 1;
 
             % Create SigBWSpinnerLabel
             app.SigBWSpinnerLabel = uilabel(app.SystemTab);
             app.SigBWSpinnerLabel.HorizontalAlignment = 'right';
-            app.SigBWSpinnerLabel.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.SigBWSpinnerLabel.Position = [36 576 25 28];
             app.SigBWSpinnerLabel.Text = {'Sig'; 'BW'};
 
@@ -2713,22 +2778,18 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.SigBWSpinner.Limits = [1 500];
             app.SigBWSpinner.ValueDisplayFormat = '%.0f';
             app.SigBWSpinner.ValueChangedFcn = createCallbackFcn(app, @SigBWSpinnerValueChanged, true);
-            app.SigBWSpinner.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.SigBWSpinner.Position = [76 582 77 22];
             app.SigBWSpinner.Value = 249;
 
             % Create LoadVSAsetupButton
             app.LoadVSAsetupButton = uibutton(app.SystemTab, 'push');
             app.LoadVSAsetupButton.ButtonPushedFcn = createCallbackFcn(app, @LoadVSAsetupButtonPushed, true);
-            app.LoadVSAsetupButton.BackgroundColor = [0.96078431372549 0.96078431372549 0.96078431372549];
-            app.LoadVSAsetupButton.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.LoadVSAsetupButton.Position = [114 53 102 22];
             app.LoadVSAsetupButton.Text = 'Load VSA setup';
 
             % Create ScanBWEditFieldLabel
             app.ScanBWEditFieldLabel = uilabel(app.SystemTab);
             app.ScanBWEditFieldLabel.HorizontalAlignment = 'right';
-            app.ScanBWEditFieldLabel.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.ScanBWEditFieldLabel.Position = [11 53 33 28];
             app.ScanBWEditFieldLabel.Text = {'Scan'; 'BW'};
 
@@ -2737,15 +2798,12 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.ScanBWEditField.Limits = [2 180];
             app.ScanBWEditField.RoundFractionalValues = 'on';
             app.ScanBWEditField.ValueChangedFcn = createCallbackFcn(app, @ScanBWEditFieldValueChanged, true);
-            app.ScanBWEditField.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.ScanBWEditField.Position = [59 59 44 22];
             app.ScanBWEditField.Value = 120;
 
             % Create RecalibrateADCsButton
             app.RecalibrateADCsButton = uibutton(app.SystemTab, 'push');
             app.RecalibrateADCsButton.ButtonPushedFcn = createCallbackFcn(app, @RecalibrateADCsButtonPushed, true);
-            app.RecalibrateADCsButton.BackgroundColor = [0.96078431372549 0.96078431372549 0.96078431372549];
-            app.RecalibrateADCsButton.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.RecalibrateADCsButton.Position = [67 489 100 35];
             app.RecalibrateADCsButton.Text = {'Recalibrate'; 'ADCs'};
 
@@ -2753,27 +2811,23 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.EvenNyquistZoneCheckBox = uicheckbox(app.SystemTab);
             app.EvenNyquistZoneCheckBox.ValueChangedFcn = createCallbackFcn(app, @EvenNyquistZoneCheckBoxValueChanged, true);
             app.EvenNyquistZoneCheckBox.Text = 'Even Nyquist Zone';
-            app.EvenNyquistZoneCheckBox.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.EvenNyquistZoneCheckBox.Position = [64 549 123 22];
 
             % Create ADCsLabel
             app.ADCsLabel = uilabel(app.SystemTab);
             app.ADCsLabel.FontWeight = 'bold';
-            app.ADCsLabel.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.ADCsLabel.Position = [93 667 38 22];
             app.ADCsLabel.Text = 'ADCs';
 
             % Create DACsLabel
             app.DACsLabel = uilabel(app.SystemTab);
             app.DACsLabel.FontWeight = 'bold';
-            app.DACsLabel.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.DACsLabel.Position = [93 468 38 22];
             app.DACsLabel.Text = {'DACs'; ''};
 
             % Create RFSoCFcSpinner_2Label
             app.RFSoCFcSpinner_2Label = uilabel(app.SystemTab);
             app.RFSoCFcSpinner_2Label.HorizontalAlignment = 'right';
-            app.RFSoCFcSpinner_2Label.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.RFSoCFcSpinner_2Label.Position = [42 440 44 27];
             app.RFSoCFcSpinner_2Label.Text = {'RFSoC'; 'Fc'};
 
@@ -2781,7 +2835,6 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.RFSoCFcSpinner_2 = uispinner(app.SystemTab);
             app.RFSoCFcSpinner_2.Limits = [1 10000];
             app.RFSoCFcSpinner_2.ValueChangedFcn = createCallbackFcn(app, @RFSoCFcSpinner_2ValueChanged, true);
-            app.RFSoCFcSpinner_2.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.RFSoCFcSpinner_2.Position = [101 445 77 22];
             app.RFSoCFcSpinner_2.Value = 4950;
 
@@ -2789,7 +2842,6 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.dataStreamCheckBox = uicheckbox(app.SystemTab);
             app.dataStreamCheckBox.ValueChangedFcn = createCallbackFcn(app, @dataStreamCheckBoxValueChanged, true);
             app.dataStreamCheckBox.Text = 'dataStream';
-            app.dataStreamCheckBox.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.dataStreamCheckBox.Position = [133 667 84 22];
             app.dataStreamCheckBox.Value = true;
 
@@ -2797,13 +2849,11 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.EvenNyquistZoneCheckBox_2 = uicheckbox(app.SystemTab);
             app.EvenNyquistZoneCheckBox_2.ValueChangedFcn = createCallbackFcn(app, @EvenNyquistZoneCheckBox_2ValueChanged, true);
             app.EvenNyquistZoneCheckBox_2.Text = 'Even Nyquist Zone';
-            app.EvenNyquistZoneCheckBox_2.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.EvenNyquistZoneCheckBox_2.Position = [58 407 123 22];
 
             % Create SYNCDropDownLabel
             app.SYNCDropDownLabel = uilabel(app.SystemTab);
             app.SYNCDropDownLabel.HorizontalAlignment = 'right';
-            app.SYNCDropDownLabel.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.SYNCDropDownLabel.Position = [43 695 39 22];
             app.SYNCDropDownLabel.Text = 'SYNC';
 
@@ -2812,8 +2862,6 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.SYNCDropDown.Items = {'all', 'dac', 'none'};
             app.SYNCDropDown.ItemsData = [2 1 0];
             app.SYNCDropDown.ValueChangedFcn = createCallbackFcn(app, @SYNCDropDownValueChanged, true);
-            app.SYNCDropDown.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
-            app.SYNCDropDown.BackgroundColor = [0.96078431372549 0.96078431372549 0.96078431372549];
             app.SYNCDropDown.Position = [97 695 100 22];
             app.SYNCDropDown.Value = 1;
 
@@ -2821,28 +2869,23 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.MirrorCheckBox = uicheckbox(app.SystemTab);
             app.MirrorCheckBox.ValueChangedFcn = createCallbackFcn(app, @MirrorCheckBoxValueChanged, true);
             app.MirrorCheckBox.Text = 'Mirror';
-            app.MirrorCheckBox.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.MirrorCheckBox.Position = [160 646 54 22];
 
             % Create SyncButton
             app.SyncButton = uibutton(app.SystemTab, 'push');
             app.SyncButton.ButtonPushedFcn = createCallbackFcn(app, @SyncButtonPushed, true);
-            app.SyncButton.BackgroundColor = [0.96078431372549 0.96078431372549 0.96078431372549];
-            app.SyncButton.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.SyncButton.Position = [64 199 100 22];
             app.SyncButton.Text = 'Sync';
 
             % Create AntennaLabel
             app.AntennaLabel = uilabel(app.SystemTab);
             app.AntennaLabel.FontWeight = 'bold';
-            app.AntennaLabel.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.AntennaLabel.Position = [87 177 53 22];
             app.AntennaLabel.Text = 'Antenna';
 
             % Create AntennaFcSpinnerLabel
             app.AntennaFcSpinnerLabel = uilabel(app.SystemTab);
             app.AntennaFcSpinnerLabel.HorizontalAlignment = 'right';
-            app.AntennaFcSpinnerLabel.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.AntennaFcSpinnerLabel.Position = [30 149 50 27];
             app.AntennaFcSpinnerLabel.Text = {'Antenna'; 'Fc'};
 
@@ -2851,14 +2894,12 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.AntennaFcSpinner.Limits = [1 Inf];
             app.AntennaFcSpinner.ValueDisplayFormat = '%.0f';
             app.AntennaFcSpinner.ValueChangedFcn = createCallbackFcn(app, @AntennaFcSpinnerValueChanged, true);
-            app.AntennaFcSpinner.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.AntennaFcSpinner.Position = [95 154 105 22];
             app.AntennaFcSpinner.Value = 28000;
 
             % Create DacSignalDropDownLabel
             app.DacSignalDropDownLabel = uilabel(app.SystemTab);
             app.DacSignalDropDownLabel.HorizontalAlignment = 'right';
-            app.DacSignalDropDownLabel.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.DacSignalDropDownLabel.Position = [43 372 60 22];
             app.DacSignalDropDownLabel.Text = 'DacSignal';
 
@@ -2866,48 +2907,40 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.DacSignalDropDown = uidropdown(app.SystemTab);
             app.DacSignalDropDown.Items = {'OFDM', 'CW', 'SAW', 'Chirp', 'Off'};
             app.DacSignalDropDown.ValueChangedFcn = createCallbackFcn(app, @DacSignalDropDownValueChanged, true);
-            app.DacSignalDropDown.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
-            app.DacSignalDropDown.BackgroundColor = [0.96078431372549 0.96078431372549 0.96078431372549];
             app.DacSignalDropDown.Position = [118 372 68 22];
             app.DacSignalDropDown.Value = 'Off';
 
             % Create FcEditFieldLabel
             app.FcEditFieldLabel = uilabel(app.SystemTab);
             app.FcEditFieldLabel.HorizontalAlignment = 'right';
-            app.FcEditFieldLabel.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.FcEditFieldLabel.Position = [4 338 25 22];
             app.FcEditFieldLabel.Text = 'Fc';
 
             % Create FcEditField
             app.FcEditField = uieditfield(app.SystemTab, 'numeric');
             app.FcEditField.ValueChangedFcn = createCallbackFcn(app, @FcEditFieldValueChanged, true);
-            app.FcEditField.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.FcEditField.Position = [44 338 25 22];
 
             % Create FeEditFieldLabel
             app.FeEditFieldLabel = uilabel(app.SystemTab);
             app.FeEditFieldLabel.HorizontalAlignment = 'right';
-            app.FeEditFieldLabel.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.FeEditFieldLabel.Position = [80 338 25 22];
             app.FeEditFieldLabel.Text = 'Fe';
 
             % Create FeEditField
             app.FeEditField = uieditfield(app.SystemTab, 'numeric');
             app.FeEditField.ValueChangedFcn = createCallbackFcn(app, @FeEditFieldValueChanged, true);
-            app.FeEditField.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.FeEditField.Position = [113 338 32 22];
             app.FeEditField.Value = 50;
 
             % Create SREditFieldLabel
             app.SREditFieldLabel = uilabel(app.SystemTab);
             app.SREditFieldLabel.HorizontalAlignment = 'right';
-            app.SREditFieldLabel.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.SREditFieldLabel.Position = [151 338 25 22];
             app.SREditFieldLabel.Text = 'SR';
 
             % Create SREditField
             app.SREditField = uieditfield(app.SystemTab, 'numeric');
-            app.SREditField.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.SREditField.Position = [181 338 26 22];
             app.SREditField.Value = 1;
 
@@ -2915,13 +2948,11 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.MirrorCheckBox_2 = uicheckbox(app.SystemTab);
             app.MirrorCheckBox_2.ValueChangedFcn = createCallbackFcn(app, @MirrorCheckBox_2ValueChanged, true);
             app.MirrorCheckBox_2.Text = 'Mirror';
-            app.MirrorCheckBox_2.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.MirrorCheckBox_2.Position = [152 468 54 22];
 
             % Create ChannelcontrolDropDownLabel
             app.ChannelcontrolDropDownLabel = uilabel(app.SystemTab);
             app.ChannelcontrolDropDownLabel.HorizontalAlignment = 'right';
-            app.ChannelcontrolDropDownLabel.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.ChannelcontrolDropDownLabel.Position = [11 300 50 27];
             app.ChannelcontrolDropDownLabel.Text = {'Channel'; 'control'};
 
@@ -2929,15 +2960,12 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.ChannelcontrolDropDown = uidropdown(app.SystemTab);
             app.ChannelcontrolDropDown.Items = {'DAC gain', 'DAC phase', 'DAC I phase', 'ADC gain', 'ADC phase', 'ADC I phase', 'DAC phase corr'};
             app.ChannelcontrolDropDown.ValueChangedFcn = createCallbackFcn(app, @ChannelcontrolDropDownValueChanged, true);
-            app.ChannelcontrolDropDown.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
-            app.ChannelcontrolDropDown.BackgroundColor = [0.96078431372549 0.96078431372549 0.96078431372549];
             app.ChannelcontrolDropDown.Position = [76 305 119 22];
             app.ChannelcontrolDropDown.Value = 'DAC phase';
 
             % Create Ch1SpinnerLabel
             app.Ch1SpinnerLabel = uilabel(app.SystemTab);
             app.Ch1SpinnerLabel.HorizontalAlignment = 'center';
-            app.Ch1SpinnerLabel.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.Ch1SpinnerLabel.Position = [66 286 27 22];
             app.Ch1SpinnerLabel.Text = 'Ch1';
 
@@ -2946,7 +2974,6 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.Ch1Spinner.Limits = [-179 179];
             app.Ch1Spinner.ValueChangedFcn = createCallbackFcn(app, @Ch1SpinnerValueChanged, true);
             app.Ch1Spinner.HorizontalAlignment = 'center';
-            app.Ch1Spinner.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.Ch1Spinner.Position = [51 268 63 22];
 
             % Create Ch2Spinner
@@ -2954,13 +2981,11 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.Ch2Spinner.Limits = [-179 179];
             app.Ch2Spinner.ValueChangedFcn = createCallbackFcn(app, @Ch2SpinnerValueChanged, true);
             app.Ch2Spinner.HorizontalAlignment = 'center';
-            app.Ch2Spinner.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.Ch2Spinner.Position = [117 268 63 22];
 
             % Create Ch2SpinnerLabel
             app.Ch2SpinnerLabel = uilabel(app.SystemTab);
             app.Ch2SpinnerLabel.HorizontalAlignment = 'center';
-            app.Ch2SpinnerLabel.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.Ch2SpinnerLabel.Position = [132 286 27 22];
             app.Ch2SpinnerLabel.Text = 'Ch2';
 
@@ -2969,13 +2994,11 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.Ch3Spinner.Limits = [-179 179];
             app.Ch3Spinner.ValueChangedFcn = createCallbackFcn(app, @Ch3SpinnerValueChanged, true);
             app.Ch3Spinner.HorizontalAlignment = 'center';
-            app.Ch3Spinner.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.Ch3Spinner.Position = [51 232 63 22];
 
             % Create Ch3SpinnerLabel
             app.Ch3SpinnerLabel = uilabel(app.SystemTab);
             app.Ch3SpinnerLabel.HorizontalAlignment = 'center';
-            app.Ch3SpinnerLabel.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.Ch3SpinnerLabel.Position = [66 250 27 22];
             app.Ch3SpinnerLabel.Text = 'Ch3';
 
@@ -2984,21 +3007,17 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.Ch4Spinner.Limits = [-179 179];
             app.Ch4Spinner.ValueChangedFcn = createCallbackFcn(app, @Ch4SpinnerValueChanged, true);
             app.Ch4Spinner.HorizontalAlignment = 'center';
-            app.Ch4Spinner.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.Ch4Spinner.Position = [117 232 63 22];
 
             % Create Ch4SpinnerLabel
             app.Ch4SpinnerLabel = uilabel(app.SystemTab);
             app.Ch4SpinnerLabel.HorizontalAlignment = 'center';
-            app.Ch4SpinnerLabel.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.Ch4SpinnerLabel.Position = [132 250 27 22];
             app.Ch4SpinnerLabel.Text = 'Ch4';
 
             % Create PrintphasemissmatchButton
             app.PrintphasemissmatchButton = uibutton(app.SystemTab, 'push');
             app.PrintphasemissmatchButton.ButtonPushedFcn = createCallbackFcn(app, @PrintphasemissmatchButtonPushed, true);
-            app.PrintphasemissmatchButton.BackgroundColor = [0.96078431372549 0.96078431372549 0.96078431372549];
-            app.PrintphasemissmatchButton.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.PrintphasemissmatchButton.Position = [52 528 136 22];
             app.PrintphasemissmatchButton.Text = 'Print phase missmatch';
 
@@ -3007,7 +3026,6 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.CheckBox.ValueChangedFcn = createCallbackFcn(app, @CheckBoxValueChanged, true);
             app.CheckBox.Visible = 'off';
             app.CheckBox.Text = '';
-            app.CheckBox.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.CheckBox.Position = [24 268 25 22];
             app.CheckBox.Value = true;
 
@@ -3016,7 +3034,6 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.CheckBox_2.ValueChangedFcn = createCallbackFcn(app, @CheckBoxValueChanged, true);
             app.CheckBox_2.Visible = 'off';
             app.CheckBox_2.Text = '';
-            app.CheckBox_2.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.CheckBox_2.Position = [186 270 25 22];
             app.CheckBox_2.Value = true;
 
@@ -3025,7 +3042,6 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.CheckBox_3.ValueChangedFcn = createCallbackFcn(app, @CheckBoxValueChanged, true);
             app.CheckBox_3.Visible = 'off';
             app.CheckBox_3.Text = '';
-            app.CheckBox_3.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.CheckBox_3.Position = [24 232 25 22];
             app.CheckBox_3.Value = true;
 
@@ -3034,7 +3050,6 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.CheckBox_4.ValueChangedFcn = createCallbackFcn(app, @CheckBoxValueChanged, true);
             app.CheckBox_4.Visible = 'off';
             app.CheckBox_4.Text = '';
-            app.CheckBox_4.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.CheckBox_4.Position = [185 236 25 22];
             app.CheckBox_4.Value = true;
 
@@ -3045,29 +3060,23 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             % Create Gauge
             app.Gauge = uigauge(app.mmWTab, 'semicircular');
             app.Gauge.Limits = [-90 90];
-            app.Gauge.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.Gauge.Position = [17 445 189 102];
 
             % Create StartanglecalibrationsButton
             app.StartanglecalibrationsButton = uibutton(app.mmWTab, 'push');
             app.StartanglecalibrationsButton.ButtonPushedFcn = createCallbackFcn(app, @StartanglecalibrationsButtonPushed, true);
-            app.StartanglecalibrationsButton.BackgroundColor = [0.96078431372549 0.96078431372549 0.96078431372549];
-            app.StartanglecalibrationsButton.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.StartanglecalibrationsButton.Position = [38 321 140 58];
             app.StartanglecalibrationsButton.Text = 'Start angle calibrations';
 
             % Create ArduinoGUIButton
             app.ArduinoGUIButton = uibutton(app.mmWTab, 'push');
             app.ArduinoGUIButton.ButtonPushedFcn = createCallbackFcn(app, @ArduinoGUIButtonPushed, true);
-            app.ArduinoGUIButton.BackgroundColor = [0.96078431372549 0.96078431372549 0.96078431372549];
-            app.ArduinoGUIButton.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.ArduinoGUIButton.Position = [62 674 104 23];
             app.ArduinoGUIButton.Text = 'Arduino GUI';
 
             % Create StarrangEditFieldLabel
             app.StarrangEditFieldLabel = uilabel(app.mmWTab);
             app.StarrangEditFieldLabel.HorizontalAlignment = 'right';
-            app.StarrangEditFieldLabel.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.StarrangEditFieldLabel.Position = [18 416 54 22];
             app.StarrangEditFieldLabel.Text = 'Starr ang';
 
@@ -3076,14 +3085,12 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.StarrangEditField.Limits = [-90 90];
             app.StarrangEditField.RoundFractionalValues = 'on';
             app.StarrangEditField.ValueChangedFcn = createCallbackFcn(app, @StarrangEditFieldValueChanged, true);
-            app.StarrangEditField.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.StarrangEditField.Position = [80 416 29 22];
             app.StarrangEditField.Value = -60;
 
             % Create StepangEditFieldLabel
             app.StepangEditFieldLabel = uilabel(app.mmWTab);
             app.StepangEditFieldLabel.HorizontalAlignment = 'right';
-            app.StepangEditFieldLabel.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.StepangEditFieldLabel.Position = [115 416 53 22];
             app.StepangEditFieldLabel.Text = 'Step ang';
 
@@ -3091,15 +3098,12 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.StepangEditField = uieditfield(app.mmWTab, 'numeric');
             app.StepangEditField.Limits = [0.01 50];
             app.StepangEditField.ValueChangedFcn = createCallbackFcn(app, @StepangEditFieldValueChanged, true);
-            app.StepangEditField.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.StepangEditField.Position = [176 416 24 22];
             app.StepangEditField.Value = 10;
 
             % Create DCLeakageAutocalStartButton
             app.DCLeakageAutocalStartButton = uibutton(app.mmWTab, 'push');
             app.DCLeakageAutocalStartButton.ButtonPushedFcn = createCallbackFcn(app, @DCLeakageAutocalStartButtonPushed, true);
-            app.DCLeakageAutocalStartButton.BackgroundColor = [0.96078431372549 0.96078431372549 0.96078431372549];
-            app.DCLeakageAutocalStartButton.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.DCLeakageAutocalStartButton.Position = [62 618 100 51];
             app.DCLeakageAutocalStartButton.Text = {'DC Leakage'; 'Autocal'; 'Start'};
 
@@ -3107,15 +3111,12 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.RXLabel_2 = uilabel(app.mmWTab);
             app.RXLabel_2.FontSize = 14;
             app.RXLabel_2.FontWeight = 'bold';
-            app.RXLabel_2.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.RXLabel_2.Position = [95 700 25 22];
             app.RXLabel_2.Text = 'RX';
 
             % Create AmplitudeAutocalStartButton
             app.AmplitudeAutocalStartButton = uibutton(app.mmWTab, 'push');
             app.AmplitudeAutocalStartButton.ButtonPushedFcn = createCallbackFcn(app, @RXAmplitudeAutocalStartButtonPushed, true);
-            app.AmplitudeAutocalStartButton.BackgroundColor = [0.96078431372549 0.96078431372549 0.96078431372549];
-            app.AmplitudeAutocalStartButton.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.AmplitudeAutocalStartButton.Position = [63 556 100 51];
             app.AmplitudeAutocalStartButton.Text = {'Amplitude'; 'Autocal'; 'Start'};
 
@@ -3123,31 +3124,24 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.TXLabel_2 = uilabel(app.mmWTab);
             app.TXLabel_2.FontSize = 14;
             app.TXLabel_2.FontWeight = 'bold';
-            app.TXLabel_2.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.TXLabel_2.Position = [95 298 25 22];
             app.TXLabel_2.Text = 'TX';
 
             % Create PhaseAutocalStartButton_2
             app.PhaseAutocalStartButton_2 = uibutton(app.mmWTab, 'push');
             app.PhaseAutocalStartButton_2.ButtonPushedFcn = createCallbackFcn(app, @TXPhaseAutocalStartButtonPushed, true);
-            app.PhaseAutocalStartButton_2.BackgroundColor = [0.96078431372549 0.96078431372549 0.96078431372549];
-            app.PhaseAutocalStartButton_2.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.PhaseAutocalStartButton_2.Position = [59 164 100 51];
             app.PhaseAutocalStartButton_2.Text = {'Phase'; 'Autocal'; 'Start'};
 
             % Create AmplitudeAutocalStartButton_2
             app.AmplitudeAutocalStartButton_2 = uibutton(app.mmWTab, 'push');
             app.AmplitudeAutocalStartButton_2.ButtonPushedFcn = createCallbackFcn(app, @TXAmplitudeAutocalStartButtonPushed, true);
-            app.AmplitudeAutocalStartButton_2.BackgroundColor = [0.96078431372549 0.96078431372549 0.96078431372549];
-            app.AmplitudeAutocalStartButton_2.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.AmplitudeAutocalStartButton_2.Position = [58 241 100 51];
             app.AmplitudeAutocalStartButton_2.Text = {'Amplitude'; 'Autocal'; 'Start'};
 
             % Create StepperGUIButton
             app.StepperGUIButton = uibutton(app.mmWTab, 'push');
             app.StepperGUIButton.ButtonPushedFcn = createCallbackFcn(app, @StepperGUIButtonPushed, true);
-            app.StepperGUIButton.BackgroundColor = [0.96078431372549 0.96078431372549 0.96078431372549];
-            app.StepperGUIButton.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.StepperGUIButton.Position = [56 388 100 22];
             app.StepperGUIButton.Text = 'Stepper GUI';
 
@@ -3159,21 +3153,17 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.GetPatternButton = uibutton(app.DebugTab, 'state');
             app.GetPatternButton.ValueChangedFcn = createCallbackFcn(app, @GetPatternButtonValueChanged, true);
             app.GetPatternButton.Text = 'GetPattern';
-            app.GetPatternButton.BackgroundColor = [0.96078431372549 0.96078431372549 0.96078431372549];
-            app.GetPatternButton.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.GetPatternButton.Position = [69 467 100 22];
 
             % Create CutoffsetEditFieldLabel
             app.CutoffsetEditFieldLabel = uilabel(app.DebugTab);
             app.CutoffsetEditFieldLabel.HorizontalAlignment = 'right';
-            app.CutoffsetEditFieldLabel.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.CutoffsetEditFieldLabel.Position = [31 305 57 22];
             app.CutoffsetEditFieldLabel.Text = 'Cut offset';
 
             % Create CutoffsetEditField
             app.CutoffsetEditField = uieditfield(app.DebugTab, 'numeric');
             app.CutoffsetEditField.ValueChangedFcn = createCallbackFcn(app, @CutoffsetEditFieldValueChanged, true);
-            app.CutoffsetEditField.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.CutoffsetEditField.Position = [131 305 38 22];
             app.CutoffsetEditField.Value = 500;
 
@@ -3181,27 +3171,23 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.c1CheckBox = uicheckbox(app.DebugTab);
             app.c1CheckBox.ValueChangedFcn = createCallbackFcn(app, @c1CheckBoxValueChanged, true);
             app.c1CheckBox.Text = 'c1';
-            app.c1CheckBox.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.c1CheckBox.Position = [134 386 35 22];
 
             % Create c2CheckBox
             app.c2CheckBox = uicheckbox(app.DebugTab);
             app.c2CheckBox.ValueChangedFcn = createCallbackFcn(app, @c2CheckBoxValueChanged, true);
             app.c2CheckBox.Text = 'c2';
-            app.c2CheckBox.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.c2CheckBox.Position = [134 359 35 22];
 
             % Create MatlabPatternCheckBox
             app.MatlabPatternCheckBox = uicheckbox(app.DebugTab);
             app.MatlabPatternCheckBox.ValueChangedFcn = createCallbackFcn(app, @MatlabPatternCheckBoxValueChanged, true);
             app.MatlabPatternCheckBox.Text = 'MatlabPattern';
-            app.MatlabPatternCheckBox.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.MatlabPatternCheckBox.Position = [87 412 97 22];
 
             % Create UpdRateEditFieldLabel
             app.UpdRateEditFieldLabel = uilabel(app.DebugTab);
             app.UpdRateEditFieldLabel.HorizontalAlignment = 'right';
-            app.UpdRateEditFieldLabel.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.UpdRateEditFieldLabel.Position = [22 440 55 22];
             app.UpdRateEditFieldLabel.Text = 'UpdRate';
 
@@ -3209,21 +3195,18 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.UpdRateEditField = uieditfield(app.DebugTab, 'numeric');
             app.UpdRateEditField.Limits = [1 Inf];
             app.UpdRateEditField.ValueChangedFcn = createCallbackFcn(app, @UpdRateEditFieldValueChanged, true);
-            app.UpdRateEditField.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.UpdRateEditField.Position = [92 440 77 22];
             app.UpdRateEditField.Value = 10;
 
             % Create DLFEditFieldLabel
             app.DLFEditFieldLabel = uilabel(app.DebugTab);
             app.DLFEditFieldLabel.HorizontalAlignment = 'right';
-            app.DLFEditFieldLabel.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.DLFEditFieldLabel.Position = [56 554 55 28];
             app.DLFEditFieldLabel.Text = 'DLF';
 
             % Create DLFEditField
             app.DLFEditField = uieditfield(app.DebugTab, 'numeric');
             app.DLFEditField.ValueChangedFcn = createCallbackFcn(app, @DLFEditFieldValueChanged2, true);
-            app.DLFEditField.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.DLFEditField.Position = [126 560 43 22];
             app.DLFEditField.Value = 1;
 
@@ -3231,14 +3214,11 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.GetSpectrumButton = uibutton(app.DebugTab, 'state');
             app.GetSpectrumButton.ValueChangedFcn = createCallbackFcn(app, @GetSpectrumButtonValueChanged, true);
             app.GetSpectrumButton.Text = 'GetSpectrum';
-            app.GetSpectrumButton.BackgroundColor = [0.96078431372549 0.96078431372549 0.96078431372549];
-            app.GetSpectrumButton.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.GetSpectrumButton.Position = [69 494 100 22];
 
             % Create BWEditFieldLabel
             app.BWEditFieldLabel = uilabel(app.DebugTab);
             app.BWEditFieldLabel.HorizontalAlignment = 'right';
-            app.BWEditFieldLabel.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.BWEditFieldLabel.Position = [56 521 55 28];
             app.BWEditFieldLabel.Text = 'BW';
 
@@ -3246,7 +3226,6 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.BWEditField = uieditfield(app.DebugTab, 'numeric');
             app.BWEditField.Limits = [0 45];
             app.BWEditField.ValueChangedFcn = createCallbackFcn(app, @BWEditFieldValueChanged, true);
-            app.BWEditField.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.BWEditField.Position = [126 527 43 22];
             app.BWEditField.Value = 0.1;
 
@@ -3254,13 +3233,11 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.patternCorrCheckBox = uicheckbox(app.DebugTab);
             app.patternCorrCheckBox.ValueChangedFcn = createCallbackFcn(app, @patternCorrCheckBoxValueChanged, true);
             app.patternCorrCheckBox.Text = 'patternCorr';
-            app.patternCorrCheckBox.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.patternCorrCheckBox.Position = [86 278 83 22];
 
             % Create mis_angEditFieldLabel
             app.mis_angEditFieldLabel = uilabel(app.DebugTab);
             app.mis_angEditFieldLabel.HorizontalAlignment = 'right';
-            app.mis_angEditFieldLabel.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.mis_angEditFieldLabel.Position = [60 695 51 22];
             app.mis_angEditFieldLabel.Text = 'mis_ang';
 
@@ -3268,14 +3245,12 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.mis_angEditField = uieditfield(app.DebugTab, 'numeric');
             app.mis_angEditField.Limits = [0.1 20];
             app.mis_angEditField.ValueChangedFcn = createCallbackFcn(app, @mis_angEditFieldValueChanged, true);
-            app.mis_angEditField.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.mis_angEditField.Position = [126 695 43 22];
             app.mis_angEditField.Value = 15;
 
             % Create alg_scan_resEditFieldLabel
             app.alg_scan_resEditFieldLabel = uilabel(app.DebugTab);
             app.alg_scan_resEditFieldLabel.HorizontalAlignment = 'right';
-            app.alg_scan_resEditFieldLabel.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.alg_scan_resEditFieldLabel.Position = [34 668 77 22];
             app.alg_scan_resEditFieldLabel.Text = 'alg_scan_res';
 
@@ -3283,14 +3258,12 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.alg_scan_resEditField = uieditfield(app.DebugTab, 'numeric');
             app.alg_scan_resEditField.Limits = [0.001 10];
             app.alg_scan_resEditField.ValueChangedFcn = createCallbackFcn(app, @alg_scan_resEditFieldValueChanged, true);
-            app.alg_scan_resEditField.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.alg_scan_resEditField.Position = [126 668 43 22];
             app.alg_scan_resEditField.Value = 1;
 
             % Create gammaEditFieldLabel
             app.gammaEditFieldLabel = uilabel(app.DebugTab);
             app.gammaEditFieldLabel.HorizontalAlignment = 'right';
-            app.gammaEditFieldLabel.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.gammaEditFieldLabel.Position = [65 641 46 22];
             app.gammaEditFieldLabel.Text = 'gamma';
 
@@ -3298,14 +3271,12 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.gammaEditField = uieditfield(app.DebugTab, 'numeric');
             app.gammaEditField.Limits = [0 Inf];
             app.gammaEditField.ValueChangedFcn = createCallbackFcn(app, @gammaEditFieldValueChanged, true);
-            app.gammaEditField.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.gammaEditField.Position = [126 641 43 22];
             app.gammaEditField.Value = 1;
 
             % Create alphaEditFieldLabel
             app.alphaEditFieldLabel = uilabel(app.DebugTab);
             app.alphaEditFieldLabel.HorizontalAlignment = 'right';
-            app.alphaEditFieldLabel.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.alphaEditFieldLabel.Position = [76 614 35 22];
             app.alphaEditFieldLabel.Text = 'alpha';
 
@@ -3313,14 +3284,12 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.alphaEditField = uieditfield(app.DebugTab, 'numeric');
             app.alphaEditField.Limits = [0 Inf];
             app.alphaEditField.ValueChangedFcn = createCallbackFcn(app, @alphaEditFieldValueChanged, true);
-            app.alphaEditField.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.alphaEditField.Position = [126 614 43 22];
             app.alphaEditField.Value = 1.1;
 
             % Create iterEditFieldLabel
             app.iterEditFieldLabel = uilabel(app.DebugTab);
             app.iterEditFieldLabel.HorizontalAlignment = 'right';
-            app.iterEditFieldLabel.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.iterEditFieldLabel.Position = [86 587 25 22];
             app.iterEditFieldLabel.Text = 'iter';
 
@@ -3328,7 +3297,6 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.iterEditField = uieditfield(app.DebugTab, 'numeric');
             app.iterEditField.Limits = [1 Inf];
             app.iterEditField.ValueChangedFcn = createCallbackFcn(app, @iterEditFieldValueChanged, true);
-            app.iterEditField.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.iterEditField.Position = [126 587 43 22];
             app.iterEditField.Value = 1;
 
@@ -3336,20 +3304,17 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.CutterCheckBox = uicheckbox(app.DebugTab);
             app.CutterCheckBox.ValueChangedFcn = createCallbackFcn(app, @CutterCheckBoxValueChanged, true);
             app.CutterCheckBox.Text = 'Cutter';
-            app.CutterCheckBox.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.CutterCheckBox.Position = [89 257 55 22];
 
             % Create DebugCheckBox_2
             app.DebugCheckBox_2 = uicheckbox(app.DebugTab);
             app.DebugCheckBox_2.ValueChangedFcn = createCallbackFcn(app, @DebugCheckBox_2ValueChanged, true);
             app.DebugCheckBox_2.Text = 'Debug';
-            app.DebugCheckBox_2.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.DebugCheckBox_2.Position = [91 232 57 22];
 
             % Create NumberofsavedfilesLabel
             app.NumberofsavedfilesLabel = uilabel(app.DebugTab);
             app.NumberofsavedfilesLabel.HorizontalAlignment = 'right';
-            app.NumberofsavedfilesLabel.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.NumberofsavedfilesLabel.Position = [18 194 62 27];
             app.NumberofsavedfilesLabel.Text = {'Number of'; 'saved files'};
 
@@ -3357,40 +3322,33 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.NumberofsavedfilesEditField = uieditfield(app.DebugTab, 'numeric');
             app.NumberofsavedfilesEditField.Limits = [0 10000];
             app.NumberofsavedfilesEditField.ValueChangedFcn = createCallbackFcn(app, @NumberofsavedfilesEditFieldValueChanged, true);
-            app.NumberofsavedfilesEditField.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.NumberofsavedfilesEditField.Position = [95 199 100 22];
 
             % Create SaveButton
             app.SaveButton = uibutton(app.DebugTab, 'push');
             app.SaveButton.ButtonPushedFcn = createCallbackFcn(app, @SaveButtonPushed, true);
-            app.SaveButton.BackgroundColor = [0.96078431372549 0.96078431372549 0.96078431372549];
-            app.SaveButton.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.SaveButton.Position = [82 169 100 22];
             app.SaveButton.Text = 'Save';
 
             % Create CustomCommandTextAreaLabel
             app.CustomCommandTextAreaLabel = uilabel(app.DebugTab);
             app.CustomCommandTextAreaLabel.HorizontalAlignment = 'right';
-            app.CustomCommandTextAreaLabel.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.CustomCommandTextAreaLabel.Position = [-5 46 60 27];
             app.CustomCommandTextAreaLabel.Text = {'Custom'; 'Command'};
 
             % Create CustomCommandTextArea
             app.CustomCommandTextArea = uitextarea(app.DebugTab);
-            app.CustomCommandTextArea.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.CustomCommandTextArea.Position = [70 51 146 24];
 
             % Create IQcompLabel
             app.IQcompLabel = uilabel(app.DebugTab);
             app.IQcompLabel.FontWeight = 'bold';
-            app.IQcompLabel.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.IQcompLabel.Position = [99 148 53 22];
             app.IQcompLabel.Text = 'IQ comp';
 
             % Create LsizeEditFieldLabel
             app.LsizeEditFieldLabel = uilabel(app.DebugTab);
             app.LsizeEditFieldLabel.HorizontalAlignment = 'right';
-            app.LsizeEditFieldLabel.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.LsizeEditFieldLabel.Position = [29 127 36 22];
             app.LsizeEditFieldLabel.Text = 'L size';
 
@@ -3398,14 +3356,12 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.LsizeEditField = uieditfield(app.DebugTab, 'numeric');
             app.LsizeEditField.Limits = [1 50];
             app.LsizeEditField.ValueChangedFcn = createCallbackFcn(app, @LsizeEditFieldValueChanged, true);
-            app.LsizeEditField.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.LsizeEditField.Position = [80 127 100 22];
             app.LsizeEditField.Value = 4;
 
             % Create MUstepEditFieldLabel
             app.MUstepEditFieldLabel = uilabel(app.DebugTab);
             app.MUstepEditFieldLabel.HorizontalAlignment = 'right';
-            app.MUstepEditFieldLabel.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.MUstepEditFieldLabel.Position = [28 96 50 22];
             app.MUstepEditFieldLabel.Text = 'MU step';
 
@@ -3413,7 +3369,6 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.MUstepEditField = uieditfield(app.DebugTab, 'numeric');
             app.MUstepEditField.Limits = [1e-31 1];
             app.MUstepEditField.ValueChangedFcn = createCallbackFcn(app, @MUstepEditFieldValueChanged, true);
-            app.MUstepEditField.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.MUstepEditField.Position = [81 96 100 22];
             app.MUstepEditField.Value = 1e-16;
 
@@ -3424,7 +3379,6 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             % Create DevicecontrolDropDownLabel
             app.DevicecontrolDropDownLabel = uilabel(app.DevicesTab);
             app.DevicecontrolDropDownLabel.HorizontalAlignment = 'right';
-            app.DevicecontrolDropDownLabel.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.DevicecontrolDropDownLabel.Position = [4 695 82 22];
             app.DevicecontrolDropDownLabel.Text = 'Device control';
 
@@ -3433,15 +3387,12 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.DevicecontrolDropDown.ItemsData = [1 2 3 4 5 6 7 8 9];
             app.DevicecontrolDropDown.DropDownOpeningFcn = createCallbackFcn(app, @DevicecontrolDropDownOpening, true);
             app.DevicecontrolDropDown.ValueChangedFcn = createCallbackFcn(app, @DevicecontrolDropDownValueChanged, true);
-            app.DevicecontrolDropDown.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
-            app.DevicecontrolDropDown.BackgroundColor = [0.96078431372549 0.96078431372549 0.96078431372549];
             app.DevicecontrolDropDown.Position = [101 695 100 22];
             app.DevicecontrolDropDown.Value = 1;
 
             % Create FrequencySpinnerLabel
             app.FrequencySpinnerLabel = uilabel(app.DevicesTab);
             app.FrequencySpinnerLabel.HorizontalAlignment = 'right';
-            app.FrequencySpinnerLabel.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.FrequencySpinnerLabel.Position = [11 641 62 22];
             app.FrequencySpinnerLabel.Text = 'Frequency';
 
@@ -3449,13 +3400,11 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.FrequencySpinner = uispinner(app.DevicesTab);
             app.FrequencySpinner.ValueDisplayFormat = '%.0f';
             app.FrequencySpinner.ValueChangedFcn = createCallbackFcn(app, @FrequencySpinnerValueChanged, true);
-            app.FrequencySpinner.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.FrequencySpinner.Position = [88 641 100 22];
 
             % Create AmplitudeSpinnerLabel
             app.AmplitudeSpinnerLabel = uilabel(app.DevicesTab);
             app.AmplitudeSpinnerLabel.HorizontalAlignment = 'right';
-            app.AmplitudeSpinnerLabel.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.AmplitudeSpinnerLabel.Position = [14 611 59 22];
             app.AmplitudeSpinnerLabel.Text = 'Amplitude';
 
@@ -3464,34 +3413,29 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.AmplitudeSpinner.Limits = [-144 30];
             app.AmplitudeSpinner.ValueDisplayFormat = '%.0f';
             app.AmplitudeSpinner.ValueChangedFcn = createCallbackFcn(app, @AmplitudeSpinnerValueChanged, true);
-            app.AmplitudeSpinner.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.AmplitudeSpinner.Position = [88 611 100 22];
 
             % Create PowerCheckBox
             app.PowerCheckBox = uicheckbox(app.DevicesTab);
             app.PowerCheckBox.ValueChangedFcn = createCallbackFcn(app, @PowerCheckBoxValueChanged2, true);
             app.PowerCheckBox.Text = 'Power';
-            app.PowerCheckBox.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.PowerCheckBox.Position = [23 570 56 22];
 
             % Create ModulationCheckBox
             app.ModulationCheckBox = uicheckbox(app.DevicesTab);
             app.ModulationCheckBox.ValueChangedFcn = createCallbackFcn(app, @ModulationCheckBoxValueChanged, true);
             app.ModulationCheckBox.Text = 'Modulation';
-            app.ModulationCheckBox.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.ModulationCheckBox.Position = [119 571 80 22];
 
             % Create IPEditFieldLabel
             app.IPEditFieldLabel = uilabel(app.DevicesTab);
             app.IPEditFieldLabel.HorizontalAlignment = 'right';
-            app.IPEditFieldLabel.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.IPEditFieldLabel.Position = [48 667 25 22];
             app.IPEditFieldLabel.Text = 'IP';
 
             % Create IPEditField
             app.IPEditField = uieditfield(app.DevicesTab, 'text');
             app.IPEditField.ValueChangedFcn = createCallbackFcn(app, @IPEditFieldValueChanged, true);
-            app.IPEditField.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.IPEditField.Position = [88 667 100 22];
             app.IPEditField.Value = '132.68.138.1';
 
@@ -3502,8 +3446,6 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             % Create coupTestButton
             app.coupTestButton = uibutton(app.MeasTab, 'push');
             app.coupTestButton.ButtonPushedFcn = createCallbackFcn(app, @coupTestButtonPushed, true);
-            app.coupTestButton.BackgroundColor = [0.96078431372549 0.96078431372549 0.96078431372549];
-            app.coupTestButton.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.coupTestButton.Position = [11 48 100 22];
             app.coupTestButton.Text = 'coupTest';
 
@@ -3511,36 +3453,29 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.coupCorrCheckBox = uicheckbox(app.MeasTab);
             app.coupCorrCheckBox.ValueChangedFcn = createCallbackFcn(app, @coupCorrCheckBoxValueChanged, true);
             app.coupCorrCheckBox.Text = 'coupCorr';
-            app.coupCorrCheckBox.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.coupCorrCheckBox.Position = [127 46 71 22];
 
             % Create txpowTestButton
             app.txpowTestButton = uibutton(app.MeasTab, 'push');
             app.txpowTestButton.ButtonPushedFcn = createCallbackFcn(app, @txpowTestButtonPushed, true);
-            app.txpowTestButton.BackgroundColor = [0.96078431372549 0.96078431372549 0.96078431372549];
-            app.txpowTestButton.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.txpowTestButton.Position = [112 700 100 22];
             app.txpowTestButton.Text = 'txpowTest';
 
             % Create powStepEditFieldLabel
             app.powStepEditFieldLabel = uilabel(app.MeasTab);
             app.powStepEditFieldLabel.HorizontalAlignment = 'right';
-            app.powStepEditFieldLabel.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.powStepEditFieldLabel.Position = [8 700 52 22];
             app.powStepEditFieldLabel.Text = 'powStep';
 
             % Create powStepEditField
             app.powStepEditField = uieditfield(app.MeasTab, 'numeric');
             app.powStepEditField.ValueChangedFcn = createCallbackFcn(app, @powStepEditFieldValueChanged, true);
-            app.powStepEditField.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.powStepEditField.Position = [75 700 31 22];
             app.powStepEditField.Value = 1;
 
             % Create leakTestButton
             app.leakTestButton = uibutton(app.MeasTab, 'push');
             app.leakTestButton.ButtonPushedFcn = createCallbackFcn(app, @leakTestButtonPushed, true);
-            app.leakTestButton.BackgroundColor = [0.96078431372549 0.96078431372549 0.96078431372549];
-            app.leakTestButton.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.leakTestButton.Position = [36 290 100 23];
             app.leakTestButton.Text = 'leakTest';
 
@@ -3553,7 +3488,6 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             % Create AvgSpinnerLabel
             app.AvgSpinnerLabel = uilabel(app.LeftPanel);
             app.AvgSpinnerLabel.HorizontalAlignment = 'right';
-            app.AvgSpinnerLabel.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.AvgSpinnerLabel.Position = [27 180 26 22];
             app.AvgSpinnerLabel.Text = 'Avg';
 
@@ -3561,7 +3495,6 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.AvgSpinner = uispinner(app.LeftPanel);
             app.AvgSpinner.Limits = [1 Inf];
             app.AvgSpinner.ValueChangedFcn = createCallbackFcn(app, @AvgSpinnerValueChanged, true);
-            app.AvgSpinner.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.AvgSpinner.Position = [67 180 56 22];
             app.AvgSpinner.Value = 1;
 
@@ -3569,7 +3502,6 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.VSACheckBox = uicheckbox(app.LeftPanel);
             app.VSACheckBox.ValueChangedFcn = createCallbackFcn(app, @VSACheckBoxValueChanged, true);
             app.VSACheckBox.Text = 'VSA';
-            app.VSACheckBox.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.VSACheckBox.Position = [193 180 46 22];
             app.VSACheckBox.Value = true;
 
@@ -3577,14 +3509,12 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.PlotCheckBox = uicheckbox(app.LeftPanel);
             app.PlotCheckBox.ValueChangedFcn = createCallbackFcn(app, @PlotCheckBoxValueChanged, true);
             app.PlotCheckBox.Text = 'Plot';
-            app.PlotCheckBox.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.PlotCheckBox.Position = [244 180 43 22];
             app.PlotCheckBox.Value = true;
 
             % Create ChannelselectListBoxLabel
             app.ChannelselectListBoxLabel = uilabel(app.LeftPanel);
             app.ChannelselectListBoxLabel.HorizontalAlignment = 'right';
-            app.ChannelselectListBoxLabel.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.ChannelselectListBoxLabel.Position = [187 105 50 43];
             app.ChannelselectListBoxLabel.Text = {'Channel'; 'select'};
 
@@ -3593,7 +3523,6 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.ChannelselectListBox.Items = {'Ch1', 'Ch2', 'Ch3', 'Ch4', 'All'};
             app.ChannelselectListBox.ItemsData = {'1', '2', '3', '4', '5', ''};
             app.ChannelselectListBox.ValueChangedFcn = createCallbackFcn(app, @ChannelselectListBoxValueChanged, true);
-            app.ChannelselectListBox.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.ChannelselectListBox.Position = [241 71 52 98];
             app.ChannelselectListBox.Value = '5';
 
@@ -3607,62 +3536,53 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             % Create MostPowerfullButton
             app.MostPowerfullButton = uiradiobutton(app.SignalpriorityButtonGroup);
             app.MostPowerfullButton.Text = 'Most Powerfull';
-            app.MostPowerfullButton.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.MostPowerfullButton.Position = [11 37 101 22];
             app.MostPowerfullButton.Value = true;
 
             % Create LessPowerfullButton
             app.LessPowerfullButton = uiradiobutton(app.SignalpriorityButtonGroup);
             app.LessPowerfullButton.Text = 'Less Powerfull';
-            app.LessPowerfullButton.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.LessPowerfullButton.Position = [11 15 100 22];
 
             % Create MirrorCheckBox_3
             app.MirrorCheckBox_3 = uicheckbox(app.LeftPanel);
             app.MirrorCheckBox_3.ValueChangedFcn = createCallbackFcn(app, @MirrorCheckBox_3ValueChanged, true);
             app.MirrorCheckBox_3.Text = 'Mirror';
-            app.MirrorCheckBox_3.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.MirrorCheckBox_3.Position = [14 159 52 22];
 
             % Create IQCompCheckBox
             app.IQCompCheckBox = uicheckbox(app.LeftPanel);
             app.IQCompCheckBox.ValueChangedFcn = createCallbackFcn(app, @IQCompCheckBoxValueChanged, true);
             app.IQCompCheckBox.Text = 'IQ Comp';
-            app.IQCompCheckBox.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.IQCompCheckBox.Position = [133 23 69 22];
 
             % Create PhasecompCheckBox
             app.PhasecompCheckBox = uicheckbox(app.LeftPanel);
             app.PhasecompCheckBox.ValueChangedFcn = createCallbackFcn(app, @PhasecompCheckBoxValueChanged, true);
             app.PhasecompCheckBox.Text = 'Phase comp';
-            app.PhasecompCheckBox.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.PhasecompCheckBox.Position = [112 3 88 22];
 
             % Create CouplingcompCheckBox
             app.CouplingcompCheckBox = uicheckbox(app.LeftPanel);
             app.CouplingcompCheckBox.ValueChangedFcn = createCallbackFcn(app, @CouplingcompCheckBoxValueChanged, true);
             app.CouplingcompCheckBox.Text = 'Coupling comp';
-            app.CouplingcompCheckBox.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.CouplingcompCheckBox.Position = [8 2 101 22];
 
             % Create AdaptiveIQcompCheckBox
             app.AdaptiveIQcompCheckBox = uicheckbox(app.LeftPanel);
             app.AdaptiveIQcompCheckBox.ValueChangedFcn = createCallbackFcn(app, @AdaptiveIQcompCheckBoxValueChanged, true);
             app.AdaptiveIQcompCheckBox.Text = 'Adaptive IQ comp';
-            app.AdaptiveIQcompCheckBox.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.AdaptiveIQcompCheckBox.Position = [8 23 117 22];
 
             % Create EVMCheckBox
             app.EVMCheckBox = uicheckbox(app.LeftPanel);
             app.EVMCheckBox.ValueChangedFcn = createCallbackFcn(app, @EVMCheckBoxValueChanged, true);
             app.EVMCheckBox.Text = 'EVM';
-            app.EVMCheckBox.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.EVMCheckBox.Position = [137 180 47 22];
 
             % Create dataChanEditFieldLabel
             app.dataChanEditFieldLabel = uilabel(app.LeftPanel);
             app.dataChanEditFieldLabel.HorizontalAlignment = 'right';
-            app.dataChanEditFieldLabel.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.dataChanEditFieldLabel.Position = [10 50 58 22];
             app.dataChanEditFieldLabel.Text = 'dataChan';
 
@@ -3671,7 +3591,6 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.dataChanEditField.Limits = [1024 131072];
             app.dataChanEditField.ValueDisplayFormat = '%.0f';
             app.dataChanEditField.ValueChangedFcn = createCallbackFcn(app, @dataChanEditFieldValueChanged, true);
-            app.dataChanEditField.FontColor = [0.129411764705882 0.129411764705882 0.129411764705882];
             app.dataChanEditField.Position = [82 50 74 22];
             app.dataChanEditField.Value = 8192;
 
