@@ -5,6 +5,8 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         RFSoCBeamformerUIFigure        matlab.ui.Figure
         GridLayout                     matlab.ui.container.GridLayout
         LeftPanel                      matlab.ui.container.Panel
+        BurstLenSpinner                matlab.ui.control.Spinner
+        BurstLenSpinnerLabel           matlab.ui.control.Label
         dataChanEditField              matlab.ui.control.NumericEditField
         dataChanEditFieldLabel         matlab.ui.control.Label
         EVMCheckBox                    matlab.ui.control.CheckBox
@@ -359,7 +361,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
         %% Part reset vars
         p_manual_mean, yspec_mean, plot_handle, plot_handle2, tcp_client
         %% RFSoC TCP streaming
-        streamBurstLength = 8;       % Normal mode: request this many frames per command.
+        streamBurstLength = 1;       % Normal mode: request this many frames per command.
         streamFramesPending = 0;     % Frames already requested from the RFSoC and not yet read.
 
         %%
@@ -405,7 +407,7 @@ classdef VSA_rfsoc_new_exported < matlab.apps.AppBase
             app.ResetButton.Text = 'Reseting...';
             app.ResetButton.BackgroundColor = 'r';
             drawnow%!!!!
-Jvy            [app.data_v, app.setup_v, app.meas_v] = vsaDdc(0, app.fsRfsoc, app.fsRfsoc, app.dataChan, 4);
+            [app.data_v, app.setup_v, app.meas_v] = vsaDdc(0, app.fsRfsoc, app.fsRfsoc, app.dataChan, 4);
             app.pcvsa = vsaSetup(app.setupFile);
             commandsHandler(app, ['da ' num2str(app.da)]);
             commandsHandler(app, ['dataStream ' num2str(app.dataStream)]);
@@ -1070,7 +1072,7 @@ Jvy            [app.data_v, app.setup_v, app.meas_v] = vsaDdc(0, app.fsRfsoc, ap
                     if ~isempty(app.stepper_app)
                         if move_flg
                             app.stepper_app.setAngle(app.cur_ang)
-                            pause(2)
+                            pause(0.1)
                             move_flg = 0;
                         end
                     else
@@ -2565,6 +2567,12 @@ Jvy            [app.data_v, app.setup_v, app.meas_v] = vsaDdc(0, app.fsRfsoc, ap
             end
         end
 
+        % Value changed function: BurstLenSpinner
+        function BurstLenSpinnerValueChanged(app, event)
+            app.streamBurstLength = app.BurstLenSpinner.Value;         
+            app.reset_req = 1;
+        end
+
         % Changes arrangement of the app based on UIFigure width
         function updateAppLayout(app, event)
             currentFigureWidth = app.RFSoCBeamformerUIFigure.Position(3);
@@ -3515,7 +3523,7 @@ Jvy            [app.data_v, app.setup_v, app.meas_v] = vsaDdc(0, app.fsRfsoc, ap
             % Create ChannelselectListBoxLabel
             app.ChannelselectListBoxLabel = uilabel(app.LeftPanel);
             app.ChannelselectListBoxLabel.HorizontalAlignment = 'right';
-            app.ChannelselectListBoxLabel.Position = [187 105 50 43];
+            app.ChannelselectListBoxLabel.Position = [187 111 50 43];
             app.ChannelselectListBoxLabel.Text = {'Channel'; 'select'};
 
             % Create ChannelselectListBox
@@ -3523,7 +3531,7 @@ Jvy            [app.data_v, app.setup_v, app.meas_v] = vsaDdc(0, app.fsRfsoc, ap
             app.ChannelselectListBox.Items = {'Ch1', 'Ch2', 'Ch3', 'Ch4', 'All'};
             app.ChannelselectListBox.ItemsData = {'1', '2', '3', '4', '5', ''};
             app.ChannelselectListBox.ValueChangedFcn = createCallbackFcn(app, @ChannelselectListBoxValueChanged, true);
-            app.ChannelselectListBox.Position = [241 71 52 98];
+            app.ChannelselectListBox.Position = [241 77 52 98];
             app.ChannelselectListBox.Value = '5';
 
             % Create SignalpriorityButtonGroup
@@ -3593,6 +3601,18 @@ Jvy            [app.data_v, app.setup_v, app.meas_v] = vsaDdc(0, app.fsRfsoc, ap
             app.dataChanEditField.ValueChangedFcn = createCallbackFcn(app, @dataChanEditFieldValueChanged, true);
             app.dataChanEditField.Position = [82 50 74 22];
             app.dataChanEditField.Value = 8192;
+
+            % Create BurstLenSpinnerLabel
+            app.BurstLenSpinnerLabel = uilabel(app.LeftPanel);
+            app.BurstLenSpinnerLabel.HorizontalAlignment = 'right';
+            app.BurstLenSpinnerLabel.Position = [162 50 53 22];
+            app.BurstLenSpinnerLabel.Text = 'BurstLen';
+
+            % Create BurstLenSpinner
+            app.BurstLenSpinner = uispinner(app.LeftPanel);
+            app.BurstLenSpinner.ValueChangedFcn = createCallbackFcn(app, @BurstLenSpinnerValueChanged, true);
+            app.BurstLenSpinner.Position = [229 50 60 22];
+            app.BurstLenSpinner.Value = 1;
 
             % Create RightPanel
             app.RightPanel = uipanel(app.GridLayout);
