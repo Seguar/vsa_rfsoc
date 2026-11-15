@@ -2,6 +2,11 @@ Applications for RFSoC communication and DOA with beamforming.
 
 **VSA_rfsoc.mlapp** - original application
 
+**RFSoC 4x2:** see [the recovered board interface](docs/rfsoc4x2-board-interface.md).
+Its observed boot server streams continuously and is not the ZCU216 burst/tracking
+server. The newer MultiTest notebooks remain experiments; live compatibility with
+these MATLAB apps has not been established by the source audit.
+
 **ZCU216 notebook beamforming:** use **VSA_rfsoc_new.mlapp** with the
 [recovered board server](https://github.com/Seguar/doa_rfsoc/tree/zcu216/PS/python/beamforming).
 Both this App Designer file and its exported MATLAB source contain burst-stream
