@@ -1,6 +1,13 @@
 Applications for RFSoC communication and DOA with beamforming.
 
-**VSA_rfsoc.mlapp** - main app
+**VSA_rfsoc.mlapp** - original application
+
+**ZCU216 notebook beamforming:** use **VSA_rfsoc_new.mlapp** with the
+[recovered board server](https://github.com/Seguar/doa_rfsoc/tree/zcu216/PS/python/beamforming).
+Both this App Designer file and its exported MATLAB source contain burst-stream
+and notebook DAC-tracking controls; the older `VSA_rfsoc.mlapp` does not.
+See [the board interface notes](docs/zcu216-board-interface.md) for frame layout,
+calibration inputs, and the limits of the 2026-11-15 reconciliation.
 
 **Requirements:**
 
